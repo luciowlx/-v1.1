@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 任务模板配置引擎 - 高保真原型 V2</title>
+    <style>
+        /* 1. ================== 全局样式 ================== */
+        :root {
+            --color-primary: #007bff;
+            --color-primary-light: #e6f3ff;
+            --color-primary-dark: #0d69d5;
+            --color-primary-bg: #f5faff; /* 模拟截图中的淡蓝色背景 */
+            --color-primary-border: #d0e6ff;
+            --color-border: #dcdfe6;
+            --color-bg: #f4f7fa;
+            --color-text: #303133;
+            --color-text-secondary: #606266;
+            --color-text-light: #909399;
+            --color-text-placeholder: #c0c4cc;
+            --color-danger: #f56c6c;
+            --header-height: 50px;
+            --left-panel-width: 260px;
+            --right-panel-width: 320px;
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: var(--font-family);
+            background-color: var(--color-bg);
+            color: var(--color-text);
+            height: 100vh;
+            overflow: hidden;
+            font-size: 14px;
+        }
+
+        .hidden { display: none !important; }
+
+        .btn {
+            font-size: 14px;
+            padding: 6px 14px;
+            border: 1px solid var(--color-border);
+            border-radius: 4px;
+            cursor: pointer;
+            background-color: #fff;
+            transition: all 0.2s;
+        }
+        .btn:hover {
+            border-color: var(--color-primary);
+            color: var(--color-primary);
+        }
+        .btn.btn-primary {
+            background-color: var(--color-primary);
+            color: white;
+            border-color: var(--color-primary);
+        }
+        .btn.btn-primary:hover {
+            background-color: #0056b3;
+        }
+        .btn.btn-danger {
+            color: var(--color-danger);
+            border-color: var(--color-danger);
+        }
+        .btn:disabled {
+            color: var(--color-text-light);
+            border-color: #e4e7ed;
+            background-color: #f5f7fa;
+            cursor: not-allowed;
+        }
+
+        /* 2. ================== 页面 1: 任务模板列表 ================== */
+        #page-task-list {
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 24px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--color-border);
+        }
+        .list-header h1 { margin: 0; font-size: 20px; }
+        .task-list-item {
+            display: flex;
+            align-items: center;
+            padding: 16px 0;
+            border-bottom: 1px solid #f0f2f5;
+        }
+        .item-content { flex-grow: 1; }
+        .item-content h3 { margin: 0 0 4px 0; font-size: 16px; }
+        .item-content h3 .tag {
+            font-size: 12px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background-color: #f0f0f0;
+            color: var(--color-text-secondary);
+            margin-left: 8px;
+            font-weight: 500;
+        }
+        .item-content h3 .tag.tag-system {
+            background-color: var(--color-primary-light);
+            color: var(--color-primary);
+        }
+        .item-content p { margin: 0; color: var(--color-text-secondary); font-size: 13px; }
+        .item-actions { flex-shrink: 0; display: flex; gap: 10px; }
+
+        /* 3. ================== 页面 2: 低代码配置引擎 ================== */
+        .editor-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        .editor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 16px;
+            background-color: #ffffff;
+            border-bottom: 1px solid var(--color-border);
+            height: var(--header-height);
+            flex-shrink: 0;
+            box-sizing: border-box;
+        }
+        .header-group { display: flex; align-items: center; gap: 12px; }
+        .header-title { font-size: 16px; font-weight: 600; }
+        .header-divider { width: 1px; height: 20px; background-color: var(--color-border); }
+        .editor-main {
+            display: grid;
+            grid-template-columns: var(--left-panel-width) 1fr var(--right-panel-width);
+            height: calc(100vh - var(--header-height));
+        }
+
+        /* 3.3 左侧面板区 */
+        .editor-left-panel {
+            background-color: #fff;
+            border-right: 1px solid var(--color-border);
+            display: flex;
+            flex-direction: column;
+        }
+        .panel-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--color-border);
+            flex-shrink: 0;
+        }
+        .tab-button {
+            flex-grow: 1;
+            padding: 10px 0;
+            font-size: 14px;
+            text-align: center;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1px;
+            color: var(--color-text-secondary);
+        }
+        .tab-button.active {
+            color: var(--color-primary);
+            border-bottom-color: var(--color-primary);
+            font-weight: 500;
+        }
+        .panel-content-wrapper { overflow-y: auto; flex-grow: 1; }
+        .panel-content { padding: 12px; }
+        .material-sub-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+        .material-sub-tabs .sub-tab {
+            padding: 4px 10px;
+            border: 1px solid var(--color-border);
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .material-sub-tabs .sub-tab.active {
+            background-color: var(--color-primary-light);
+            border-color: var(--color-primary);
+            color: var(--color-primary);
+        }
+        .material-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .material-item {
+            padding: 10px 8px;
+            border: 1px solid var(--color-border);
+            border-radius: 4px;
+            font-size: 13px;
+            text-align: center;
+            cursor: grab;
+            background-color: #fcfcfc;
+        }
+        .outline-tree, .schema-editor {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 13px;
+            color: var(--color-text-secondary);
+            white-space: pre;
+        }
+
+        /* 3.4 中部画布区 (高保真) */
+        .editor-canvas-area {
+            background-color: var(--color-bg);
+            padding: 24px;
+            overflow-y: auto;
+        }
+        /* 画布中的模板卡片 */
+        .canvas-mockup-card {
+            background-color: var(--color-primary-bg);
+            border: 1px solid var(--color-primary-border);
+            border-radius: 8px;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        /* 画布中的可点击项 */
+        .canvas-item {
+            border: 1px dashed transparent;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .canvas-item:hover {
+            border-color: var(--color-primary);
+            background-color: var(--color-primary-light);
+        }
+        .canvas-item.selected {
+            border-color: var(--color-primary) !important;
+            border-style: solid;
+            background-color: var(--color-primary-light);
+            box-shadow: 0 0 0 2px var(--color-primary-light);
+        }
+
+        /* 截图样式: 区域标题 */
+        .mock-section-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--color-primary-dark);
+            margin: 0 0 16px 0;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--color-primary-border);
+        }
+        /* 截图样式: 表单网格 */
+        .mock-form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px 24px;
+            margin-bottom: 16px;
+        }
+        /* 截图样式: 表单字段 */
+        .mock-field {
+            padding: 4px; /* 为选中边框留出空间 */
+        }
+        .mock-field label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            font-size: 14px;
+            color: var(--color-text);
+        }
+        .mock-field label .required { color: var(--color-danger); margin-left: 2px; }
+        .mock-field label .tooltip { color: var(--color-text-light); font-weight: 400; font-size: 13px; }
+        
+        .mock-input-display {
+            background-color: #fff;
+            border: 1px solid var(--color-primary-border);
+            border-radius: 4px;
+            padding: 10px 12px;
+            color: var(--color-text-secondary);
+            font-size: 14px;
+        }
+        .mock-checkbox-display {
+            background-color: transparent;
+            font-size: 14px;
+            color: var(--color-text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 4px;
+        }
+        .mock-checkbox-display::before { /* 模拟的方框 */
+            content: '';
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 1px solid var(--color-border);
+            background: #fff;
+            border-radius: 2px;
+        }
+        /* 截图样式: 输出区域 */
+        .mock-output-group-title {
+            font-weight: 600;
+            color: var(--color-text);
+            font-size: 15px;
+            margin-top: 24px;
+            margin-bottom: 12px;
+        }
+        .mock-metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        .mock-metric-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 4px;
+            font-size: 14px;
+        }
+        .mock-metric-item::before { /* 模拟的勾选框 */
+            content: '✔';
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            font-size: 12px;
+            color: #fff;
+            background: var(--color-primary);
+            border-radius: 2px;
+        }
+        .mock-code-display {
+            background-color: #fff;
+            border: 1px solid var(--color-primary-border);
+            border-radius: 4px;
+            padding: 10px 12px;
+            color: var(--color-text-placeholder);
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 13px;
+        }
+
+
+        /* 3.5 右侧配置区 */
+        .editor-right-panel {
+            background-color: #fff;
+            border-left: 1px solid var(--color-border);
+            display: flex;
+            flex-direction: column;
+        }
+        .props-panel-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--color-border);
+            flex-shrink: 0;
+        }
+        .props-panel-header h3 { margin: 0; font-size: 15px; }
+        .props-panel-header p { margin: 4px 0 0 0; font-size: 12px; color: var(--color-text-light); }
+        .props-tabs-container {
+            border-bottom: 1px solid var(--color-border);
+            flex-shrink: 0;
+        }
+        .props-panel-content-wrapper { overflow-y: auto; flex-grow: 1; }
+        .props-panel-placeholder {
+            text-align: center;
+            color: var(--color-text-light);
+            margin-top: 40px;
+        }
+        .form-group { margin-bottom: 14px; }
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 6px;
+        }
+        .form-group input[type="text"],
+        .form-group input[type="number"],
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 8px 10px;
+            font-size: 13px;
+            border: 1px solid var(--color-border);
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .form-group input[disabled] {
+            background-color: #f5f7fa;
+            color: var(--color-text-light);
+        }
+        .form-group-checkbox { display: flex; align-items: center; }
+        .form-group-checkbox input { margin-right: 8px; }
+
+    </style>
+</head>
+<body>
+
+    <!-- ============================================= -->
+    <!--           页面 1: 任务模板列表 (PRD 1.5)         -->
+    <!-- ============================================= -->
+    <main id="page-task-list">
+        <div class="list-header">
+            <h1>任务模板管理</h1>
+            <button class="btn btn-primary" data-navigate-to="page-low-code-editor" data-template-id="new_template">
+                + 新增任务模板
+            </button>
+        </div>
+        <div class="task-list-container">
+            <div class="task-list-item">
+                <div class="item-content">
+                    <h3>时序预测任务 <span class="tag tag-system">系统</span></h3>
+                    <p>用于处理时间序列数据的预测，如销量预测、股价预测等。</p>
+                </div>
+                <div class="item-actions">
+                    <button class="btn" data-navigate-to="page-low-code-editor" data-template-id="task_timeseries_v1">配置</button>
+                    <button class="btn btn-danger" disabled>删除</button>
+                </div>
+            </div>
+            <div class="task-list-item">
+                <div class="item-content">
+                    <h3>分类任务 <span class="tag tag-system">系统</span></h3>
+                    <p>用于处理离散值预测，如客户流失预警、垃圾邮件识别等。</p>
+                </div>
+                <div class="item-actions">
+                    <button class="btn" data-navigate-to="page-low-code-editor" data-template-id="task_classification_v1">配置</button>
+                    <button class="btn btn-danger" disabled>删除</button>
+                </div>
+            </div>
+            <div class="task-list-item">
+                <div class="item-content">
+                    <h3>回归任务 <span class="tag tag-system">系统</span></h3>
+                    <p>用于处理连续值预测，如房价预测、产品定价等。</p>
+                </div>
+                <div class="item-actions">
+                    <button class="btn" data-navigate-to="page-low-code-editor" data-template-id="task_regression_v1">配置</button>
+                    <button class="btn btn-danger" disabled>删除</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ============================================= -->
+    <!--          页面 2: 低代码配置引擎 (PRD 2.0)        -->
+    <!-- ============================================= -->
+    <div id="page-low-code-editor" class="editor-container hidden">
+        
+        <header class="editor-header">
+            <div class="header-group">
+                <button class="btn" data-navigate-to="page-task-list">&lt; 返回列表</button>
+                <span class="header-divider"></span>
+                <span id="editor-template-name" class="header-title"></span>
+            </div>
+            <div class="header-group">
+                <button class="btn">↩️ 撤销</button> <button class="btn">↪️ 重做</button> <span class="header-divider"></span>
+                <button class="btn">💾 保存本地</button> <button class="btn">🔄 重置</button>
+                <button class="btn">👁️ 预览</button> <span class="header-divider"></span>
+                <button class="btn btn-primary">✅ 保存</button>
+            </div>
+        </header>
+
+        <main class="editor-main">
+            
+            <!-- 2.2.1 左侧面板区 -->
+            <aside class="editor-left-panel">
+                <nav class="panel-tabs" data-panel-id="left-panel">
+                    <div class="tab-button active" data-tab="materials">物料</div>
+                    <div class="tab-button" data-tab="outline">大纲</div>
+                    <div class="tab-button" data-tab="schema">源码</div>
+                </nav>
+                <div class="panel-content-wrapper">
+                    <div id="left-panel-tab-materials" class="panel-content tab-content active">
+                        <nav class="material-sub-tabs" data-panel-id="material-sub-panel">
+                            <div class="sub-tab tab-button active" data-tab="input">输入配置</div>
+                            <div class="sub-tab tab-button" data-tab="output">输出配置</div>
+                        </nav>
+                        <div id="material-sub-panel-tab-input" class="tab-content active"><div class="material-grid">
+                            <div class="material-item">🔢 数字输入</div>
+                            <div class="material-item">✅ 布尔设置</div>
+                            <div class="material-item">🔽 下拉选择</div>
+                            <div class="material-item">📝 多行文本</div>
+                            <div class="material-item">📋 字段选择器</div>
+                        </div></div>
+                        <div id="material-sub-panel-tab-output" class="tab-content hidden"><div class="material-grid">
+                            <div class="material-item">📈 指标配置器</div>
+                            <div class="material-item">📊 图表配置器</div>
+                        </div></div>
+                    </div>
+                    <div id="left-panel-tab-outline" class="panel-content tab-content hidden"><div class="outline-tree">...</div></div>
+                    <div id="left-panel-tab-schema" class="panel-content tab-content hidden"><div class="schema-editor">...</div></div>
+                </div>
+            </aside>
+
+            <!-- 2.2.2 中部画布区 (高保真) -->
+            <section class="editor-canvas-area">
+
+                <!-- 模板 1: 时序预测 (默认隐藏) -->
+                <div class="canvas-mockup-card hidden" id="canvas-mockup-task_timeseries_v1">
+                    <h2 class="mock-section-title">⚙️ 输入配置</h2>
+                    <div class="mock-form-grid">
+                        <div class="mock-field canvas-item" data-component-id="ts_time_column">
+                            <label>时间列 <span class="required">*</span> <span class="tooltip">(请先在第2步...)</label>
+                            <div class="mock-input-display">选择时间列</div>
+                        </div>
+                        <div class="mock-field canvas-item" data-component-id="ts_target_column">
+                            <label>预测目标列 <span class="required">*</span> <span class="tooltip">(请先在第2步...)</label>
+                            <div class="mock-input-display">选择预测目标列</div>
+                        </div>
+                        <div class="mock-field canvas-item" data-component-id="ts_context_length">
+                            <label>上下文长度 <span class="required">*</span></label>
+                            <div class="mock-input-display">24</div>
+                        </div>
+                        <div class="mock-field canvas-item" data-component-id="ts_predict_length">
+                            <label>预测长度 <span class="required">*</span></label>
+                            <div class="mock-input-display">12</div>
+                        </div>
+                        <div class="mock-field canvas-item" data-component-id="ts_predict_step">
+                            <label>预测步长 <span class="required">*</span></label>
+                            <div class="mock-input-display">1</div>
+                        </div>
+                        <div class="mock-field canvas-item" data-component-id="ts_start_time">
+                            <label>预测开始时间 <span class="tooltip">(可选, 示例: ...)</label>
+                            <div class="mock-input-display">2025-10-29 08:00:00</div>
+                        </div>
+                        <div class="mock-field canvas-item" data-component-id="ts_main_vars">
+                            <label>主变量文件 <span class="tooltip">(可选, 互斥)</label>
+                            <div class="mock-input-display">选择主变量文件</div>
+                        </div>
+                        <div class="mock-field canvas-item" data-component-id="ts_cov_vars">
+                            <label>协变量文件 <span class="tooltip">(可选, 互斥)</label>
+                            <div class="mock-input-display">选择协变量文件</div>
+                        </div>
+                    </div>
+
+                    <h2 class="mock-section-title" style="margin-top: 30px;">📊 输出配置</h2>
+                    <h3 class="mock-output-group-title">评估指标</h3>
+                    <div class="mock-metrics-grid">
+                        <div class="mock-metric-item canvas-item" data-component-id="metric_mse">
+                            <label>MSE</label>
+                        </div>
+                        <div class="mock-metric-item canvas-item" data-component-id="metric_rmse">
+                            <label>RMSE</label>
+                        </div>
+                        <div class="mock-metric-item canvas-item" data-component-id="metric_mae">
+                            <label>MAE</label>
+                        </div>
+                        <div class="mock-metric-item canvas-item" data-component-id="metric_mape">
+                            <label>MAPE</label>
+                        </div>
+                        <div class="mock-metric-item canvas-item" data-component-id="metric_r2">
+                            <label>R²</label>
+                        </div>
+                    </div>
+                    <div class="mock-form-grid" style="margin-top: 16px;">
+                        <div class="mock-field canvas-item" data-component-id="threshold_relative">
+                            <label>相对偏差阈值(±%)</label>
+                            <div class="mock-input-display">10</div>
+                        </div>
+                        <div class="mock-field canvas-item" data-component-id="threshold_absolute">
+                            <label>绝对偏差阈值(±)</label>
+                            <div class="mock-input-display">10</div>
+                        </div>
+                    </div>
+                    <h3 class="mock-output-group-title">可视化</h3>
+                    <div class="mock-metrics-grid">
+                        <div class="mock-metric-item canvas-item" data-component-id="viz_forecast_plot">
+                            <label>折线图</label>
+                        </div>
+                        <div class="mock-metric-item canvas-item" data-component-id="viz_residual_plot">
+                            <label>残差图</label>
+                        </div>
+                        <div class="mock-metric-item canvas-item" data-component-id="viz_pred_vs_true_scatter">
+                            <label>预测vs真实散点</label>
+                        </div>
+                        <div class="mock-metric-item canvas-item" data-component-id="viz_error_histogram">
+                            <label>误差直方图</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 模板 2: 分类 (默认隐藏) -->
+                <div class="canvas-mockup-card hidden" id="canvas-mockup-task_classification_v1">
+                    <h2 class="mock-section-title">⚙️ 输入配置</h2>
+                    <div class="mock-form-grid">
+                        <div class="mock-field canvas-item" data-component-id="train_split_ratio">
+                            <label>训练集比例(%)</label>
+                            <div class="mock-input-display">80</div>
+                        </div>
+                        <div class="mock-field canvas-item" data-component-id="test_split_ratio">
+                            <label>测试集比例(%)</label>
+                            <div class="mock-input-display">20</div>
+                        </div>
+                    </div>
+                    <div class="mock-checkbox-display canvas-item" data-component-id="shuffle">
+                        <label>洗牌(Shuffle)</label>
+                    </div>
+
+                    <h2 class="mock-section-title" style="margin-top: 30px;">📊 输出配置</h2>
+                    <h3 class="mock-output-group-title">评估指标与平均方式</h3>
+                    <div class="mock-metrics-grid">
+                        <div class="mock-metric-item canvas-item" data-component-id="metric_accuracy">
+                            <label>Accuracy</label>
+                        </div>
+                        <div class="mock-metric-item canvas-item" data-component-id="metric_precision">
+                            <label>Precision</label>
+                        </div>
+                        <div class="mock-metric-item canvas-item" data-component-id="metric_recall">
+                            <label>Recall</label>
+                        </div>
+                        <div class="mock-metric-item canvas-item" data-component-id="metric_f1">
+                            <label>F1</label>
+                        </div>
+                        <div class="mock-metric-item canvas-item" data-component-id="metric_roc_auc">
+                            <label>ROC-AUC</label>
+                        </div>
+                    </div>
+                    <div class="mock-form-grid" style="margin-top: 16px;">
+                        <div class="mock-field canvas-item" data-component-id="avg_method">
+                            <label>平均方式 <span class="tooltip">(Precision/Recall/F1/ROC-AUC)</span></label>
+                            <div class="mock-input-display">binary</div>
+                        </div>
+                    </div>
+                    <h3 class="mock-output-group-title">自定义指标</h3>
+                    <div class="mock-field canvas-item" data-component-id="custom_metric_code">
+                        <div class="mock-code-display">请输入有效的 Python 函数代码...</div>
+                    </div>
+                    <h3 class="mock-output-group-title">可视化</h3>
+                    <div class="mock-metrics-grid">
+                        <div class="mock-metric-item canvas-item" data-component-id="viz_roc_curve">
+                            <label>ROC 曲线</label>
+                        </div>
+                        <div class="mock-metric-item canvas-item" data-component-id="viz_pr_curve">
+                            <label>PR 曲线</label>
+                        </div>
+                        <div class="mock-metric-item canvas-item" data-component-id="viz_confusion_matrix">
+                            <label>混淆矩阵</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 模板 3: 回归 (默认隐藏) -->
+                <div class="canvas-mockup-card hidden" id="canvas-mockup-task_regression_v1">
+                    <h2 class="mock-section-title">⚙️ 输入配置</h2>
+                    <div class="mock-form-grid">
+                        <div class="mock-field canvas-item" data-component-id="train_split_ratio">
+                            <label>训练集比例(%)</label>
+                            <div class="mock-input-display">80</div>
+                        </div>
+                        <div class="mock-field canvas-item" data-component-id="test_split_ratio">
+                            <label>测试集比例(%)</label>
+                            <div class="mock-input-display">20</div>
+                        </div>
+                    </div>
+                    <div class="mock-checkbox-display canvas-item" data-component-id="shuffle">
+                        <label>洗牌(Shuffle)</label>
+                    </div>
+
+                    <h2 class="mock-section-title" style="margin-top: 30px;">📊 输出配置</h2>
+                    <h3 class="mock-output-group-title">评估指标</h3>
+                    <div class="mock-metrics-grid">
+                        <div class="mock-metric-item canvas-item" data-component-id="metric_mse">
+                            <label>MSE</label>
+                        </div>
+                        <div class="mock-metric-item canvas-item" data-component-id="metric_rmse">
+                            <label>RMSE</label>
+                        </div>
+                        <div class="mock-metric-item canvas-item" data-component-id="metric_mae">
+                            <label>MAE</label>
+                        </div>
+                        <div class="mock-metric-item canvas-item" data-component-id="metric_mape">
+                            <label>MAPE</label>
+                        </div>
+                        <div class="mock-metric-item canvas-item" data-component-id="metric_r2">
+                            <label>R²</label>
+                        </div>
+                    </div>
+                    <div class="mock-form-grid" style="margin-top: 16px;">
+                        <div class="mock-field canvas-item" data-component-id="threshold_relative">
+                            <label>相对偏差阈值(±%)</label>
+                            <div class="mock-input-display">10</div>
+                        </div>
+                        <div class="mock-field canvas-item" data-component-id="threshold_absolute">
+                            <label>绝对偏差阈值(±)</label>
+                            <div class="mock-input-display">10</div>
+                        </div>
+                    </div>
+                    <h3 class="mock-output-group-title">可视化</h3>
+                    <div class="mock-metrics-grid">
+                        <div class="mock-metric-item canvas-item" data-component-id="viz_forecast_plot">
+                            <label>折线图</label>
+                        </div>
+                        <div class="mock-metric-item canvas-item" data-component-id="viz_residual_plot">
+                            <label>残差图</label>
+                        </div>
+                        <div class="mock-metric-item canvas-item" data-component-id="viz_pred_vs_true_scatter">
+                            <label>预测vs真实散点</label>
+                        </div>
+                        <div class="mock-metric-item canvas-item" data-component-id="viz_error_histogram">
+                            <label>误差直方图</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 新模板/空状态 -->
+                <div class="canvas-mockup-card hidden" id="canvas-mockup-new_template">
+                    <h2 class="mock-section-title">⚙️ 输入配置</h2>
+                    <p style="text-align: center; color: var(--color-text-light); margin: 40px 0;">从左侧“物料”面板拖拽“输入组件”到这里</p>
+                    <h2 class="mock-section-title" style="margin-top: 30px;">📊 输出配置</h2>
+                    <p style="text-align: center; color: var(--color-text-light); margin: 40px 0;">从左侧“物料”面板拖拽“输出组件”到这里</p>
+                </div>
+
+            </section>
+
+            <!-- 2.2.3 右侧配置区 -->
+            <aside class="editor-right-panel">
+                <div id="props-panel-placeholder" class="props-panel-placeholder">
+                    <p>请在画布中选中一个组件</p>
+                    <p>以编辑其属性</p>
+                </div>
+                
+                <div id="props-panel-content" class="hidden">
+                    <div class="props-panel-header">
+                        <h3 id="props-header-title">组件属性</h3>
+                        <p id="props-header-subtitle">componentName</p>
+                    </div>
+                    <nav class="panel-tabs props-tabs-container" data-panel-id="right-panel">
+                        <div class="tab-button active" data-tab="properties">属性</div>
+                        <div class="tab-button" data-tab="styles">样式</div>
+                        <div class="tab-button" data-tab="advanced">高级</div>
+                    </nav>
+                    <div class="panel-content-wrapper">
+                        <div id="right-panel-tab-properties" class="panel-content tab-content active"></div>
+                        <div id="right-panel-tab-styles" class="panel-content tab-content hidden"></div>
+                        <div id="right-panel-tab-advanced" class="panel-content tab-content hidden"></div>
+                    </div>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+
+    <script>
+        // =============================================
+        //          模拟数据 (基于 PRD)
+        // =============================================
+
+        // 附录 B: 可视化物料库
+        const vizLibrary = [
+            { label: "折线图/预测图", value: "forecast_plot" },
+            { label: "预测vs真实散点", value: "pred_vs_true_scatter" },
+            { label: "残差图", value: "residual_plot" },
+            { label: "误差直方图", value: "error_histogram" },
+            { label: "ROC 曲线", value: "roc_curve" },
+            { label: "PR 曲线", value: "pr_curve" },
+            { label: "混淆矩阵", value: "confusion_matrix" }
+        ];
+
+        // 模拟的组件 Schema 数据库 (包含所有模板的字段)
+        const componentDataStore = {
+            // --- 通用字段 ---
+            'train_split_ratio': {
+                componentName: "NumberSetter", label: "训练集比例(%)", paramId: "train_split_ratio",
+                defaultValue: 80, tooltip: "训练数据占总数据的百分比。",
+                rules: [{ type: "required" }, { type: "min", value: 1 }, { type: "max", value: 99 }]
+            },
+            'test_split_ratio': {
+                componentName: "NumberSetter", label: "测试集比例(%)", paramId: "test_split_ratio",
+                defaultValue: 20, rules: [{ type: "required" }, { type: "min", value: 1 }, { type: "max", value: 99 }]
+            },
+            'shuffle': {
+                componentName: "BoolSetter", label: "洗牌(Shuffle)", paramId: "shuffle",
+                defaultValue: false, tooltip: "是否在训练前打乱数据顺序。"
+            },
+            'threshold_relative': {
+                componentName: "NumberSetter", label: "相对偏差阈值(±%)", paramId: "threshold_relative",
+                defaultValue: 10
+            },
+            'threshold_absolute': {
+                componentName: "NumberSetter", label: "绝对偏差阈值(±)", paramId: "threshold_absolute",
+                defaultValue: 10
+            },
+            // --- 时序预测字段 ---
+            'ts_time_column': {
+                componentName: "ColumnPicker", label: "时间列", paramId: "ts_time_column",
+                tooltip: "请在第2步选择数据...", rules: [{ type: "required" }]
+            },
+            'ts_target_column': {
+                componentName: "ColumnPicker", label: "预测目标列", paramId: "ts_target_column",
+                tooltip: "请在第2步选择数据...", rules: [{ type: "required" }]
+            },
+            'ts_context_length': {
+                componentName: "NumberSetter", label: "上下文长度", paramId: "ts_context_length",
+                defaultValue: 24, rules: [{ type: "required" }]
+            },
+            'ts_predict_length': {
+                componentName: "NumberSetter", label: "预测长度", paramId: "ts_predict_length",
+                defaultValue: 12, rules: [{ type: "required" }]
+            },
+            'ts_predict_step': {
+                componentName: "NumberSetter", label: "预测步长", paramId: "ts_predict_step",
+                defaultValue: 1, rules: [{ type: "required" }]
+            },
+            'ts_start_time': {
+                componentName: "DateTimePicker", label: "预测开始时间", paramId: "ts_start_time",
+                tooltip: "可选, 示例: 2025-10-29 08:00:00"
+            },
+            'ts_main_vars': {
+                componentName: "SelectSetter", label: "主变量文件", paramId: "ts_main_vars",
+                tooltip: "可选, 互斥", options: []
+            },
+            'ts_cov_vars': {
+                componentName: "SelectSetter", label: "协变量文件", paramId: "ts_cov_vars",
+                tooltip: "可选, 互斥", options: []
+            },
+            // --- 分类字段 ---
+            'avg_method': {
+                componentName: "SelectSetter", label: "平均方式", paramId: "avg_method",
+                defaultValue: "binary", options: [{label: "binary"}, {label: "macro"}, {label: "micro"}]
+            },
+            'custom_metric_code': {
+                componentName: "TextAreaSetter", label: "自定义指标", paramId: "custom_metric_code",
+                placeholder: "请输入有效的 Python 函数代码..."
+            },
+            // --- 输出指标 ---
+            'metric_mse': { componentName: "MetricSetter", label: "MSE", metricId: "mse", isDefault: true, description: "均方误差" },
+            'metric_rmse': { componentName: "MetricSetter", label: "RMSE", metricId: "rmse", isDefault: true, description: "均方根误差" },
+            'metric_mae': { componentName: "MetricSetter", label: "MAE", metricId: "mae", isDefault: true, description: "平均绝对误差" },
+            'metric_mape': { componentName: "MetricSetter", label: "MAPE", metricId: "mape", isDefault: true, description: "平均绝对百分比误差" },
+            'metric_r2': { componentName: "MetricSetter", label: "R²", metricId: "r2", isDefault: true, description: "决定系数" },
+            'metric_accuracy': { componentName: "MetricSetter", label: "Accuracy", metricId: "accuracy", isDefault: true },
+            'metric_precision': { componentName: "MetricSetter", label: "Precision", metricId: "precision", isDefault: true },
+            'metric_recall': { componentName: "MetricSetter", label: "Recall", metricId: "recall", isDefault: true },
+            'metric_f1': { componentName: "MetricSetter", label: "F1", metricId: "f1", isDefault: true },
+            'metric_roc_auc': { componentName: "MetricSetter", label: "ROC-AUC", metricId: "roc_auc", isDefault: true },
+            // --- 输出可视化 ---
+            'viz_forecast_plot': { componentName: "VizSetter", label: "折线图", vizId: "forecast_plot", isDefault: true },
+            'viz_residual_plot': { componentName: "VizSetter", label: "残差图", vizId: "residual_plot", isDefault: true },
+            'viz_pred_vs_true_scatter': { componentName: "VizSetter", label: "预测vs真实散点", vizId: "pred_vs_true_scatter", isDefault: true },
+            'viz_error_histogram': { componentName: "VizSetter", label: "误差直方图", vizId: "error_histogram", isDefault: true },
+            'viz_roc_curve': { componentName: "VizSetter", label: "ROC 曲线", vizId: "roc_curve", isDefault: true },
+            'viz_pr_curve': { componentName: "VizSetter", label: "PR 曲线", vizId: "pr_curve", isDefault: true },
+            'viz_confusion_matrix': { componentName: "VizSetter", label: "混淆矩阵", vizId: "confusion_matrix", isDefault: true }
+        };
+
+        // =============================================
+        //          原型交互逻辑
+        // =============================================
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const pages = document.querySelectorAll('#page-task-list, #page-low-code-editor');
+            const navButtons = document.querySelectorAll('[data-navigate-to]');
+            const editorTemplateName = document.getElementById('editor-template-name');
+            const canvasMockups = document.querySelectorAll('.canvas-mockup-card');
+
+            const showPage = (pageId) => {
+                pages.forEach(p => p.classList.add('hidden'));
+                const pageToShow = document.getElementById(pageId);
+                if (pageToShow) pageToShow.classList.remove('hidden');
+            };
+
+            navButtons.forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const targetPage = e.currentTarget.dataset.navigateTo;
+                    showPage(targetPage);
+
+                    if (targetPage === 'page-low-code-editor') {
+                        const templateId = e.currentTarget.dataset.templateId || 'new_template';
+                        const templateName = e.currentTarget.dataset.templateName || '新模板';
+                        editorTemplateName.textContent = templateName;
+                        
+                        // 动态显示对应的画布
+                        canvasMockups.forEach(mockup => mockup.classList.add('hidden'));
+                        const targetMockup = document.getElementById(`canvas-mockup-${templateId}`);
+                        if (targetMockup) {
+                            targetMockup.classList.remove('hidden');
+                        } else {
+                            // 回退到新模板
+                            document.getElementById('canvas-mockup-new_template').classList.remove('hidden');
+                        }
+                        
+                        // (可选) 清空右侧配置面板
+                        clearAndHidePropsPanel();
+                    }
+                });
+            });
+
+            // --- 2. 通用 Tab 切换逻辑 ---
+            const setupTabbedPanels = (containerSelector) => {
+                const container = document.querySelector(containerSelector);
+                if (!container) return;
+                
+                const panelId = container.dataset.panelId;
+                const tabButtons = container.querySelectorAll('.tab-button');
+                
+                tabButtons.forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const targetTab = e.currentTarget.dataset.tab;
+                        tabButtons.forEach(btn => btn.classList.remove('active'));
+                        e.currentTarget.classList.add('active');
+                        
+                        const allContents = container.parentElement.querySelectorAll(`[id^="${panelId}-tab-"]`);
+                        allContents.forEach(content => content.classList.add('hidden'));
+                        
+                        const targetContent = document.getElementById(`${panelId}-tab-${targetTab}`);
+                        if (targetContent) targetContent.classList.remove('hidden');
+                    });
+                });
+            };
+
+            setupTabbedPanels('.editor-left-panel .panel-tabs');
+            setupTabbedPanels('.material-sub-tabs');
+            setupTabbedPanels('.props-tabs-container');
+
+
+            // --- 3. 画布组件选中 & 渲染属性面板 ---
+            const propsPlaceholder = document.getElementById('props-panel-placeholder');
+            const propsContent = document.getElementById('props-panel-content');
+            const propsHeaderTitle = document.getElementById('props-header-title');
+            const propsHeaderSubtitle = document.getElementById('props-header-subtitle');
+            
+            const propsTabContent = document.getElementById('right-panel-tab-properties');
+            const stylesTabContent = document.getElementById('right-panel-tab-styles');
+            const advancedTabContent = document.getElementById('right-panel-tab-advanced');
+
+            // 委托事件到画布区域
+            document.querySelector('.editor-canvas-area').addEventListener('click', (e) => {
+                const canvasItem = e.target.closest('.canvas-item');
+                if (!canvasItem) return;
+
+                // 1. 更新选中状态
+                document.querySelectorAll('.canvas-item').forEach(i => i.classList.remove('selected'));
+                canvasItem.classList.add('selected');
+                
+                // 2. 显示面板
+                propsPlaceholder.classList.add('hidden');
+                propsContent.classList.remove('hidden');
+
+                // 3. 获取数据
+                const componentId = canvasItem.dataset.componentId;
+                const data = componentDataStore[componentId];
+                
+                if (!data) {
+                    console.warn(`No data found for componentId: ${componentId}`);
+                    return; 
+                }
+
+                // 4. 渲染面板
+                renderPropsPanel(data);
+            });
+            
+            const clearAndHidePropsPanel = () => {
+                propsPlaceholder.classList.remove('hidden');
+                propsContent.classList.add('hidden');
+                document.querySelectorAll('.canvas-item').forEach(item => item.classList.remove('selected'));
+            };
+
+            // --- 4. 属性面板渲染函数 ---
+            const renderPropsPanel = (data) => {
+                propsHeaderTitle.textContent = `${data.label} [属性]`;
+                propsHeaderSubtitle.textContent = data.componentName;
+                
+                let propsHtml = renderFormGroup('label', '标签 (Label)', data.label);
+                
+                if (data.paramId) propsHtml += renderFormGroup('paramId', '参数ID (paramId)', data.paramId, true);
+                if (data.metricId) propsHtml += renderFormGroup('metricId', '指标ID (metricId)', data.metricId, true);
+                if (data.vizId) {
+                    propsHtml += renderSelectGroup('vizId', '图表类型 (vizId)', data.vizId, vizLibrary);
+                }
+                if (data.defaultValue !== undefined) {
+                    if (typeof data.defaultValue === 'boolean') {
+                        propsHtml += renderCheckboxGroup('defaultValue', '默认值', data.defaultValue);
+                    } else {
+                        propsHtml += renderFormGroup('defaultValue', '默认值', data.defaultValue);
+                    }
+                }
+                if (data.isDefault !== undefined) {
+                    propsHtml += renderCheckboxGroup('isDefault', '默认启用', data.isDefault);
+                }
+                if (data.description) {
+                    propsHtml += renderFormGroup('description', '描述', data.description, false, 'textarea');
+                }
+                if (data.tooltip) {
+                    propsHtml += renderFormGroup('tooltip', '提示信息', data.tooltip, false, 'textarea');
+                }
+                propsTabContent.innerHTML = propsHtml;
+
+                stylesTabContent.innerHTML = renderFormGroup('width', '宽度 (Width)', '100%') + renderCheckboxGroup('fullWidth', '是否独占一行', true);
+                
+                let advancedHtml = '<h4>校验规则</h4>';
+                if (data.rules && data.rules.length > 0) {
+                    data.rules.forEach(rule => {
+                        let ruleValue = rule.message || (rule.value !== undefined ? rule.value : '');
+                        advancedHtml += renderFormGroup(rule.type, rule.type, ruleValue);
+                    });
+                } else {
+                    advancedHtml = '<p style="color: #999; font-size: 13px;">此组件无高级校验规则。</p>';
+                }
+                advancedTabContent.innerHTML = advancedHtml;
+            };
+
+            // --- 5. 表单渲染辅助函数 ---
+            const renderFormGroup = (id, label, value, disabled = false, type = 'text') => {
+                const disabledAttr = disabled ? 'disabled' : '';
+                if (type === 'textarea') {
+                    return `
+                        <div class="form-group">
+                            <label for="${id}">${label}</label>
+                            <textarea id="${id}" rows="3" ${disabledAttr}>${value}</textarea>
+                        </div>`;
+                }
+                return `
+                    <div class="form-group">
+                        <label for="${id}">${label}</label>
+                        <input type="${type}" id="${id}" value="${value}" ${disabledAttr}>
+                    </div>`;
+            };
+            const renderCheckboxGroup = (id, label, isChecked) => {
+                const checkedAttr = isChecked ? 'checked' : '';
+                return `
+                    <div class="form-group-checkbox">
+                        <input type="checkbox" id="${id}" ${checkedAttr}>
+                        <label for="${id}">${label}</label>
+                    </div>`;
+            };
+            const renderSelectGroup = (id, label, selectedValue, options) => {
+                let optionsHtml = options.map(opt => 
+                    `<option value="${opt.value}" ${opt.value === selectedValue ? 'selected' : ''}>
+                        ${opt.label}
+                    </option>`
+                ).join('');
+                return `
+                    <div class="form-group">
+                        <label for="${id}">${label}</label>
+                        <select id="${id}">${optionsHtml}</select>
+                    </div>`;
+            };
+
+        });
+    </script>
+</body>
+</html>

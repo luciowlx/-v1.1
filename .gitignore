@@ -1,0 +1,8 @@
+node_modules
+# 构建产物与本地缓存
+build/
+dist/
+.vercel/
+
+# macOS 系统文件
+.DS_Store
