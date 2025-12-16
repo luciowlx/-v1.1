@@ -3,14 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+
 import { Badge } from "./ui/badge";
-import { 
-  ArrowLeft, 
-  Upload, 
-  Palette, 
-  Monitor, 
-  Navigation, 
+import {
+  ArrowLeft,
+  Upload,
+  Palette,
+  Monitor,
+  Navigation,
   Image as ImageIcon,
   Settings,
   Save,
@@ -58,17 +58,7 @@ export function PersonalizationSettings({ onBack }: PersonalizationSettingsProps
     solidColor: "#f1f5f9"
   });
 
-  // 预设主题色
-  const presetColors = [
-    { name: "蓝色", primary: "#3b82f6", accent: "#10b981" },
-    { name: "绿色", primary: "#10b981", accent: "#3b82f6" },
-    { name: "紫色", primary: "#8b5cf6", accent: "#f59e0b" },
-    { name: "红色", primary: "#ef4444", accent: "#06b6d4" },
-    { name: "橙色", primary: "#f97316", accent: "#8b5cf6" },
-    { name: "粉色", primary: "#ec4899", accent: "#10b981" },
-    { name: "青色", primary: "#06b6d4", accent: "#f59e0b" },
-    { name: "灰色", primary: "#6b7280", accent: "#3b82f6" }
-  ];
+
 
   const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -99,13 +89,7 @@ export function PersonalizationSettings({ onBack }: PersonalizationSettingsProps
     }
   };
 
-  const applyTheme = (theme: typeof presetColors[0]) => {
-    setThemeConfig(prev => ({
-      ...prev,
-      primaryColor: theme.primary,
-      accentColor: theme.accent
-    }));
-  };
+
 
   const resetToDefault = () => {
     setSystemConfig({
@@ -148,13 +132,13 @@ export function PersonalizationSettings({ onBack }: PersonalizationSettingsProps
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="bg-gray-50 p-6 pb-20">
       <div className="max-w-6xl mx-auto">
         {/* 页面头部 */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-4">
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               onClick={onBack}
               className="flex items-center space-x-2"
             >
@@ -178,29 +162,15 @@ export function PersonalizationSettings({ onBack }: PersonalizationSettingsProps
           </div>
         </div>
 
-        {/* 配置选项卡 */}
-        <Tabs defaultValue="system" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="system" className="flex items-center space-x-2">
-              <Settings className="h-4 w-4" />
-              <span>系统标识</span>
-            </TabsTrigger>
-            <TabsTrigger value="navigation" className="flex items-center space-x-2">
-              <Navigation className="h-4 w-4" />
-              <span>导航样式</span>
-            </TabsTrigger>
-            <TabsTrigger value="theme" className="flex items-center space-x-2">
-              <Palette className="h-4 w-4" />
-              <span>主题配置</span>
-            </TabsTrigger>
-            <TabsTrigger value="login" className="flex items-center space-x-2">
-              <ImageIcon className="h-4 w-4" />
-              <span>登录页配置</span>
-            </TabsTrigger>
-          </TabsList>
+        {/* 配置内容 - 垂直平铺 */}
+        <div className="space-y-8 pb-10">
 
           {/* 系统标识配置 */}
-          <TabsContent value="system" className="space-y-6">
+          <section className="space-y-4">
+            <div className="flex items-center space-x-2 border-b pb-2">
+              <Settings className="h-5 w-5 text-gray-500" />
+              <h2 className="text-lg font-semibold text-gray-900">系统标识</h2>
+            </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
@@ -210,9 +180,9 @@ export function PersonalizationSettings({ onBack }: PersonalizationSettingsProps
                   <div className="flex items-center space-x-4">
                     <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
                       {systemConfig.logoUrl ? (
-                        <img 
-                          src={systemConfig.logoUrl} 
-                          alt="Logo" 
+                        <img
+                          src={systemConfig.logoUrl}
+                          alt="Logo"
                           className="w-full h-full object-contain"
                         />
                       ) : (
@@ -277,9 +247,9 @@ export function PersonalizationSettings({ onBack }: PersonalizationSettingsProps
                     <div className="flex items-center space-x-3">
                       <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
                         {systemConfig.logoUrl ? (
-                          <img 
-                            src={systemConfig.logoUrl} 
-                            alt="Logo" 
+                          <img
+                            src={systemConfig.logoUrl}
+                            alt="Logo"
                             className="w-full h-full object-contain"
                           />
                         ) : (
@@ -299,10 +269,14 @@ export function PersonalizationSettings({ onBack }: PersonalizationSettingsProps
                 </CardContent>
               </Card>
             </div>
-          </TabsContent>
+          </section>
 
           {/* 导航样式配置 */}
-          <TabsContent value="navigation" className="space-y-6">
+          <section className="space-y-4">
+            <div className="flex items-center space-x-2 border-b pb-2">
+              <Navigation className="h-5 w-5 text-gray-500" />
+              <h2 className="text-lg font-semibold text-gray-900">导航样式</h2>
+            </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
@@ -331,110 +305,18 @@ export function PersonalizationSettings({ onBack }: PersonalizationSettingsProps
                       ))}
                     </div>
                   </div>
-                  
-                  {navigationConfig.layout === "sidebar" && (
-                    <div>
-                      <Label htmlFor="sidebar-width">侧边栏宽度 (px)</Label>
-                      <Input
-                        id="sidebar-width"
-                        type="number"
-                        value={navigationConfig.sidebarWidth}
-                        onChange={(e) => setNavigationConfig(prev => ({
-                          ...prev,
-                          sidebarWidth: e.target.value
-                        }))}
-                        min="200"
-                        max="400"
-                      />
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>显示选项</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <Label>显示图标</Label>
-                    <Button
-                      variant={navigationConfig.showIcons ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setNavigationConfig(prev => ({
-                        ...prev,
-                        showIcons: !prev.showIcons
-                      }))}
-                    >
-                      {navigationConfig.showIcons ? "开启" : "关闭"}
-                    </Button>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <Label>显示标签</Label>
-                    <Button
-                      variant={navigationConfig.showLabels ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setNavigationConfig(prev => ({
-                        ...prev,
-                        showLabels: !prev.showLabels
-                      }))}
-                    >
-                      {navigationConfig.showLabels ? "开启" : "关闭"}
-                    </Button>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <Label>可折叠</Label>
-                    <Button
-                      variant={navigationConfig.collapsible ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setNavigationConfig(prev => ({
-                        ...prev,
-                        collapsible: !prev.collapsible
-                      }))}
-                    >
-                      {navigationConfig.collapsible ? "开启" : "关闭"}
-                    </Button>
-                  </div>
                 </CardContent>
               </Card>
             </div>
-          </TabsContent>
+          </section>
 
           {/* 主题配置 */}
-          <TabsContent value="theme" className="space-y-6">
+          <section className="space-y-4">
+            <div className="flex items-center space-x-2 border-b pb-2">
+              <Palette className="h-5 w-5 text-gray-500" />
+              <h2 className="text-lg font-semibold text-gray-900">主题配置</h2>
+            </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>预设主题</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-3">
-                    {presetColors.map((theme) => (
-                      <Button
-                        key={theme.name}
-                        variant="outline"
-                        className="h-auto p-3 flex items-center space-x-3"
-                        onClick={() => applyTheme(theme)}
-                      >
-                        <div className="flex space-x-1">
-                          <div 
-                            className="w-4 h-4 rounded-full"
-                            style={{ backgroundColor: theme.primary }}
-                          />
-                          <div 
-                            className="w-4 h-4 rounded-full"
-                            style={{ backgroundColor: theme.accent }}
-                          />
-                        </div>
-                        <span>{theme.name}</span>
-                      </Button>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
               <Card>
                 <CardHeader>
                   <CardTitle>自定义颜色</CardTitle>
@@ -463,7 +345,7 @@ export function PersonalizationSettings({ onBack }: PersonalizationSettingsProps
                       />
                     </div>
                   </div>
-                  
+
                   <div>
                     <Label htmlFor="accent-color">辅助色</Label>
                     <div className="flex items-center space-x-2 mt-1">
@@ -487,7 +369,7 @@ export function PersonalizationSettings({ onBack }: PersonalizationSettingsProps
                       />
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center justify-between">
                     <Label>深色模式</Label>
                     <Button
@@ -509,25 +391,25 @@ export function PersonalizationSettings({ onBack }: PersonalizationSettingsProps
                   <CardTitle>主题预览</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div 
+                  <div
                     className="p-6 rounded-lg border-2"
-                    style={{ 
+                    style={{
                       backgroundColor: themeConfig.backgroundColor,
-                      borderColor: themeConfig.primaryColor 
+                      borderColor: themeConfig.primaryColor
                     }}
                   >
                     <div className="flex items-center space-x-4 mb-4">
-                      <Button 
+                      <Button
                         style={{ backgroundColor: themeConfig.primaryColor }}
                         className="text-white"
                       >
                         主要按钮
                       </Button>
-                      <Button 
+                      <Button
                         variant="outline"
-                        style={{ 
+                        style={{
                           borderColor: themeConfig.accentColor,
-                          color: themeConfig.accentColor 
+                          color: themeConfig.accentColor
                         }}
                       >
                         次要按钮
@@ -540,10 +422,14 @@ export function PersonalizationSettings({ onBack }: PersonalizationSettingsProps
                 </CardContent>
               </Card>
             </div>
-          </TabsContent>
+          </section>
 
           {/* 登录页配置 */}
-          <TabsContent value="login" className="space-y-6">
+          <section className="space-y-4">
+            <div className="flex items-center space-x-2 border-b pb-2">
+              <ImageIcon className="h-5 w-5 text-gray-500" />
+              <h2 className="text-lg font-semibold text-gray-900">登录页配置</h2>
+            </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Card>
                 <CardHeader>
@@ -670,14 +556,14 @@ export function PersonalizationSettings({ onBack }: PersonalizationSettingsProps
                   <CardTitle>登录页预览</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div 
+                  <div
                     className="w-full h-64 rounded-lg flex items-center justify-center relative overflow-hidden"
                     style={{
                       background: loginConfig.backgroundType === "image" && loginConfig.backgroundImage
                         ? `url(${loginConfig.backgroundImage}) center/cover`
                         : loginConfig.backgroundType === "gradient"
-                        ? `linear-gradient(135deg, ${loginConfig.gradientStart}, ${loginConfig.gradientEnd})`
-                        : loginConfig.solidColor
+                          ? `linear-gradient(135deg, ${loginConfig.gradientStart}, ${loginConfig.gradientEnd})`
+                          : loginConfig.solidColor
                     }}
                   >
                     <div className="bg-white/90 backdrop-blur-sm p-6 rounded-lg shadow-lg">
@@ -694,8 +580,8 @@ export function PersonalizationSettings({ onBack }: PersonalizationSettingsProps
                 </CardContent>
               </Card>
             </div>
-          </TabsContent>
-        </Tabs>
+          </section>
+        </div>
       </div>
     </div>
   );

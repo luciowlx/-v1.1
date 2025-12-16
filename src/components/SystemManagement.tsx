@@ -63,12 +63,7 @@ export function SystemManagement({ defaultSubTab = "overview" }: SystemManagemen
       icon: Cpu,
       description: "迁移自顶部配置管理的任务引擎功能"
     },
-    {
-      id: "personal",
-      name: "个人中心",
-      icon: User,
-      description: "个人信息设置"
-    }
+
     ,
     {
       id: "log",
@@ -212,14 +207,7 @@ export function SystemManagement({ defaultSubTab = "overview" }: SystemManagemen
                   </CardContent>
                 </Card>
 
-                <Card className="cursor-pointer hover:shadow-md transition-all duration-200 hover:scale-105 bg-white border border-gray-200">
-                  <CardContent className="p-6 text-center">
-                    <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                      <User className="h-6 w-6 text-purple-600" />
-                    </div>
-                    <h4 className="font-medium text-gray-900 mb-1">个人设置</h4>
-                  </CardContent>
-                </Card>
+
               </div>
             </div>
 

@@ -78,7 +78,7 @@ export function FullPageView({ type, onClose, notificationCenterInitialTab = 'no
       </div>
 
       {/* 页面内容 */}
-      <div className="flex-1 overflow-auto bg-gray-50">
+      <div className="flex-1 overflow-y-auto min-h-0 bg-gray-50">
         {renderContent()}
       </div>
     </div>

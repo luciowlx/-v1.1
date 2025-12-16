@@ -498,10 +498,7 @@ export function RoleManagement() {
               批量删除 ({selectedRoles.length})
             </Button>
           )}
-          <Button variant="outline" onClick={() => setIsLogDialogOpen(true)}>
-            <Eye className="w-4 h-4 mr-2" />
-            操作日志
-          </Button>
+
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
               <Button>
