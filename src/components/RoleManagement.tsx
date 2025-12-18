@@ -9,7 +9,7 @@ import { Checkbox } from "./ui/checkbox";
 import { Switch } from "./ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
-import { Plus, Edit, Trash2, Shield, Users, Settings, Search, Eye, UserPlus, Mail, Lock } from "lucide-react";
+import { Plus, Edit, Trash2, Shield, Users, Settings, Search, Eye, UserPlus, Mail, Lock, ToggleLeft, ToggleRight } from "lucide-react";
 import type { User } from "../types/user";
 import { registeredUsers } from "../mock/users";
 import { ScrollArea } from "./ui/scroll-area";
@@ -353,9 +353,13 @@ export function RoleManagement() {
     setRoles(roles.map(role => role.id === roleId ? { ...role, status: enabled ? "active" : "inactive" } : role));
   };
 
-  const handleBatchDelete = () => {
-    // Only delete non-default roles
-    setRoles(roles.filter(role => !selectedRoles.includes(role.id) || role.isDefault));
+  const handleBatchStatusUpdate = (status: "active" | "inactive") => {
+    setRoles(roles.map(role => {
+      if (selectedRoles.includes(role.id) && !role.isDefault) {
+        return { ...role, status };
+      }
+      return role;
+    }));
     setSelectedRoles([]);
   };
 
@@ -507,10 +511,16 @@ export function RoleManagement() {
         </div>
         <div className="flex gap-3">
           {selectedRoles.length > 0 && (
-            <Button variant="destructive" onClick={handleBatchDelete}>
-              <Trash2 className="w-4 h-4 mr-2" />
-              批量删除 ({selectedRoles.length})
-            </Button>
+            <>
+              <Button variant="outline" className="text-green-600 hover:text-green-700 hover:bg-green-50" onClick={() => handleBatchStatusUpdate("active")}>
+                <ToggleRight className="w-4 h-4 mr-2" />
+                批量启用 ({selectedRoles.length})
+              </Button>
+              <Button variant="outline" className="text-gray-600 hover:text-gray-700 hover:bg-gray-50" onClick={() => handleBatchStatusUpdate("inactive")}>
+                <ToggleLeft className="w-4 h-4 mr-2" />
+                批量禁用 ({selectedRoles.length})
+              </Button>
+            </>
           )}
 
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>

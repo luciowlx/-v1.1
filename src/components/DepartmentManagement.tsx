@@ -19,7 +19,8 @@ import {
   MenuProps,
   Badge,
   Tooltip,
-  message
+  message,
+  Switch
 } from "antd";
 import type { DataNode, TreeProps } from "antd/es/tree";
 import type { ColumnsType } from "antd/es/table";
@@ -38,7 +39,9 @@ import {
   Phone,
   Mail,
   Calendar,
-  MoreHorizontal
+  MoreHorizontal,
+  ToggleLeft,
+  ToggleRight
 } from "lucide-react";
 import { setDepartmentTree } from "../services/departments";
 
@@ -533,6 +536,22 @@ export function DepartmentManagement() {
     }
   };
 
+  const handleBatchUserStatusUpdate = (status: "active" | "inactive") => {
+    if (selectedUsers.length === 0) return;
+    setUsers(users.map(user =>
+      selectedUsers.includes(user.id) ? { ...user, status } : user
+    ));
+    setSelectedUsers([]);
+    message.success(`已批量${status === 'active' ? '启用' : '禁用'} ${selectedUsers.length} 位用户`);
+  };
+
+  const handleToggleUserStatus = (userId: string, enabled: boolean) => {
+    setUsers(users.map(user =>
+      user.id === userId ? { ...user, status: enabled ? "active" : "inactive" } : user
+    ));
+    message.success(`用户已${enabled ? '启用' : '禁用'}`);
+  };
+
   // 辅助函数
   // 编辑直接打开，无需二次确认
   const openEditDialog = (department: Department) => {
@@ -709,7 +728,12 @@ export function DepartmentManagement() {
       key: 'status',
       render: (_, record) => (
         <Space>
-          <Badge status={record.status === 'active' ? 'success' : 'error'} text={record.status === 'active' ? '启用' : '禁用'} />
+          <Switch
+            size="small"
+            checked={record.status === 'active'}
+            onChange={(checked) => handleToggleUserStatus(record.id, checked)}
+          />
+          <span className="text-gray-500 text-sm">{record.status === 'active' ? '启用' : '禁用'}</span>
         </Space>
       ),
     },
@@ -817,7 +841,6 @@ export function DepartmentManagement() {
                   />
                   <div className="flex items-center gap-3">
                     <Title level={3} style={{ margin: 0 }}>{getDepartmentName(selectedDeptId)}</Title>
-                    <Badge count={getDepartmentUserCount(selectedDeptId)} overflowCount={999} style={{ backgroundColor: '#2db7f5' }} />
                   </div>
                   <Text type="secondary" className="mt-1 block">
                     {findDepartmentById(departments, selectedDeptId)?.description || '暂无描述'}
@@ -828,6 +851,24 @@ export function DepartmentManagement() {
                     <Button icon={<ArrowUpDown size={14} />} onClick={() => setIsDeptChangeDialogOpen(true)}>
                       批量转部门
                     </Button>
+                  )}
+                  {selectedUsers.length > 0 && (
+                    <>
+                      <Button
+                        icon={<ToggleRight size={14} />}
+                        className="text-green-600 border-green-200 hover:text-green-700 hover:border-green-300 hover:bg-green-50"
+                        onClick={() => handleBatchUserStatusUpdate("active")}
+                      >
+                        批量启用
+                      </Button>
+                      <Button
+                        icon={<ToggleLeft size={14} />}
+                        className="text-gray-500 border-gray-200 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50"
+                        onClick={() => handleBatchUserStatusUpdate("inactive")}
+                      >
+                        批量禁用
+                      </Button>
+                    </>
                   )}
                   <Button type="primary" icon={<UserPlus size={16} />} onClick={() => setIsAddUserDialogOpen(true)}>
                     添加员工
