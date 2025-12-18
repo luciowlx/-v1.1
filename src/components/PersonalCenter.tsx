@@ -1,29 +1,23 @@
+
 import { useEffect, useState } from "react";
 import { useLanguage } from "../i18n/LanguageContext";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import { Textarea } from "./ui/textarea";
 import { Badge } from "./ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import {
   User,
   Mail,
   Phone,
   Lock,
-  Camera,
-  Save,
   Eye,
   EyeOff,
   Calendar,
-  MapPin,
-  Briefcase,
   Shield,
-  Bell,
-  Palette,
-  Globe
+  Bell
 } from "lucide-react";
 
 interface UserProfile {
@@ -135,20 +129,11 @@ export function PersonalCenter() {
 
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState(userProfile);
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
 
   useEffect(() => {
     localStorage.setItem("currentUserRole", userProfile.role);
   }, [userProfile.role]);
-
-  /**
-   * 更新个人资料表单内容到主档。
-   * 参数：无
-   * 返回：void
-   */
-  const handleProfileUpdate = (): void => {
-    setUserProfile(editForm);
-    setIsEditing(false);
-  };
 
   /**
    * 提交修改密码表单，进行基本一致性校验并模拟成功提示。
@@ -163,6 +148,7 @@ export function PersonalCenter() {
     // 这里应该调用API更新密码
     alert(t("personal.center.alert.passwordUpdated"));
     setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+    setIsPasswordDialogOpen(false);
   };
 
   /**
@@ -209,263 +195,245 @@ export function PersonalCenter() {
         <p className="text-gray-600 mt-1">{t("personal.center.description")}</p>
       </div>
 
-      <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="profile">{t("personal.center.tabs.profile")}</TabsTrigger>
-          <TabsTrigger value="security">{t("personal.center.tabs.security")}</TabsTrigger>
-          <TabsTrigger value="notifications">{t("personal.center.tabs.notifications")}</TabsTrigger>
-          <TabsTrigger value="logs">{t("personal.center.tabs.logs")}</TabsTrigger>
-        </TabsList>
-
-        {/* 个人信息 */}
-        <TabsContent value="profile" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <User className="h-5 w-5 mr-2" />
-                {t("personal.center.section.basicInfo")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* 头像部分 */}
-              <div className="flex items-center space-x-6">
-                <div className="relative">
-                  <Avatar className="h-20 w-20">
-                    <AvatarImage src={userProfile.avatar} />
-                    <AvatarFallback className="text-lg">{userProfile.realName.charAt(0)}</AvatarFallback>
-                  </Avatar>
-
-                </div>
-                <div>
-                  <h3 className="text-lg font-medium">{userProfile.realName}</h3>
-                  <p className="text-gray-600">@{userProfile.username}</p>
-                  <div className="flex items-center mt-2 space-x-4">
-                    <Badge variant="outline">{userProfile.role}</Badge>
-                    <Badge variant="secondary">{userProfile.department}</Badge>
+      <div className="space-y-6">
+        {/* 个人信息卡片 */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+            <CardTitle className="flex items-center">
+              <User className="h-5 w-5 mr-2" />
+              {t("personal.center.section.basicInfo")}
+            </CardTitle>
+            <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Lock className="w-4 h-4 mr-2" />
+                  修改密码
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>{t("personal.center.security.changePassword")}</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="currentPassword">{t("personal.center.security.currentPassword")}</Label>
+                    <div className="relative">
+                      <Input
+                        id="currentPassword"
+                        type={showPasswords.current ? "text" : "password"}
+                        value={passwordForm.currentPassword}
+                        onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                        placeholder={t("personal.center.security.currentPassword.placeholder")}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3"
+                        onClick={() => togglePasswordVisibility("current")}
+                      >
+                        {showPasswords.current ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                    </div>
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="newPassword">{t("personal.center.security.newPassword")}</Label>
+                    <div className="relative">
+                      <Input
+                        id="newPassword"
+                        type={showPasswords.new ? "text" : "password"}
+                        value={passwordForm.newPassword}
+                        onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                        placeholder={t("personal.center.security.newPassword.placeholder")}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3"
+                        onClick={() => togglePasswordVisibility("new")}
+                      >
+                        {showPasswords.new ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword">{t("personal.center.security.confirmPassword")}</Label>
+                    <div className="relative">
+                      <Input
+                        id="confirmPassword"
+                        type={showPasswords.confirm ? "text" : "password"}
+                        value={passwordForm.confirmPassword}
+                        onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                        placeholder={t("personal.center.security.confirmPassword.placeholder")}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3"
+                        onClick={() => togglePasswordVisibility("confirm")}
+                      >
+                        {showPasswords.confirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  </div>
+                  <Button onClick={handlePasswordChange} className="w-full mt-2">
+                    {t("personal.center.security.submit")}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* 头像部分 */}
+            <div className="flex items-center space-x-6">
+              <div className="relative">
+                <Avatar className="h-20 w-20">
+                  <AvatarImage src={userProfile.avatar} />
+                  <AvatarFallback className="text-lg">{userProfile.realName.charAt(0)}</AvatarFallback>
+                </Avatar>
+
+              </div>
+              <div>
+                <h3 className="text-lg font-medium">{userProfile.realName}</h3>
+                <p className="text-gray-600">@{userProfile.username}</p>
+                <div className="flex items-center mt-2 space-x-4">
+                  <Badge variant="outline">{userProfile.role}</Badge>
+                  <Badge variant="secondary">{userProfile.department}</Badge>
                 </div>
               </div>
+            </div>
 
-              {/* 信息表单 */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* 信息表单 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-                <div>
-                  <Label htmlFor="username">{t("personal.center.form.username")}</Label>
+              <div>
+                <Label htmlFor="username">{t("personal.center.form.username")}</Label>
+                <Input
+                  id="username"
+                  value={isEditing ? editForm.username : userProfile.username}
+                  onChange={(e) => setEditForm({ ...editForm, username: e.target.value })}
+                  disabled={!isEditing}
+                />
+              </div>
+              <div>
+                <Label htmlFor="email">{t("personal.center.form.email")}</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <Input
-                    id="username"
-                    value={isEditing ? editForm.username : userProfile.username}
-                    onChange={(e) => setEditForm({ ...editForm, username: e.target.value })}
+                    id="email"
+                    type="email"
+                    value={isEditing ? editForm.email : userProfile.email}
+                    onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
                     disabled={!isEditing}
+                    className="pl-10"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="email">{t("personal.center.form.email")}</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                    <Input
-                      id="email"
-                      type="email"
-                      value={isEditing ? editForm.email : userProfile.email}
-                      onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
-                      disabled={!isEditing}
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="phone">{t("personal.center.form.phone")}</Label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                    <Input
-                      id="phone"
-                      value={isEditing ? editForm.phone : userProfile.phone}
-                      onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                      disabled={!isEditing}
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="lastLogin">{t("personal.center.account.lastLogin")}</Label>
-                  <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                    <Input
-                      id="lastLogin"
-                      value={userProfile.lastLogin}
-                      disabled
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="role">{t("personal.center.form.role")}</Label>
+              </div>
+              <div>
+                <Label htmlFor="phone">{t("personal.center.form.phone")}</Label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <Input
-                    id="role"
-                    value={userProfile.role}
+                    id="phone"
+                    value={isEditing ? editForm.phone : userProfile.phone}
+                    onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                    disabled={!isEditing}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="lastLogin">{t("personal.center.account.lastLogin")}</Label>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    id="lastLogin"
+                    value={userProfile.lastLogin}
                     disabled
+                    className="pl-10"
                   />
-                </div>
-              </div>
-
-              {/* 个人简介块按需求移除 */}
-
-
-            </CardContent>
-          </Card>
-
-          {/* 账户信息块按需求移除；“最后登录时间”已移动到基本信息区域展示 */}
-        </TabsContent>
-
-        {/* 安全设置 */}
-        <TabsContent value="security" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Lock className="h-5 w-5 mr-2" />
-                {t("personal.center.security.changePassword")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="currentPassword">{t("personal.center.security.currentPassword")}</Label>
-                <div className="relative">
-                  <Input
-                    id="currentPassword"
-                    type={showPasswords.current ? "text" : "password"}
-                    value={passwordForm.currentPassword}
-                    onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
-                    placeholder={t("personal.center.security.currentPassword.placeholder")}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3"
-                    onClick={() => togglePasswordVisibility("current")}
-                  >
-                    {showPasswords.current ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </Button>
                 </div>
               </div>
               <div>
-                <Label htmlFor="newPassword">{t("personal.center.security.newPassword")}</Label>
-                <div className="relative">
-                  <Input
-                    id="newPassword"
-                    type={showPasswords.new ? "text" : "password"}
-                    value={passwordForm.newPassword}
-                    onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
-                    placeholder={t("personal.center.security.newPassword.placeholder")}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3"
-                    onClick={() => togglePasswordVisibility("new")}
-                  >
-                    {showPasswords.new ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </Button>
-                </div>
+                <Label htmlFor="role">{t("personal.center.form.role")}</Label>
+                <Input
+                  id="role"
+                  value={userProfile.role}
+                  disabled
+                />
               </div>
-              <div>
-                <Label htmlFor="confirmPassword">{t("personal.center.security.confirmPassword")}</Label>
-                <div className="relative">
-                  <Input
-                    id="confirmPassword"
-                    type={showPasswords.confirm ? "text" : "password"}
-                    value={passwordForm.confirmPassword}
-                    onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
-                    placeholder={t("personal.center.security.confirmPassword.placeholder")}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3"
-                    onClick={() => togglePasswordVisibility("confirm")}
-                  >
-                    {showPasswords.confirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </Button>
-                </div>
-              </div>
-              <Button onClick={handlePasswordChange} className="w-full">
-                {t("personal.center.security.submit")}
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* 通知设置 */}
-        <TabsContent value="notifications" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Bell className="h-5 w-5 mr-2" />
-                {t("personal.center.notifications.preferences")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {([
-                { key: "emailNotifications", label: t("personal.center.notifications.email"), hint: t("personal.center.notifications.hint.email") },
-                { key: "smsNotifications", label: t("personal.center.notifications.sms"), hint: t("personal.center.notifications.hint.sms") },
-                { key: "systemNotifications", label: t("personal.center.notifications.system"), hint: t("personal.center.notifications.hint.system") },
-                { key: "projectUpdates", label: t("personal.center.notifications.projectUpdates"), hint: t("personal.center.notifications.hint.projectUpdates") },
-                { key: "taskReminders", label: t("personal.center.notifications.taskReminders"), hint: t("personal.center.notifications.hint.taskReminders") },
-              ] as { key: keyof NotificationSettings; label: string; hint: string }[]).map(({ key, label, hint }) => (
-                <div key={key} className="flex items-center justify-between p-3 border rounded">
-                  <div>
-                    <span className="font-medium">{label}</span>
-                    <p className="text-sm text-gray-600">{hint}</p>
-                  </div>
-                  <Button
-                    variant={notificationSettings[key] ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => handleNotificationChange(key, !notificationSettings[key])}
-                  >
-                    {notificationSettings[key] ? t("personal.center.notifications.status.enabled") : t("personal.center.notifications.status.disabled")}
-                  </Button>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Bell className="h-5 w-5 mr-2" />
+              {t("personal.center.notifications.preferences")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {([
+              { key: "emailNotifications", label: t("personal.center.notifications.email"), hint: t("personal.center.notifications.hint.email") },
+              { key: "smsNotifications", label: t("personal.center.notifications.sms"), hint: t("personal.center.notifications.hint.sms") },
+              { key: "systemNotifications", label: t("personal.center.notifications.system"), hint: t("personal.center.notifications.hint.system") },
+              { key: "projectUpdates", label: t("personal.center.notifications.projectUpdates"), hint: t("personal.center.notifications.hint.projectUpdates") },
+              { key: "taskReminders", label: t("personal.center.notifications.taskReminders"), hint: t("personal.center.notifications.hint.taskReminders") },
+            ] as { key: keyof NotificationSettings; label: string; hint: string }[]).map(({ key, label, hint }) => (
+              <div key={key} className="flex items-center justify-between p-3 border rounded">
+                <div>
+                  <span className="font-medium">{label}</span>
+                  <p className="text-sm text-gray-600">{hint}</p>
                 </div>
-              ))}
-            </CardContent>
-          </Card>
-        </TabsContent>
+                <Button
+                  variant={notificationSettings[key] ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handleNotificationChange(key, !notificationSettings[key])}
+                >
+                  {notificationSettings[key] ? t("personal.center.notifications.status.enabled") : t("personal.center.notifications.status.disabled")}
+                </Button>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
 
         {/* 安全日志 */}
-        <TabsContent value="logs" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Shield className="h-5 w-5 mr-2" />
-                {t("personal.center.logs.title")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {securityLogs.map((log) => (
-                  <div key={log.id} className="flex items-center justify-between p-4 border rounded">
-                    <div className="flex items-center space-x-4">
-                      <div className={`w-2 h-2 rounded-full ${log.status === "success" ? "bg-green-500" : "bg-red-500"}`} />
-                      <div>
-                        <div className="font-medium">{translateLogAction(log.action)}</div>
-                        <div className="text-sm text-gray-600">
-                          {log.device} • {log.ip} • {log.location}
-                        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Shield className="h-5 w-5 mr-2" />
+              {t("personal.center.logs.title")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {securityLogs.map((log) => (
+                <div key={log.id} className="flex items-center justify-between p-4 border rounded">
+                  <div className="flex items-center space-x-4">
+                    <div className={`w-2 h-2 rounded-full ${log.status === "success" ? "bg-green-500" : "bg-red-500"}`} />
+                    <div>
+                      <div className="font-medium">{translateLogAction(log.action)}</div>
+                      <div className="text-sm text-gray-600">
+                        {log.device} • {log.ip} • {log.location}
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-sm text-gray-600">{log.timestamp}</div>
-                      <Badge variant={log.status === "success" ? "default" : "destructive"} className="mt-1">
-                        {log.status === "success" ? t("personal.center.logs.status.success") : t("personal.center.logs.status.failed")}
-                      </Badge>
-                    </div>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+                  <div className="text-right">
+                    <div className="text-sm text-gray-600">{log.timestamp}</div>
+                    <Badge variant={log.status === "success" ? "default" : "destructive"} className="mt-1">
+                      {log.status === "success" ? t("personal.center.logs.status.success") : t("personal.center.logs.status.failed")}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

@@ -94,14 +94,11 @@ export function Login({ onLogin }: LoginProps) {
                                     账号
                                 </Label>
                                 <div className="relative group">
-                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none z-10 w-5 h-5">
-                                        <User className="h-5 w-5 text-blue-300/70 group-hover:text-blue-300 transition-colors" />
-                                    </div>
                                     <Input
                                         id="account"
                                         placeholder="请输入邮箱 / 手机号"
-                                        className="!pl-12 h-12 !bg-black/20 !border-white/10 !text-white !placeholder-white/30 focus:!bg-black/40 focus:!border-blue-400/50 transition-all duration-200"
-                                        style={{ paddingLeft: '3rem' }}
+                                        className="!pl-3 h-12 !bg-black/20 !border-white/10 !text-white !placeholder-white/30 focus:!bg-black/40 focus:!border-blue-400/50 transition-all duration-200"
+                                        style={{ paddingLeft: '0.75rem' }}
                                         value={formData.account}
                                         onChange={(e) => setFormData({ ...formData, account: e.target.value })}
                                         required
@@ -194,12 +191,7 @@ export function Login({ onLogin }: LoginProps) {
                 </div>
             </div>
 
-            {/* Help Button - Bottom Right */}
-            <div className="absolute bottom-6 right-6">
-                <button className="w-10 h-10 rounded-full bg-white/5 backdrop-blur-md flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all border border-white/5">
-                    <HelpCircle className="w-5 h-5" />
-                </button>
-            </div>
+
         </div>
     );
 }

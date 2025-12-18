@@ -1,27 +1,34 @@
 import * as React from "react";
 import { useState, useEffect, useRef } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Textarea } from "./ui/textarea";
-import { Badge } from "./ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
-import { Checkbox } from "./ui/checkbox";
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group";
-import { Switch } from "./ui/switch";
-import { Pagination, PaginationContent, PaginationItem, PaginationPrevious, PaginationNext } from "./ui/pagination";
-import { Skeleton } from "./ui/skeleton";
+import {
+  Tree,
+  Table,
+  Button,
+  Input,
+  Modal,
+  Form,
+  Select,
+  Splitter,
+  Typography,
+  Tag,
+  Avatar,
+  Space,
+  Breadcrumb,
+  Empty,
+  Dropdown,
+  MenuProps,
+  Badge,
+  Tooltip,
+  message
+} from "antd";
+import type { DataNode, TreeProps } from "antd/es/tree";
+import type { ColumnsType } from "antd/es/table";
 import {
   Plus,
   Edit,
   Trash2,
   Users,
   Building2,
-  MoreHorizontal,
   Search,
   Filter,
   UserPlus,
@@ -31,10 +38,13 @@ import {
   Phone,
   Mail,
   Calendar,
-  ChevronDown,
-  ChevronRight
+  MoreHorizontal
 } from "lucide-react";
 import { setDepartmentTree } from "../services/departments";
+
+const { Search: AntSearch } = Input;
+const { Title, Text } = Typography;
+const { confirm } = Modal;
 
 // 用户接口定义
 interface User {
@@ -625,925 +635,516 @@ export function DepartmentManagement() {
     return walk(depts);
   };
 
-  const renderDepartmentTree = (depts: Department[], level = 0) => {
-    return depts.map(dept => (
-      <div key={dept.id} className="border rounded-lg mb-2">
-        <div
-          className={`p-4 flex items-center justify-between ${selectedDeptId === dept.id ? 'bg-blue-50' : 'bg-gray-50'} ${level > 0 ? 'ml-' + (level * 4) : ''} cursor-pointer`}
-          onClick={() => { setSelectedDeptId(dept.id); setSelectedDepartment(dept); }}
-        >
-          <div className="flex items-center space-x-3">
-            {dept.children && dept.children.length > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e: React.MouseEvent<HTMLButtonElement>) => { e.stopPropagation(); toggleDeptExpansion(dept.id); }}
-                className="p-1"
-              >
-                {expandedDepts.includes(dept.id) ?
-                  <ChevronDown className="h-4 w-4" /> :
-                  <ChevronRight className="h-4 w-4" />
-                }
-              </Button>
+
+  // 部门树数据转换
+  const convertToTreeData = (depts: Department[]): DataNode[] => {
+    return depts.map(dept => ({
+      title: (
+        <div className="flex flex-row items-center justify-between group w-full pr-2 overflow-hidden">
+          <span className="truncate flex-1 font-medium text-gray-700">{dept.name}</span>
+          <Space className="hidden group-hover:flex flex-shrink-0" size={0} onClick={(e) => e.stopPropagation()}>
+            <Tooltip title="添加子部门">
+              <Button type="text" size="small" icon={<FolderPlus size={14} />} onClick={() => handleAddSubDepartment(dept.id)} />
+            </Tooltip>
+            {dept.parentId && (
+              <>
+                <Tooltip title="编辑">
+                  <Button type="text" size="small" icon={<Edit size={14} />} onClick={() => openEditDialog(dept)} />
+                </Tooltip>
+                <Tooltip title="移动">
+                  <Button type="text" size="small" icon={<Move size={14} />} onClick={() => { setSelectedDepartment(dept); setMoveTargetParentId(dept.parentId || ""); setIsMoveDeptDialogOpen(true); }} />
+                </Tooltip>
+                <Tooltip title="删除">
+                  <Button type="text" size="small" danger icon={<Trash2 size={14} />} onClick={() => handleDeleteDepartment(dept.id)} />
+                </Tooltip>
+              </>
             )}
-            <Building2 className="h-5 w-5 text-blue-600" />
-            <div>
-              <h3 className="font-medium">{dept.name}</h3>
-              <p className="text-sm text-gray-600">{dept.description}</p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-500 flex items-center">
-              <Users className="h-4 w-4 mr-1" />
-              {getDepartmentUserCount(dept.id)}
-            </span>
-            <div className="flex items-center space-x-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e: React.MouseEvent<HTMLButtonElement>) => { e.stopPropagation(); handleAddSubDepartment(dept.id); }}
-                title="添加子部门"
-              >
-                <FolderPlus className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e: React.MouseEvent<HTMLButtonElement>) => { e.stopPropagation(); openEditDialog(dept); }}
-                title="编辑部门"
-              >
-                <Edit className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={!dept.parentId}
-                onClick={(e: React.MouseEvent<HTMLButtonElement>) => { e.stopPropagation(); setSelectedDepartment(dept); setMoveTargetParentId(dept.parentId || ""); setIsMoveDeptDialogOpen(true); }}
-                title={!dept.parentId ? "一级部门不可移动" : "移动部门"}
-              >
-                <Move className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={!dept.parentId}
-                onClick={(e: React.MouseEvent<HTMLButtonElement>) => { e.stopPropagation(); handleDeleteDepartment(dept.id); }}
-                className="text-red-600 hover:text-red-700"
-                title="删除部门"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+            {!dept.parentId && (
+              <Tooltip title="编辑">
+                <Button type="text" size="small" icon={<Edit size={14} />} onClick={() => openEditDialog(dept)} />
+              </Tooltip>
+            )}
+          </Space>
         </div>
-        {loadingDepts.includes(dept.id) && (
-          <div className="pl-8 pb-2">
-            <Skeleton className="h-6 w-full" />
-          </div>
-        )}
-        {dept.children && dept.children.length > 0 && expandedDepts.includes(dept.id) && (
-          <div className="pl-8 pb-2">
-            {renderDepartmentTree(dept.children, level + 1)}
-          </div>
-        )}
-      </div>
-    ));
+      ),
+      key: dept.id,
+      children: dept.children ? convertToTreeData(dept.children) : [],
+    }));
   };
 
-  // 用户视图过滤（独立搜索与状态）
+  const treeData = convertToTreeData(filterDepartmentsTree(departments, deptSearch));
+
+  // 用户列表列定义
+  const columns: ColumnsType<User> = [
+    {
+      title: '员工信息',
+      dataIndex: 'name',
+      key: 'name',
+      render: (_, record) => (
+        <div className="flex items-center gap-3">
+          <Avatar src={record.avatar}>{record.name?.charAt(0)}</Avatar>
+          <div>
+            <div className="font-medium">{record.name}</div>
+            <Tag bordered={false} color="blue">{record.role}</Tag>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: '联系方式',
+      key: 'contact',
+      render: (_, record) => (
+        <div className="space-y-1 text-sm text-gray-500">
+          <div className="flex items-center gap-2">
+            <Mail size={14} /> {record.email}
+          </div>
+          <div className="flex items-center gap-2">
+            <Phone size={14} /> {record.phone}
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: '状态',
+      key: 'status',
+      render: (_, record) => (
+        <Space>
+          <Badge status={record.status === 'active' ? 'success' : 'error'} text={record.status === 'active' ? '启用' : '禁用'} />
+        </Space>
+      ),
+    },
+    {
+      title: '加入时间',
+      dataIndex: 'joinDate',
+      key: 'joinDate',
+      render: (text) => <span className="text-gray-500"><Calendar className="inline-block mr-1" size={14} />{text}</span>
+    },
+    {
+      title: '操作',
+      key: 'action',
+      render: (_, record) => (
+        <Space size="small">
+          <Button type="text" size="small" icon={<Edit size={14} />} onClick={() => openUserDetailDialog(record)}>编辑</Button>
+          <Button
+            type="text"
+            size="small"
+            danger
+            icon={<Trash2 size={14} />}
+            disabled={record.status === 'active'}
+            onClick={() => handleDeleteUser(record.id)}
+          >
+            删除
+          </Button>
+        </Space>
+      ),
+    },
+  ];
+
   const filteredUsers = users.filter(user => {
     const q = (userSearch || searchQuery).toLowerCase();
     const matchesSearch = user.name.toLowerCase().includes(q) || user.id.toLowerCase().includes(q);
     const statusValue = userStatusFilter || (statusFilter as 'all' | 'active' | 'inactive');
     const matchesStatus = statusValue === "all" || user.status === statusValue;
-    return matchesSearch && matchesStatus;
+    const matchesDept = user.departmentId === selectedDeptId;
+    return matchesSearch && matchesStatus && matchesDept;
   });
 
   return (
-    <div className="space-y-6">
-      {/* 页面标题和操作 */}
-      <div className="flex justify-between items-center">
+    <div className="h-[calc(100vh-140px)] bg-white rounded-lg border border-gray-200 flex flex-col">
+      <div className="flex justify-between items-center p-4 border-b border-gray-100">
         <div>
-          <h2 className="text-2xl font-semibold text-gray-900">部门管理</h2>
-          <p className="text-gray-600 mt-1">管理组织架构，设置部门信息和权限</p>
+          <Title level={4} style={{ margin: 0 }}>部门管理</Title>
+          <Text type="secondary" className="text-xs">管理组织架构与人员信息</Text>
         </div>
-        <div className="flex space-x-2">
-          <Dialog open={isAddUserDialogOpen} onOpenChange={setIsAddUserDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="flex items-center space-x-2">
-                <UserPlus className="h-4 w-4" />
-                <span>添加员工</span>
-              </Button>
-            </DialogTrigger>
-          </Dialog>
-
-          <Dialog open={isCreateDeptDialogOpen} onOpenChange={setIsCreateDeptDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="flex items-center space-x-2">
-                <Plus className="h-4 w-4" />
-                <span>新建部门</span>
-              </Button>
-            </DialogTrigger>
-          </Dialog>
-        </div>
+        <Space>
+          <Button
+            type="primary"
+            icon={<Plus size={16} />}
+            onClick={() => setIsCreateDeptDialogOpen(true)}
+          >
+            新建部门
+          </Button>
+        </Space>
       </div>
 
-      {/* 搜索和筛选（仅在用户视图显示） */}
-      {activeTab === 'user' && (
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex space-x-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <Input
-                    placeholder="搜索用户姓名"
-                    value={userSearch}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setUserSearch(e.target.value); setUserPage(1); }}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-              <ToggleGroup type="single" value={userStatusFilter} onValueChange={(v: 'all' | 'active' | 'inactive' | undefined) => setUserStatusFilter(v || 'all')}>
-                <ToggleGroupItem value="all">全部</ToggleGroupItem>
-                <ToggleGroupItem value="active">启用</ToggleGroupItem>
-                <ToggleGroupItem value="inactive">禁用</ToggleGroupItem>
-              </ToggleGroup>
-              {selectedUsers.length > 0 && (
-                <Button
-                  onClick={() => setIsDeptChangeDialogOpen(true)}
-                  className="flex items-center space-x-2"
-                >
-                  <ArrowUpDown className="h-4 w-4" />
-                  <span>变更部门 ({selectedUsers.length})</span>
-                </Button>
-              )}
+      <Splitter style={{ flex: 1 }}>
+        <Splitter.Panel defaultSize="25%" min="20%" max="40%">
+          <div className="h-full flex flex-col max-h-full">
+            <div className="p-3 border-b border-gray-100">
+              <AntSearch
+                placeholder="搜索部门"
+                onChange={(e) => setDeptSearch(e.target.value)}
+                allowClear
+              />
             </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* 两表切换控制已移除：按照需求去掉顶部的部门/用户切换标签 */}
-
-      {/* 部门视图（左右分栏：左树 + 右员工列表） */}
-      {activeTab === 'department' && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Building2 className="h-5 w-5 mr-2" />
-              部门列表
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-row space-x-6">
-              {/* 左侧：部门树 + 搜索 */}
-              <div
-                className="md:w-1/3 border-r pr-4"
-                ref={leftPaneRef}
-                onScroll={() => {
-                  if (!leftPaneRef.current || !rightPaneRef.current) return;
-                  const l = leftPaneRef.current;
-                  const r = rightPaneRef.current;
-                  const ratio = l.scrollTop / Math.max(1, (l.scrollHeight - l.clientHeight));
-                  r.scrollTop = ratio * Math.max(1, (r.scrollHeight - r.clientHeight));
-                }}
-                style={{ maxHeight: '60vh', overflowY: 'auto' }}
-              >
-                <div className="mb-3">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                    <Input
-                      placeholder="搜索部门名称（支持模糊）"
-                      value={deptSearch}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDeptSearch(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
-                <div>
-                  {renderDepartmentTree(filterDepartmentsTree(departments, deptSearch))}
-                </div>
-              </div>
-
-              {/* 右侧：选中部门的员工列表 */}
-              <div className="md:w-2/3 pl-4" ref={rightPaneRef} style={{ maxHeight: '60vh', overflowY: 'auto' }}>
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <h3 className="text-lg font-medium">{getDepartmentName(selectedDeptId)} 的员工</h3>
-                    <p className="text-xs text-gray-500">路径：{getDepartmentPath(selectedDeptId)}</p>
-                  </div>
-                  <div className="w-64">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                      <Input
-                        placeholder="搜索员工姓名"
-                        value={userSearch}
-                        onChange={(e) => { setUserSearch(e.target.value); setUserPage(1); }}
-                        className="pl-10"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mb-2">
-                  <ToggleGroup type="single" value={userStatusFilter} onValueChange={(v: 'all' | 'active' | 'inactive' | undefined) => setUserStatusFilter(v || 'all')}>
-                    <ToggleGroupItem value="all">全部</ToggleGroupItem>
-                    <ToggleGroupItem value="active">启用</ToggleGroupItem>
-                    <ToggleGroupItem value="inactive">禁用</ToggleGroupItem>
-                  </ToggleGroup>
-                </div>
-
-                {(() => {
-                  // 模拟加载效果
-                  const allUsers = users.filter(u => u.departmentId === selectedDeptId);
-                  const q = (userSearch || '').toLowerCase();
-                  const filtered = allUsers.filter(u =>
-                    (u.name.toLowerCase().includes(q) || u.id.toLowerCase().includes(q)) &&
-                    (userStatusFilter === 'all' || u.status === userStatusFilter)
-                  );
-                  const totalPages = Math.max(1, Math.ceil(filtered.length / userPageSize));
-                  const currentPage = Math.min(userPage, totalPages);
-                  const pageItems = filtered.slice((currentPage - 1) * userPageSize, currentPage * userPageSize);
-
-                  return (
-                    <div>
-                      {isUserLoading ? (
-                        <div className="space-y-2">
-                          <Skeleton className="h-8 w-full" />
-                          <Skeleton className="h-8 w-full" />
-                          <Skeleton className="h-8 w-full" />
-                        </div>
-                      ) : (
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>员工信息</TableHead>
-                              <TableHead>联系方式</TableHead>
-                              <TableHead>状态</TableHead>
-                              <TableHead>创建时间</TableHead>
-                              <TableHead>操作</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {pageItems.map((user) => (
-                              <TableRow key={user.id}>
-                                <TableCell>
-                                  <div className="flex items-center space-x-3">
-                                    <Avatar className="h-8 w-8">
-                                      <AvatarImage src={user.avatar} />
-                                      <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                                    </Avatar>
-                                    <div>
-                                      <div className="font-medium">{user.name}</div>
-                                      <div className="text-sm text-gray-500">{user.role}</div>
-                                    </div>
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <div className="space-y-1">
-                                    <div className="flex items-center text-sm">
-                                      <Mail className="h-3 w-3 mr-1 text-gray-400" />
-                                      {user.email}
-                                    </div>
-                                    <div className="flex items-center text-sm">
-                                      <Phone className="h-3 w-3 mr-1 text-gray-400" />
-                                      {user.phone}
-                                    </div>
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <div className="flex items-center gap-2">
-                                    <Badge variant={user.status === "active" ? "default" : "secondary"}>
-                                      {user.status === "active" ? "启用" : "禁用"}
-                                    </Badge>
-                                    <Switch
-                                      checked={user.status === "active"}
-                                      onCheckedChange={(checked: boolean) => {
-                                        setUsers(users.map(u => u.id === user.id ? { ...u, status: checked ? "active" : "inactive" } : u));
-                                      }}
-                                      aria-label="切换用户启用/禁用状态"
-                                    />
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <div className="flex items-center text-sm">
-                                    <Calendar className="h-3 w-3 mr-1 text-gray-400" />
-                                    {user.joinDate}
-                                  </div>
-                                </TableCell>
-                                <TableCell>
-                                  <div className="flex items-center space-x-1">
-                                    <Button variant="ghost" size="sm" onClick={() => openUserDetailDialog(user)} title="编辑员工">
-                                      <Edit className="h-4 w-4" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => handleDeleteUser(user.id)}
-                                      disabled={user.status === "active"}
-                                      className={user.status === "active" ? "opacity-50 cursor-not-allowed" : "text-red-600 hover:text-red-700 hover:bg-red-50"}
-                                      title={user.status === "active" ? "仅禁用状态的用户可删除" : "删除员工"}
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </Button>
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      )}
-
-                      <div className="flex items-center justify-between mt-3">
-                        <div className="text-sm text-gray-600">第 {currentPage} / {totalPages} 页，共 {filtered.length} 条</div>
-                        <Pagination>
-                          <PaginationContent>
-                            <PaginationItem>
-                              <PaginationPrevious size="default" href="#" onClick={(e: React.MouseEvent<HTMLAnchorElement>) => { e.preventDefault(); setUserPage(Math.max(1, currentPage - 1)); }} />
-                            </PaginationItem>
-                            <PaginationItem>
-                              <PaginationNext size="default" href="#" onClick={(e: React.MouseEvent<HTMLAnchorElement>) => { e.preventDefault(); setUserPage(Math.min(totalPages, currentPage + 1)); }} />
-                            </PaginationItem>
-                          </PaginationContent>
-                        </Pagination>
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* 用户列表（切换） */}
-      {activeTab === 'user' && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Users className="h-5 w-5 mr-2" />
-              员工列表
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12">
-                    <Checkbox
-                      checked={selectedUsers.length === filteredUsers.length && filteredUsers.length > 0}
-                      onCheckedChange={(checked: boolean) => {
-                        if (checked) {
-                          setSelectedUsers(filteredUsers.map(user => user.id));
-                        } else {
-                          setSelectedUsers([]);
+            <div className="flex-1 overflow-y-auto p-2">
+              <Tree
+                treeData={treeData}
+                defaultExpandAll
+                selectedKeys={[selectedDeptId]}
+                onSelect={(keys) => {
+                  if (keys.length > 0) {
+                    const newId = keys[0] as string;
+                    setSelectedDeptId(newId);
+                    // Set selected department object if needed
+                    const findDept = (nodes: Department[]): Department | undefined => {
+                      for (const node of nodes) {
+                        if (node.id === newId) return node;
+                        if (node.children) {
+                          const res = findDept(node.children);
+                          if (res) return res;
                         }
-                      }}
-                    />
-                  </TableHead>
-                  <TableHead>员工信息</TableHead>
-                  <TableHead>联系方式</TableHead>
-                  <TableHead>所属部门</TableHead>
-                  <TableHead>状态</TableHead>
-                  <TableHead>创建时间</TableHead>
-                  <TableHead>操作</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(() => {
-                  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / userPageSize));
-                  const currentPage = Math.min(userPage, totalPages);
-                  const pageItems = filteredUsers.slice((currentPage - 1) * userPageSize, currentPage * userPageSize);
-                  return pageItems.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell>
-                        <Checkbox
-                          checked={selectedUsers.includes(user.id)}
-                          onCheckedChange={(checked: boolean) => {
-                            if (checked) {
-                              setSelectedUsers([...selectedUsers, user.id]);
-                            } else {
-                              setSelectedUsers(selectedUsers.filter(id => id !== user.id));
-                            }
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-3">
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage src={user.avatar} />
-                            <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <div className="font-medium">{user.name}</div>
-                            <div className="text-sm text-gray-500">{user.role}</div>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <div className="flex items-center text-sm">
-                            <Mail className="h-3 w-3 mr-1 text-gray-400" />
-                            {user.email}
-                          </div>
-                          <div className="flex items-center text-sm">
-                            <Phone className="h-3 w-3 mr-1 text-gray-400" />
-                            {user.phone}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>{getDepartmentName(user.departmentId)}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Badge variant={user.status === "active" ? "default" : "secondary"}>
-                            {user.status === "active" ? "启用" : "禁用"}
-                          </Badge>
-                          <Switch
-                            checked={user.status === "active"}
-                            onCheckedChange={(checked: boolean) => {
-                              setUsers(users.map(u => u.id === user.id ? { ...u, status: checked ? "active" : "inactive" } : u));
-                            }}
-                            aria-label="切换用户启用/禁用状态"
-                          />
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center text-sm">
-                          <Calendar className="h-3 w-3 mr-1 text-gray-400" />
-                          {user.joinDate}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => openUserDetailDialog(user)}
-                            title="编辑员工"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteUser(user.id)}
-                            disabled={user.status === "active"}
-                            className={user.status === "active" ? "opacity-50 cursor-not-allowed" : "text-red-600 hover:text-red-700 hover:bg-red-50"}
-                            title={user.status === "active" ? "仅禁用状态的用户可删除" : "删除员工"}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ));
-                })()}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* 删除部门二次确认对话框 */}
-      <Dialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>确认删除部门</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-sm text-gray-600">
-              确认要删除该部门吗？删除后，该部门及其所有子部门将被永久移除。所有相关员工将自动归入其父级部门。
-            </p>
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setIsDeleteConfirmOpen(false)}>取消</Button>
-              <Button variant="destructive" onClick={confirmDeleteDepartment}>确认删除</Button>
+                      }
+                    }
+                    setSelectedDepartment(findDept(departments) || null);
+                  }
+                }}
+                blockNode
+                showIcon
+              />
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </Splitter.Panel>
+        <Splitter.Panel>
+          <div className="h-full flex flex-col max-h-full overflow-hidden">
+            {/* Header Info */}
+            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+              <div className="flex justify-between items-start">
+                <div>
+                  <Breadcrumb
+                    items={getDepartmentPath(selectedDeptId).split(' / ').map(name => ({ title: name }))}
+                    className="mb-2"
+                  />
+                  <div className="flex items-center gap-3">
+                    <Title level={3} style={{ margin: 0 }}>{getDepartmentName(selectedDeptId)}</Title>
+                    <Badge count={getDepartmentUserCount(selectedDeptId)} overflowCount={999} style={{ backgroundColor: '#2db7f5' }} />
+                  </div>
+                  <Text type="secondary" className="mt-1 block">
+                    {findDepartmentById(departments, selectedDeptId)?.description || '暂无描述'}
+                  </Text>
+                </div>
+                <Space>
+                  {selectedUsers.length > 0 && (
+                    <Button icon={<ArrowUpDown size={14} />} onClick={() => setIsDeptChangeDialogOpen(true)}>
+                      批量转部门
+                    </Button>
+                  )}
+                  <Button type="primary" icon={<UserPlus size={16} />} onClick={() => setIsAddUserDialogOpen(true)}>
+                    添加员工
+                  </Button>
+                </Space>
+              </div>
 
-      {/* 移动部门对话框 */}
-      <Dialog open={isMoveDeptDialogOpen} onOpenChange={setIsMoveDeptDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>移动部门</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>当前部门</Label>
-              <p className="mt-1 text-sm text-gray-700">{selectedDepartment?.name}</p>
-            </div>
-            <div>
-              <Label htmlFor="move-parent">目标父级</Label>
-              {(() => {
-                const invalidIds = selectedDepartment ? [selectedDepartment.id, ...getDescendantIds(departments, selectedDepartment.id)] : [];
-                const candidates = getAllDepartments(departments).filter(d => !invalidIds.includes(d.id));
-                return (
-                  <Select value={moveTargetParentId} onValueChange={(value: string) => setMoveTargetParentId(value)}>
-                    <SelectTrigger id="move-parent">
-                      <SelectValue placeholder="选择目标父级" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {candidates.map(d => (
-                        <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                );
-              })()}
-            </div>
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setIsMoveDeptDialogOpen(false)}>取消</Button>
-              <Button onClick={handleMoveDepartment}>确认移动</Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* 新建部门对话框 */}
-      <Dialog open={isCreateDeptDialogOpen} onOpenChange={setIsCreateDeptDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>新建部门</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="dept-name">部门名称 <span className="text-red-500">*</span></Label>
-              <Input
-                id="dept-name"
-                value={deptFormData.name}
-                onChange={(e) => setDeptFormData({ ...deptFormData, name: e.target.value })}
-                placeholder="请输入部门名称"
-              />
-            </div>
-            <div>
-              <Label htmlFor="dept-parent">上级部门</Label>
-              <Select value={deptFormData.parentId} onValueChange={(value: string) => setDeptFormData({ ...deptFormData, parentId: value })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="选择上级部门（可选）" />
-                </SelectTrigger>
-                <SelectContent>
-                  {getAllDepartments(departments).map(dept => (
-                    <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="dept-description">部门描述</Label>
-              <Textarea
-                id="dept-description"
-                value={deptFormData.description}
-                onChange={(e) => setDeptFormData({ ...deptFormData, description: e.target.value })}
-                placeholder="请输入部门描述"
-                rows={3}
-              />
-            </div>
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setIsCreateDeptDialogOpen(false)}>
-                取消
-              </Button>
-              <Button onClick={handleCreateDepartment}>
-                创建
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* 编辑部门对话框 */}
-      <Dialog open={isEditDeptDialogOpen} onOpenChange={setIsEditDeptDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>编辑部门</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="edit-dept-name">部门名称 <span className="text-red-500">*</span></Label>
-              <Input
-                id="edit-dept-name"
-                value={deptFormData.name}
-                onChange={(e) => setDeptFormData({ ...deptFormData, name: e.target.value })}
-                placeholder="请输入部门名称"
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-dept-description">部门描述</Label>
-              <Textarea
-                id="edit-dept-description"
-                value={deptFormData.description}
-                onChange={(e) => setDeptFormData({ ...deptFormData, description: e.target.value })}
-                placeholder="请输入部门描述"
-                rows={3}
-              />
-            </div>
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setIsEditDeptDialogOpen(false)}>
-                取消
-              </Button>
-              <Button onClick={handleEditDepartment}>
-                保存
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* 添加员工对话框 */}
-      <Dialog open={isAddUserDialogOpen} onOpenChange={setIsAddUserDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>添加员工</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="user-name">姓名</Label>
-              <Input
-                id="user-name"
-                value={userFormData.name}
-                onChange={(e) => setUserFormData({ ...userFormData, name: e.target.value })}
-                placeholder="请输入员工姓名"
-              />
-            </div>
-            <div>
-              <Label htmlFor="user-email">邮箱</Label>
-              <Input
-                id="user-email"
-                type="email"
-                value={userFormData.email}
-                onChange={(e) => setUserFormData({ ...userFormData, email: e.target.value })}
-                placeholder="请输入邮箱地址"
-              />
-            </div>
-            <div>
-              <Label htmlFor="user-phone">手机号</Label>
-              <Input
-                id="user-phone"
-                value={userFormData.phone}
-                onChange={(e) => setUserFormData({ ...userFormData, phone: e.target.value })}
-                placeholder="请输入手机号码"
-              />
-            </div>
-            <div>
-              <Label htmlFor="user-password">密码</Label>
-              <Input
-                id="user-password"
-                type="password"
-                value={userFormData.password}
-                onChange={(e) => setUserFormData({ ...userFormData, password: e.target.value })}
-                placeholder="设置登录密码（至少8位）"
-              />
-            </div>
-            <div>
-              <Label htmlFor="user-password-confirm">确认密码</Label>
-              <Input
-                id="user-password-confirm"
-                type="password"
-                value={userFormData.confirmPassword}
-                onChange={(e) => setUserFormData({ ...userFormData, confirmPassword: e.target.value })}
-                placeholder="再次输入密码"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="user-department">所属部门</Label>
-              <Select value={userFormData.departmentId} onValueChange={(value: string) => setUserFormData({ ...userFormData, departmentId: value })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="选择所属部门" />
-                </SelectTrigger>
-                <SelectContent>
-                  {getAllDepartments(departments).map(dept => (
-                    <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setIsAddUserDialogOpen(false)}>
-                取消
-              </Button>
-              <Button onClick={handleCreateUser}>
-                添加
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* 员工详情对话框 */}
-      <Dialog open={isUserDetailDialogOpen} onOpenChange={setIsUserDetailDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>员工详情</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="detail-user-name">姓名</Label>
-              <Input
-                id="detail-user-name"
-                value={userFormData.name}
-                onChange={(e) => setUserFormData({ ...userFormData, name: e.target.value })}
-                placeholder="请输入员工姓名"
-              />
-            </div>
-            <div>
-              <Label htmlFor="detail-user-email">邮箱</Label>
-              <Input
-                id="detail-user-email"
-                type="email"
-                value={userFormData.email}
-                onChange={(e) => setUserFormData({ ...userFormData, email: e.target.value })}
-                placeholder="请输入邮箱地址"
-              />
-            </div>
-            <div>
-              <Label htmlFor="detail-user-phone">手机号</Label>
-              <Input
-                id="detail-user-phone"
-                value={userFormData.phone}
-                onChange={(e) => setUserFormData({ ...userFormData, phone: e.target.value })}
-                placeholder="请输入手机号码"
-              />
-            </div>
-            <div>
-              <Label htmlFor="detail-user-password">密码</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="detail-user-password"
-                  type={showEditPassword ? "text" : "password"}
-                  value={userFormData.password}
-                  onChange={(e) => setUserFormData({ ...userFormData, password: e.target.value })}
-                  placeholder="设置登录密码（至少8位）"
+              {/* Filters */}
+              <div className="flex items-center gap-4 mt-6">
+                <AntSearch
+                  placeholder="搜索员工姓名"
+                  style={{ width: 240 }}
+                  onChange={(e) => setUserSearch(e.target.value)}
                 />
-                <Button variant="outline" size="sm" onClick={() => setShowEditPassword(!showEditPassword)}>
-                  {showEditPassword ? "隐藏密码" : "显示密码"}
-                </Button>
+                <Select
+                  defaultValue="all"
+                  style={{ width: 120 }}
+                  onChange={(val: any) => setUserStatusFilter(val)}
+                  options={[
+                    { label: '全部状态', value: 'all' },
+                    { label: '已启用', value: 'active' },
+                    { label: '已禁用', value: 'inactive' },
+                  ]}
+                />
               </div>
             </div>
-            <div>
-              <Label htmlFor="detail-user-password-confirm">确认密码</Label>
-              <Input
-                id="detail-user-password-confirm"
-                type={showEditPassword ? "text" : "password"}
-                value={userFormData.confirmPassword}
-                onChange={(e) => setUserFormData({ ...userFormData, confirmPassword: e.target.value })}
-                placeholder="再次输入密码"
+
+            {/* Table Content */}
+            <div className="flex-1 overflow-auto p-0">
+              <Table
+                rowKey="id"
+                columns={columns}
+                dataSource={filteredUsers}
+                rowSelection={{
+                  selectedRowKeys: selectedUsers,
+                  onChange: (keys) => setSelectedUsers(keys as string[]),
+                }}
+                pagination={{
+                  pageSize: 10,
+                  showSizeChanger: true,
+                  showTotal: (total) => `共 ${total} 条`,
+                }}
+                scroll={{ y: 'calc(100vh - 400px)' }}
               />
             </div>
-            <div>
-              <Label htmlFor="edit-role">角色</Label>
-              <Select
-                value={userFormData.role}
-                onValueChange={(value) => setUserFormData({ ...userFormData, role: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="选择角色" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="超级管理员">超级管理员</SelectItem>
-                  <SelectItem value="项目经理">项目经理</SelectItem>
-                  <SelectItem value="数据分析师">数据分析师</SelectItem>
-                  <SelectItem value="普通用户">普通用户</SelectItem>
-                  <SelectItem value="后端工程师">后端工程师</SelectItem>
-                  <SelectItem value="产品经理">产品经理</SelectItem>
-                  <SelectItem value="总经理">总经理</SelectItem>
-                  <SelectItem value="技术总监">技术总监</SelectItem>
-                </SelectContent>
+          </div>
+        </Splitter.Panel>
+      </Splitter>
+
+
+
+
+
+      {/* Delete Dept Confirm */}
+      <Modal
+        title="确认删除部门"
+        open={isDeleteConfirmOpen}
+        onOk={confirmDeleteDepartment}
+        onCancel={() => setIsDeleteConfirmOpen(false)}
+        okText="确认删除"
+        cancelText="取消"
+        okButtonProps={{ danger: true }}
+      >
+        <p>确定要删除该部门吗？此操作不可撤回。</p>
+        <p className="text-gray-500 text-sm mt-2">注意：删除后，该部门及其子部门将被删除，所有员工将归入上级部门。</p>
+      </Modal>
+
+      {/* Create Dept */}
+      <Modal
+        title="新建部门"
+        open={isCreateDeptDialogOpen}
+        onOk={handleCreateDepartment}
+        onCancel={() => setIsCreateDeptDialogOpen(false)}
+        okText="创建"
+        cancelText="取消"
+      >
+        <Form layout="vertical">
+          <Form.Item label="部门名称" required>
+            <Input value={deptFormData.name} onChange={e => setDeptFormData({ ...deptFormData, name: e.target.value })} placeholder="请输入部门名称" />
+          </Form.Item>
+          <Form.Item label="部门描述">
+            <Input.TextArea value={deptFormData.description} onChange={e => setDeptFormData({ ...deptFormData, description: e.target.value })} placeholder="请输入部门描述" />
+          </Form.Item>
+          <Form.Item label="上级部门">
+            <Select
+              allowClear
+              placeholder="请选择上级部门（为空则为一级部门）"
+              value={deptFormData.parentId || undefined}
+              onChange={val => setDeptFormData({ ...deptFormData, parentId: val })}
+            >
+              {getAllDepartments(departments).map(dept => (
+                <Select.Option key={dept.id} value={dept.id}>{dept.name}</Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+          <Form.Item label="部门负责人">
+            <Input value={deptFormData.manager} onChange={e => setDeptFormData({ ...deptFormData, manager: e.target.value })} placeholder="请输入负责人姓名" />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Add Sub Dept */}
+      <Modal
+        title="添加子部门"
+        open={isAddSubDeptDialogOpen}
+        onOk={() => { handleCreateDepartment(); setIsAddSubDeptDialogOpen(false); }}
+        onCancel={() => setIsAddSubDeptDialogOpen(false)}
+        okText="添加"
+        cancelText="取消"
+      >
+        <Form layout="vertical">
+          <Form.Item label="上级部门">
+            <Input value={getDepartmentName(deptFormData.parentId)} disabled />
+          </Form.Item>
+          <Form.Item label="部门名称" required>
+            <Input value={deptFormData.name} onChange={e => setDeptFormData({ ...deptFormData, name: e.target.value })} placeholder="请输入部门名称" />
+          </Form.Item>
+          <Form.Item label="部门描述">
+            <Input.TextArea value={deptFormData.description} onChange={e => setDeptFormData({ ...deptFormData, description: e.target.value })} placeholder="请输入部门描述" />
+          </Form.Item>
+          <Form.Item label="部门负责人">
+            <Input value={deptFormData.manager} onChange={e => setDeptFormData({ ...deptFormData, manager: e.target.value })} placeholder="请输入负责人姓名" />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Edit Dept */}
+      <Modal
+        title="编辑部门"
+        open={isEditDeptDialogOpen}
+        onOk={handleEditDepartment}
+        onCancel={() => setIsEditDeptDialogOpen(false)}
+        okText="保存"
+        cancelText="取消"
+      >
+        <Form layout="vertical">
+          <Form.Item label="部门名称" required>
+            <Input value={deptFormData.name} onChange={e => setDeptFormData({ ...deptFormData, name: e.target.value })} placeholder="请输入部门名称" />
+          </Form.Item>
+          <Form.Item label="部门描述">
+            <Input.TextArea value={deptFormData.description} onChange={e => setDeptFormData({ ...deptFormData, description: e.target.value })} placeholder="请输入部门描述" />
+          </Form.Item>
+          <Form.Item label="部门负责人">
+            <Input value={deptFormData.manager} onChange={e => setDeptFormData({ ...deptFormData, manager: e.target.value })} placeholder="请输入负责人姓名" />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Move Dept */}
+      <Modal
+        title="移动部门"
+        open={isMoveDeptDialogOpen}
+        onOk={handleMoveDepartment}
+        onCancel={() => setIsMoveDeptDialogOpen(false)}
+        okText="确认移动"
+        cancelText="取消"
+      >
+        <p className="mb-4">将部门 <b>{selectedDepartment?.name}</b> 移动到：</p>
+        <Select
+          style={{ width: '100%' }}
+          placeholder="请选择新的上级部门"
+          value={moveTargetParentId || undefined}
+          onChange={val => setMoveTargetParentId(val)}
+          allowClear
+        >
+          <Select.Option value="">无（作为一级部门）</Select.Option>
+          {getAllDepartments(departments).filter(d => d.id !== selectedDepartment?.id).map(dept => (
+            <Select.Option key={dept.id} value={dept.id} disabled={getDescendantIds(departments, selectedDepartment?.id || '').includes(dept.id)}>
+              {dept.name}
+            </Select.Option>
+          ))}
+        </Select>
+      </Modal>
+
+      {/* Add User */}
+      <Modal
+        title="添加员工"
+        open={isAddUserDialogOpen}
+        onOk={handleCreateUser}
+        onCancel={() => setIsAddUserDialogOpen(false)}
+        okText="添加"
+        cancelText="取消"
+        width={600}
+      >
+        <Form layout="vertical">
+          <div className="grid grid-cols-2 gap-4">
+            <Form.Item label="姓名" required>
+              <Input value={userFormData.name} onChange={e => setUserFormData({ ...userFormData, name: e.target.value })} placeholder="员工姓名" />
+            </Form.Item>
+            <Form.Item label="手机号">
+              <Input value={userFormData.phone} onChange={e => setUserFormData({ ...userFormData, phone: e.target.value })} placeholder="11位手机号" />
+            </Form.Item>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Form.Item label="邮箱">
+              <Input value={userFormData.email} onChange={e => setUserFormData({ ...userFormData, email: e.target.value })} placeholder="员工邮箱" />
+            </Form.Item>
+            <Form.Item label="角色">
+              <Select value={userFormData.role} onChange={val => setUserFormData({ ...userFormData, role: val })} placeholder="选择角色">
+                <Select.Option value="普通用户">普通用户</Select.Option>
+                <Select.Option value="项目经理">项目经理</Select.Option>
+                <Select.Option value="数据分析师">数据分析师</Select.Option>
+                <Select.Option value="总经理">总经理</Select.Option>
+                <Select.Option value="技术总监">技术总监</Select.Option>
               </Select>
-            </div>
-
-            <div>
-              <Label htmlFor="detail-user-department">所属部门</Label>
-              <Select value={userFormData.departmentId} onValueChange={(value: string) => setUserFormData({ ...userFormData, departmentId: value })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="选择所属部门" />
-                </SelectTrigger>
-                <SelectContent>
-                  {getAllDepartments(departments).map(dept => (
-                    <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
-                  ))}
-                </SelectContent>
+            </Form.Item>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Form.Item label="所属部门">
+              <Select value={userFormData.departmentId} onChange={val => setUserFormData({ ...userFormData, departmentId: val })} placeholder="选择部门">
+                {getAllDepartments(departments).map(dept => (
+                  <Select.Option key={dept.id} value={dept.id}>{dept.name}</Select.Option>
+                ))}
               </Select>
-            </div>
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setIsUserDetailDialogOpen(false)}>
-                取消
-              </Button>
-              <Button onClick={handleEditUser}>
-                保存
-              </Button>
-            </div>
+            </Form.Item>
           </div>
-        </DialogContent>
-      </Dialog>
+          <div className="grid grid-cols-2 gap-4">
+            <Form.Item label="设置密码" required>
+              <Input.Password value={userFormData.password} onChange={e => setUserFormData({ ...userFormData, password: e.target.value })} placeholder="至少8位" />
+            </Form.Item>
+            <Form.Item label="确认密码" required>
+              <Input.Password value={userFormData.confirmPassword} onChange={e => setUserFormData({ ...userFormData, confirmPassword: e.target.value })} placeholder="再次输入密码" />
+            </Form.Item>
+          </div>
+        </Form>
+      </Modal>
 
-      {/* 部门变更对话框 */}
-      <Dialog open={isDeptChangeDialogOpen} onOpenChange={setIsDeptChangeDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>变更部门</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>选中员工 ({selectedUsers.length} 人)</Label>
-              <div className="mt-2 space-y-2 max-h-32 overflow-y-auto">
-                {selectedUsers.map(userId => {
-                  const user = users.find(u => u.id === userId);
-                  return user ? (
-                    <div key={userId} className="flex items-center space-x-2 text-sm">
-                      <Avatar className="h-6 w-6">
-                        <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      <span>{user.name}</span>
-                      <span className="text-xs text-gray-400">加入时间: {user.joinDate}</span>
-                    </div>
-                  ) : null;
-                })}
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="change-department">目标部门</Label>
-              <Select value={userFormData.departmentId} onValueChange={(value: string) => setUserFormData({ ...userFormData, departmentId: value })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="选择目标部门" />
-                </SelectTrigger>
-                <SelectContent>
-                  {getAllDepartments(departments).map(dept => (
-                    <SelectItem key={dept.id} value={dept.id}>{dept.name}</SelectItem>
-                  ))}
-                </SelectContent>
+      {/* Edit User Details */}
+      <Modal
+        title="员工详情"
+        open={isUserDetailDialogOpen}
+        onOk={handleEditUser}
+        onCancel={() => setIsUserDetailDialogOpen(false)}
+        okText="保存"
+        cancelText="取消"
+        width={600}
+      >
+        <Form layout="vertical">
+          <div className="grid grid-cols-2 gap-4">
+            <Form.Item label="姓名" required>
+              <Input value={userFormData.name} onChange={e => setUserFormData({ ...userFormData, name: e.target.value })} placeholder="员工姓名" />
+            </Form.Item>
+            <Form.Item label="手机号">
+              <Input value={userFormData.phone} onChange={e => setUserFormData({ ...userFormData, phone: e.target.value })} placeholder="11位手机号" />
+            </Form.Item>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Form.Item label="邮箱">
+              <Input value={userFormData.email} onChange={e => setUserFormData({ ...userFormData, email: e.target.value })} placeholder="员工邮箱" />
+            </Form.Item>
+            <Form.Item label="角色">
+              <Select value={userFormData.role} onChange={val => setUserFormData({ ...userFormData, role: val })} placeholder="选择角色">
+                <Select.Option value="普通用户">普通用户</Select.Option>
+                <Select.Option value="项目经理">项目经理</Select.Option>
+                <Select.Option value="数据分析师">数据分析师</Select.Option>
+                <Select.Option value="总经理">总经理</Select.Option>
+                <Select.Option value="技术总监">技术总监</Select.Option>
               </Select>
-            </div>
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setIsDeptChangeDialogOpen(false)}>
-                取消
-              </Button>
-              <Button onClick={handleDepartmentChange}>
-                确认变更
-              </Button>
-            </div>
+            </Form.Item>
           </div>
-        </DialogContent>
-      </Dialog>
+          <div className="grid grid-cols-2 gap-4">
+            <Form.Item label="所属部门">
+              <Select value={userFormData.departmentId} onChange={val => setUserFormData({ ...userFormData, departmentId: val })} placeholder="选择部门">
+                {getAllDepartments(departments).map(dept => (
+                  <Select.Option key={dept.id} value={dept.id}>{dept.name}</Select.Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Form.Item label="密码">
+              <Input.Password value={userFormData.password} onChange={e => setUserFormData({ ...userFormData, password: e.target.value })} placeholder="不修改请留空或保持星号" />
+            </Form.Item>
+            <Form.Item label="确认密码">
+              <Input.Password value={userFormData.confirmPassword} onChange={e => setUserFormData({ ...userFormData, confirmPassword: e.target.value })} placeholder="确认密码" />
+            </Form.Item>
+          </div>
+        </Form>
+      </Modal>
 
-      {/* 添加子部门对话框 */}
-      <Dialog open={isAddSubDeptDialogOpen} onOpenChange={setIsAddSubDeptDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>添加子部门</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="sub-dept-name">部门名称 <span className="text-red-500">*</span></Label>
-              <Input
-                id="sub-dept-name"
-                value={deptFormData.name}
-                onChange={(e) => setDeptFormData({ ...deptFormData, name: e.target.value })}
-                placeholder="请输入部门名称"
-              />
-            </div>
-            <div>
-              <Label htmlFor="sub-dept-description">部门描述</Label>
-              <Textarea
-                id="sub-dept-description"
-                value={deptFormData.description}
-                onChange={(e) => setDeptFormData({ ...deptFormData, description: e.target.value })}
-                placeholder="请输入部门描述"
-                rows={3}
-              />
-            </div>
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setIsAddSubDeptDialogOpen(false)}>
-                取消
-              </Button>
-              <Button onClick={() => {
-                handleCreateDepartment();
-                setIsAddSubDeptDialogOpen(false);
-              }}>
-                添加
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Batch Change Dept */}
+      <Modal
+        title={`批量变更部门 (已选 ${selectedUsers.length} 人)`}
+        open={isDeptChangeDialogOpen}
+        onOk={handleDepartmentChange}
+        onCancel={() => setIsDeptChangeDialogOpen(false)}
+        okText="确认变更"
+        cancelText="取消"
+      >
+        <div className="mb-4">
+          <Text type="secondary">将选中的员工移动到：</Text>
+        </div>
+        <Select
+          style={{ width: '100%' }}
+          placeholder="请选择目标部门"
+          value={userFormData.departmentId}
+          onChange={val => setUserFormData({ ...userFormData, departmentId: val })}
+        >
+          {getAllDepartments(departments).map(dept => (
+            <Select.Option key={dept.id} value={dept.id}>{dept.name}</Select.Option>
+          ))}
+        </Select>
+      </Modal>
 
-      {/* 删除用户二次确认对话框 */}
-      <Dialog open={isDeleteUserConfirmOpen} onOpenChange={setIsDeleteUserConfirmOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>确认删除员工</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-sm text-gray-600">
-              确定要删除该员工吗？此操作不可撤回。
-            </p>
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setIsDeleteUserConfirmOpen(false)}>取消</Button>
-              <Button variant="destructive" onClick={confirmDeleteUser}>确认删除</Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Delete User Confirm */}
+      <Modal
+        title="确认删除员工"
+        open={isDeleteUserConfirmOpen}
+        onOk={confirmDeleteUser}
+        onCancel={() => setIsDeleteUserConfirmOpen(false)}
+        okText="确认删除"
+        cancelText="取消"
+        okButtonProps={{ danger: true }}
+      >
+        <p>确定要删除该员工吗？此操作不可撤回。</p>
+      </Modal>
+
     </div>
   );
 }

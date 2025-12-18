@@ -26,7 +26,7 @@ interface ProjectCardProps {
 export function ProjectCard({ title, description, status, stats, date, members, dataSource, color = "blue", onViewDetails, onManage }: ProjectCardProps) {
   const colorClasses = {
     blue: "bg-blue-50 border-blue-200",
-    green: "bg-green-50 border-green-200", 
+    green: "bg-green-50 border-green-200",
     purple: "bg-purple-50 border-purple-200",
     orange: "bg-orange-50 border-orange-200"
   };
@@ -34,7 +34,7 @@ export function ProjectCard({ title, description, status, stats, date, members, 
   const badgeColors = {
     blue: "bg-blue-100 text-blue-700",
     green: "bg-green-100 text-green-700",
-    purple: "bg-purple-100 text-purple-700", 
+    purple: "bg-purple-100 text-purple-700",
     orange: "bg-orange-100 text-orange-700"
   };
 
@@ -55,7 +55,7 @@ export function ProjectCard({ title, description, status, stats, date, members, 
           {/* 移除项目卡片右上角的省略号按钮 */}
         </div>
       </CardHeader>
-      
+
       <CardContent className="pt-0 flex flex-col flex-grow">
         <div className="grid grid-cols-3 gap-4 mb-4">
           <div className="text-center">
@@ -71,7 +71,7 @@ export function ProjectCard({ title, description, status, stats, date, members, 
             <div className="text-xs text-gray-500">任务</div>
           </div>
         </div>
-        
+
         <div className="space-y-2 mb-4 text-xs text-gray-500">
           {date && (
             <div className="flex items-center space-x-1">
@@ -86,19 +86,19 @@ export function ProjectCard({ title, description, status, stats, date, members, 
             </div>
           )}
         </div>
-        
+
         <div className="flex justify-between items-center mt-auto">
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             className="text-blue-600 border-blue-200 hover:bg-blue-50"
             onClick={onViewDetails}
           >
             查看详情
           </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             className="text-blue-600 border-blue-200 hover:bg-blue-50"
             onClick={onManage}
           >

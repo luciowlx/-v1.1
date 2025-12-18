@@ -9,7 +9,7 @@ import { Checkbox } from "./ui/checkbox";
 import { Switch } from "./ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
-import { Plus, Edit, Trash2, Shield, Users, Settings, Search, Eye, UserPlus, Mail } from "lucide-react";
+import { Plus, Edit, Trash2, Shield, Users, Settings, Search, Eye, UserPlus, Mail, Lock } from "lucide-react";
 import type { User } from "../types/user";
 import { registeredUsers } from "../mock/users";
 import { ScrollArea } from "./ui/scroll-area";
@@ -38,6 +38,7 @@ interface Role {
   userCount: number;
   status: "active" | "inactive";
   createdAt: string;
+  isDefault?: boolean;
 }
 
 // 三层权限结构：一级菜单 -> 二级菜单 -> 三级按钮
@@ -203,6 +204,16 @@ const allPermissions: Permission[] = [
 export function RoleManagement() {
   const [roles, setRoles] = useState<Role[]>([
     {
+      id: "default-role-001",
+      name: "默认角色",
+      description: "企业版全功能权限默认角色",
+      permissions: allPermissions.map(p => p.id),
+      userCount: 0,
+      status: "active",
+      createdAt: "2024-01-01",
+      isDefault: true
+    },
+    {
       id: "1",
       name: "超级管理员",
       description: "拥有系统所有权限",
@@ -337,11 +348,14 @@ export function RoleManagement() {
    * @param enabled 是否启用
    */
   const handleToggleRoleStatus = (roleId: string, enabled: boolean) => {
+    const role = roles.find(r => r.id === roleId);
+    if (!role || role.isDefault) return; // Prevent updating default role
     setRoles(roles.map(role => role.id === roleId ? { ...role, status: enabled ? "active" : "inactive" } : role));
   };
 
   const handleBatchDelete = () => {
-    setRoles(roles.filter(role => !selectedRoles.includes(role.id)));
+    // Only delete non-default roles
+    setRoles(roles.filter(role => !selectedRoles.includes(role.id) || role.isDefault));
     setSelectedRoles([]);
   };
 
@@ -600,7 +614,9 @@ export function RoleManagement() {
                   <TableCell>
                     <Checkbox
                       checked={selectedRoles.includes(role.id)}
+                      disabled={role.isDefault}
                       onCheckedChange={(checked: boolean) => {
+                        if (role.isDefault) return; // Cannot select default role for deletion
                         if (checked) {
                           setSelectedRoles([...selectedRoles, role.id]);
                         } else {
@@ -609,8 +625,20 @@ export function RoleManagement() {
                       }}
                     />
                   </TableCell>
-                  <TableCell className="font-medium">{role.name}</TableCell>
-                  <TableCell className="text-gray-600">{role.description}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{role.name}</span>
+                        {role.isDefault && (
+                          <Badge variant="secondary" className="h-5 px-1.5 text-xs bg-amber-100 text-amber-700 hover:bg-amber-100 border-amber-200 gap-1">
+                            <Lock className="w-3 h-3" />
+                            系统内置
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-gray-500 text-sm">{role.description}</TableCell>
                   <TableCell>
                     <Badge variant="outline">{role.permissions.length} 个权限</Badge>
                   </TableCell>
@@ -624,38 +652,53 @@ export function RoleManagement() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <Switch
-                        checked={role.status === "active"}
-                        onCheckedChange={(checked: boolean) => handleToggleRoleStatus(role.id, checked)}
-                        aria-label={`切换角色 ${role.name} 状态`}
-                      />
-                      <span className="text-sm text-gray-600">{role.status === "active" ? "启用" : "禁用"}</span>
+                      {role.isDefault ? (
+                        <div className="flex items-center gap-2 px-2 py-1 bg-green-50 text-green-700 rounded-full text-xs font-medium border border-green-200">
+                          <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                          <span>长期生效</span>
+                        </div>
+                      ) : (
+                        <>
+                          <Switch
+                            checked={role.status === "active"}
+                            onCheckedChange={(checked: boolean) => handleToggleRoleStatus(role.id, checked)}
+                            aria-label={`切换角色 ${role.name} 状态`}
+                          />
+                          <span className="text-sm text-gray-600">{role.status === "active" ? "启用" : "禁用"}</span>
+                        </>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell className="text-gray-600">{role.createdAt}</TableCell>
                   <TableCell>
                     <div className="flex gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openEditDialog(role)}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openPermissionDialog(role)}
-                      >
-                        <Settings className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteRole(role.id)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      {!role.isDefault && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openEditDialog(role)}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openPermissionDialog(role)}
+                          >
+                            <Settings className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            disabled={role.isDefault}
+                            onClick={() => handleDeleteRole(role.id)}
+                            title={role.isDefault ? "默认角色无法删除" : "删除角色"}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </>
+                      )}
                       <Button
                         variant="ghost"
                         size="sm"
