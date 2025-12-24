@@ -102,10 +102,10 @@ export default function App() {
   const [isDuplicateConfirmOpen, setIsDuplicateConfirmOpen] = useState(false);
   const [isArchiveConfirmOpen, setIsArchiveConfirmOpen] = useState(false);
 
-  // 数据管理页面状态
+  // 数据资产页面状态
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
 
-  // 任务管理页面状态
+  // 决策推理页面状态
   const [isCreateTaskDialogOpen, setIsCreateTaskDialogOpen] = useState(false);
 
   // 个人中心状态
@@ -751,11 +751,11 @@ export default function App() {
                 setIsCreateProjectOpen(true);
               }}
               onNavigateToDataManagement={() => {
-                setActiveTab("数据管理");
+                setActiveTab("数据资产");
                 setIsUploadDialogOpen(true);
               }}
               onNavigateToTaskManagement={() => {
-                setActiveTab("任务管理");
+                setActiveTab("决策推理");
                 setIsCreateTaskDialogOpen(true);
               }}
               onNavigateToModelManagement={() => {
@@ -1247,11 +1247,11 @@ export default function App() {
                     mode={projectDetailMode}
                     onNavigateToData={() => {
                       setIsProjectDetailOpen(false);
-                      setActiveTab("数据管理");
+                      setActiveTab("数据资产");
                     }}
                     onNavigateToTasks={() => {
                       setIsProjectDetailOpen(false);
-                      setActiveTab("任务管理");
+                      setActiveTab("决策推理");
                     }}
                     onNavigateToModels={() => {
                       setIsProjectDetailOpen(false);
@@ -1568,7 +1568,7 @@ export default function App() {
             </Dialog>
           </div >
         );
-      case "数据管理":
+      case "数据资产":
         return (
           <div className="relative">
             <DataManagement
@@ -1590,11 +1590,11 @@ export default function App() {
             )}
           </div>
         );
-      case "任务管理":
+      case "决策推理":
         return (
           <div>
             <div className="mb-6">
-              <h1 className="text-2xl font-semibold text-gray-900 mb-2">任务管理</h1>
+              <h1 className="text-2xl font-semibold text-gray-900 mb-2">{t('task.title')}</h1>
               <p className="text-gray-600">创建、监控和管理AI模型训练任务，实时跟踪任务进度和性能指标</p>
             </div>
             <TaskManagement
@@ -1819,8 +1819,8 @@ export default function App() {
 
       {/* AI助手已统一到 FullPageView（type='ai-assistant'） */}
 
-      {/* 浮动预览入口：任务对比（仅在任务管理页显示） */}
-      {activeTab === '任务管理' && (
+      {/* 浮动预览入口：任务对比（仅在决策推理页显示） */}
+      {activeTab === '决策推理' && (
         <>
           <div className="fixed bottom-6 right-6 space-y-2 z-50">
             <button

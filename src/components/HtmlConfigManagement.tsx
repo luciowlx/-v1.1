@@ -323,24 +323,26 @@ export default function HtmlConfigManagement() {
               >
                 配置
               </Button>
-              <Button
-                danger
-                icon={<DeleteOutlined />}
-                onClick={() => {
-                  Modal.confirm({
-                    title: '确认删除',
-                    content: `是否确认删除模板 [${it.name}]？`,
-                    okText: '确认',
-                    cancelText: '取消',
-                    onOk: () => {
-                      setTemplates((prev: TaskTemplate[]) => prev.filter((t: TaskTemplate) => t.name !== it.name));
-                      message.success('删除成功');
-                    }
-                  });
-                }}
-              >
-                删除
-              </Button>
+              {it.tag === '自定义' && (
+                <Button
+                  danger
+                  icon={<DeleteOutlined />}
+                  onClick={() => {
+                    Modal.confirm({
+                      title: '确认删除',
+                      content: `是否确认删除模板 [${it.name}]？`,
+                      okText: '确认',
+                      cancelText: '取消',
+                      onOk: () => {
+                        setTemplates((prev: TaskTemplate[]) => prev.filter((t: TaskTemplate) => t.name !== it.name));
+                        message.success('删除成功');
+                      }
+                    });
+                  }}
+                >
+                  删除
+                </Button>
+              )}
             </div>
           </div>
         ))}

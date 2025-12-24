@@ -44,6 +44,8 @@ interface NotebookInstance {
     lastSyncTime: string;
     url: string;
     sshCommand: string;
+    createdAt: string;
+    creator: string;
 }
 
 /**
@@ -75,7 +77,9 @@ export function NotebookManagement({ onOpenDetail, onConnect }: { onOpenDetail?:
                 autoStopHours: 4,
                 lastSyncTime: '2024-01-22 10:30:00',
                 url: 'https://jupyter.limix.ai/nb-202401',
-                sshCommand: 'ssh -p 30022 root@192.168.1.100 -i ~/.ssh/id_rsa'
+                sshCommand: 'ssh -p 30022 root@192.168.1.100 -i ~/.ssh/id_rsa',
+                createdAt: '2024-01-22 08:30:00',
+                creator: 'admin'
             },
             {
                 id: 'NB-202402',
@@ -88,7 +92,9 @@ export function NotebookManagement({ onOpenDetail, onConnect }: { onOpenDetail?:
                 autoStopHours: 2,
                 lastSyncTime: '2024-01-21 18:20:15',
                 url: '',
-                sshCommand: ''
+                sshCommand: '',
+                createdAt: '2024-01-21 10:20:15',
+                creator: '王小明'
             },
             {
                 id: 'NB-202403',
@@ -101,7 +107,9 @@ export function NotebookManagement({ onOpenDetail, onConnect }: { onOpenDetail?:
                 autoStopHours: 8,
                 lastSyncTime: '2024-01-20 09:15:00',
                 url: '',
-                sshCommand: ''
+                sshCommand: '',
+                createdAt: '2024-01-20 09:00:00',
+                creator: '李华'
             },
             {
                 id: 'NB-202404',
@@ -114,7 +122,9 @@ export function NotebookManagement({ onOpenDetail, onConnect }: { onOpenDetail?:
                 autoStopHours: 12,
                 lastSyncTime: '-',
                 url: '',
-                sshCommand: ''
+                sshCommand: '',
+                createdAt: '2024-01-23 14:30:00',
+                creator: 'admin'
             },
             {
                 id: 'NB-202405',
@@ -127,7 +137,9 @@ export function NotebookManagement({ onOpenDetail, onConnect }: { onOpenDetail?:
                 autoStopHours: 0,
                 lastSyncTime: '2024-01-22 10:45:30',
                 url: 'https://jupyter.limix.ai/nb-202405',
-                sshCommand: ''
+                sshCommand: '',
+                createdAt: '2024-01-20 15:45:30',
+                creator: '张三'
             }
         ];
         setInstances(mockData);
@@ -207,7 +219,9 @@ export function NotebookManagement({ onOpenDetail, onConnect }: { onOpenDetail?:
                     autoStopHours: values.autoStop,
                     lastSyncTime: '-',
                     url: '',
-                    sshCommand: values.enableSsh ? 'ssh -p 30022 root@192.168.1.100' : ''
+                    sshCommand: values.enableSsh ? 'ssh -p 30022 root@192.168.1.100' : '',
+                    createdAt: new Date().toISOString().replace('T', ' ').split('.')[0],
+                    creator: 'admin' // 默认当前用户
                 };
                 setInstances([newInst, ...instances]);
                 message.success('创建任务下发成功');
@@ -227,11 +241,12 @@ export function NotebookManagement({ onOpenDetail, onConnect }: { onOpenDetail?:
     };
 
     // 表格列定义
-    const columns = [
+    const columns: any[] = [
         {
             title: '实例名称',
             dataIndex: 'name',
             key: 'name',
+            width: 200,
             render: (text: string, record: NotebookInstance) => (
                 <div className="flex flex-col">
                     <a
@@ -253,6 +268,15 @@ export function NotebookManagement({ onOpenDetail, onConnect }: { onOpenDetail?:
             title: '状态',
             dataIndex: 'status',
             key: 'status',
+            width: 100,
+            filters: [
+                { text: '运行中', value: 'Running' },
+                { text: '已停止', value: 'Stopped' },
+                { text: '启动中', value: 'Starting' },
+                { text: '停止中', value: 'Stopping' },
+                { text: '失败', value: 'Failed' },
+            ],
+            onFilter: (value: any, record: NotebookInstance) => record.status === value,
             render: (status: string) => {
                 let color = 'default';
                 let label = status;
@@ -268,6 +292,8 @@ export function NotebookManagement({ onOpenDetail, onConnect }: { onOpenDetail?:
             title: '资源规格',
             dataIndex: 'spec',
             key: 'spec',
+            width: 200,
+            sorter: (a: NotebookInstance, b: NotebookInstance) => a.spec.localeCompare(b.spec),
             render: (text: string) => (
                 <div className="flex items-center gap-2">
                     {text.includes('GPU') ? <Badge color="purple" count="GPU" size="small" style={{ fontSize: '10px' }} /> : <Badge color="blue" count="CPU" size="small" style={{ fontSize: '10px' }} />}
@@ -279,18 +305,44 @@ export function NotebookManagement({ onOpenDetail, onConnect }: { onOpenDetail?:
             title: '基础镜像',
             dataIndex: 'image',
             key: 'image',
+            width: 180,
+            sorter: (a: NotebookInstance, b: NotebookInstance) => a.image.localeCompare(b.image),
             render: (text: string) => <span className="text-xs text-slate-600">{text}</span>,
         },
         {
             title: '运行时间',
             dataIndex: 'runtime',
             key: 'runtime',
+            width: 100,
             render: (text: string) => <div className="flex items-center gap-1 text-xs"><Clock className="w-3 h-3" /> {text}</div>,
+        },
+        {
+            title: '创建时间',
+            dataIndex: 'createdAt',
+            key: 'createdAt',
+            width: 160,
+            sorter: (a: NotebookInstance, b: NotebookInstance) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+            render: (text: string) => <span className="text-xs text-slate-500">{text}</span>,
+        },
+        {
+            title: '创建人',
+            dataIndex: 'creator',
+            key: 'creator',
+            width: 120,
+            filters: [
+                { text: 'admin', value: 'admin' },
+                { text: '王小明', value: '王小明' },
+                { text: '李华', value: '李华' },
+                { text: '张三', value: '张三' },
+            ],
+            onFilter: (value: any, record: NotebookInstance) => record.creator === value,
+            render: (text: string) => <span className="text-xs text-slate-500">{text}</span>,
         },
         {
             title: 'SSH 状态',
             dataIndex: 'sshEnabled',
             key: 'sshEnabled',
+            width: 100,
             render: (enabled: boolean) => (
                 enabled ? <Badge status="success" text="已开启" /> : <Badge status="default" text="未开启" />
             ),
@@ -298,6 +350,8 @@ export function NotebookManagement({ onOpenDetail, onConnect }: { onOpenDetail?:
         {
             title: '操作',
             key: 'actions',
+            fixed: 'right',
+            width: 180,
             render: (_: any, record: NotebookInstance) => (
                 <Space size="middle">
                     {record.status === 'Stopped' ? (
@@ -506,6 +560,7 @@ export function NotebookManagement({ onOpenDetail, onConnect }: { onOpenDetail?:
                     dataSource={instances.filter(i => i.name.includes(searchQuery) || i.id.includes(searchQuery))}
                     rowKey="id"
                     pagination={{ pageSize: 10 }}
+                    scroll={{ x: 1300 }}
                     className="rounded-b-lg"
                     rowClassName="hover:bg-slate-50 cursor-default"
                 />
