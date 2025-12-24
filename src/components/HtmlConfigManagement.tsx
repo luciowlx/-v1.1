@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect } from "react";
-import { Splitter } from "antd";
+import { Splitter, Modal, Form, Input, message, Tag, Button, Switch } from "antd";
+import { PlusOutlined, EditOutlined, DeleteOutlined, LeftOutlined } from "@ant-design/icons";
 
 type ComponentData = {
   componentName: string;
@@ -16,9 +17,25 @@ type ComponentData = {
   fullWidth?: boolean;
 };
 
+interface TaskTemplate {
+  name: string;
+  tag: '系统' | '自定义';
+  desc: string;
+  enabled: boolean;
+  config?: Record<string, ComponentData>;
+}
+
 export default function HtmlConfigManagement() {
+  const [form] = Form.useForm();
   const [page, setPage] = useState<"list" | "editor">("list");
   const [templateName, setTemplateName] = useState<string>("回归任务");
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [templates, setTemplates] = useState<TaskTemplate[]>([
+    { name: "时序预测任务", tag: "系统", desc: "用于处理时间序列数据的预测，如销量预测、股价预测等。", enabled: true },
+    { name: "分类任务", tag: "系统", desc: "用于处理离散值预测，如客户流失预警、垃圾邮件识别等。", enabled: true },
+    { name: "回归任务", tag: "系统", desc: "用于处理连续值预测，如房价预测、产品定价等。", enabled: true },
+    { name: "客户聚类", tag: "自定义", desc: "基于用户画像的 K-Means 聚类分析。", enabled: false }
+  ]);
   const [leftTab, setLeftTab] = useState<"materials" | "outline" | "schema">("materials");
   const [materialSubTab, setMaterialSubTab] = useState<"input" | "output">("input");
   const [propsTab, setPropsTab] = useState<"properties" | "styles" | "advanced">("properties");
@@ -196,7 +213,7 @@ export default function HtmlConfigManagement() {
 
   const applyInitialTemplate = (name: string) => {
     const key = name.includes("时序") ? "forecasting" : name.includes("分类") ? "classification" : name.includes("回归") ? "regression" : "forecasting";
-    const tpl = initialTemplates[key];
+    const tpl = initialTemplates[key] || initialTemplates.regression;
     setDataStore({ ...tpl });
     setBaseline({ ...tpl });
     setHistory([{ ...tpl }]);
@@ -205,60 +222,193 @@ export default function HtmlConfigManagement() {
     setPropsTab("properties");
   };
 
+  /**
+   * 处理新增模板提交
+   * @param values 表单各项值
+   */
+  const handleAddTemplate = (values: any) => {
+    const hide = message.loading('正在创建模板...', 0);
+    setTimeout(() => {
+      const newTemplate: TaskTemplate = {
+        name: values.name,
+        tag: '自定义',
+        desc: values.desc || '暂无描述',
+        enabled: true,
+        config: { ...initialTemplates.regression } // 默认初始化为回归模板配置
+      };
+      setTemplates([...templates, newTemplate]);
+      hide();
+      message.success('模板创建成功');
+      setIsAddModalOpen(false);
+      form.resetFields();
+    }, 800);
+  };
+
   const renderListPage = () => (
-    <div className="max-w-5xl mx-auto bg-white rounded-lg shadow p-6">
-      <div className="flex items-center justify-between border-b pb-4 mb-4">
-        <h1 className="text-lg font-semibold">任务模板管理</h1>
-        <button className="btn btn-primary" onClick={() => { setTemplateName("新任务模板"); setPage("editor"); }}>+ 新增任务模板</button>
-      </div>
-      {[
-        { name: "时序预测任务", tag: "系统", desc: "用于处理时间序列数据的预测，如销量预测、股价预测等。" },
-        { name: "分类任务", tag: "系统", desc: "用于处理离散值预测，如客户流失预警、垃圾邮件识别等。" },
-        { name: "回归任务", tag: "系统", desc: "用于处理连续值预测，如房价预测、产品定价等。" },
-        { name: "客户聚类", tag: "自定义", desc: "基于用户画像的 K-Means 聚类分析。" }
-      ].map((it) => (
-        <div key={it.name} className="flex items-center py-4 border-b last:border-b-0">
-          <div className="flex-1">
-            <div className="text-sm font-medium">{it.name} <span className={`ml-2 px-2 py-0.5 rounded text-xs ${it.tag === "系统" ? "bg-blue-50 text-blue-600" : "bg-gray-100 text-gray-600"}`}>{it.tag}</span></div>
-            <div className="text-gray-600 text-sm mt-1">{it.desc}</div>
-          </div>
-          <div className="flex gap-2">
-            <button className="btn" onClick={() => { setTemplateName(it.name); applyInitialTemplate(it.name); setPage("editor"); }}>配置</button>
-            <button className="btn" disabled>删除</button>
-          </div>
+    <div className="max-w-5xl mx-auto bg-white rounded-lg shadow-sm p-8" style={{ marginTop: 24 }}>
+      <div className="flex items-center justify-between border-b pb-6 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">任务模板管理</h1>
+          <p className="text-gray-500 mt-1">管理并配置不同业务场景下的算法任务模板</p>
         </div>
-      ))}
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          size="large"
+          onClick={() => { setIsAddModalOpen(true); }}
+        >
+          新增任务模板
+        </Button>
+      </div>
+
+      <div className="space-y-4">
+        {templates.map((it: TaskTemplate) => (
+          <div key={it.name} className="flex items-center p-6 border rounded-xl hover:shadow-md transition-shadow bg-white group">
+            <div className="flex-1">
+              <div className="flex items-center gap-3">
+                <span className="text-base font-semibold text-gray-800">{it.name}</span>
+                <Tag color={it.tag === "系统" ? "blue" : "purple"}>
+                  {it.tag}
+                </Tag>
+              </div>
+              <div className="text-gray-500 text-sm mt-2 leading-relaxed">{it.desc}</div>
+            </div>
+
+            <div className="flex items-center gap-8 mr-12 text-sm text-gray-500">
+              <div className="flex flex-col items-center gap-1">
+                <span className="text-xs text-gray-400">应用状态</span>
+                <Switch
+                  checked={it.enabled}
+                  onChange={(checked) => {
+                    Modal.confirm({
+                      title: `确认${checked ? '启用' : '禁用'}模板？`,
+                      content: (
+                        <div>
+                          <p>是否确认 {checked ? '启用' : '禁用'} 任务模板 <strong>[{it.name}]</strong>？</p>
+                          <p style={{ color: '#ff4d4f', marginTop: 8 }}>⚠️ 注意：该操作将直接影响“任务管理”中的任务创建流程。</p>
+                        </div>
+                      ),
+                      okText: '确认',
+                      cancelText: '取消',
+                      onOk: () => {
+                        setTemplates((prev: TaskTemplate[]) =>
+                          prev.map((tpl: TaskTemplate) =>
+                            tpl.name === it.name ? { ...tpl, enabled: checked } : tpl
+                          )
+                        );
+                        message.success(`模板 [${it.name}] 已${checked ? '启用' : '禁用'}`);
+                      }
+                    });
+                  }}
+                />
+              </div>
+            </div>
+            <div className="flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Button
+                type="primary"
+                ghost
+                icon={<EditOutlined />}
+                onClick={() => {
+                  setTemplateName(it.name);
+                  if (it.config) {
+                    setDataStore({ ...it.config });
+                    setBaseline({ ...it.config });
+                    setHistory([{ ...it.config }]);
+                    setHistoryIndex(0);
+                  } else {
+                    applyInitialTemplate(it.name);
+                  }
+                  setPage("editor");
+                }}
+              >
+                配置
+              </Button>
+              <Button
+                danger
+                icon={<DeleteOutlined />}
+                onClick={() => {
+                  Modal.confirm({
+                    title: '确认删除',
+                    content: `是否确认删除模板 [${it.name}]？`,
+                    okText: '确认',
+                    cancelText: '取消',
+                    onOk: () => {
+                      setTemplates((prev: TaskTemplate[]) => prev.filter((t: TaskTemplate) => t.name !== it.name));
+                      message.success('删除成功');
+                    }
+                  });
+                }}
+              >
+                删除
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <Modal
+        title="新增任务模板"
+        open={isAddModalOpen}
+        onCancel={() => setIsAddModalOpen(false)}
+        onOk={() => form.submit()}
+        okText="创建"
+        cancelText="取消"
+        destroyOnClose
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleAddTemplate}
+          initialValues={{ name: '', desc: '' }}
+          style={{ marginTop: 16 }}
+        >
+          <Form.Item
+            name="name"
+            label="模板名称"
+            rules={[{ required: true, message: '请输入模板名称' }, { max: 30, message: '名称最多30个字符' }]}
+          >
+            <Input placeholder="输入任务模板名称，例如：个性化推荐任务" maxLength={30} />
+          </Form.Item>
+          <Form.Item
+            name="desc"
+            label="模板描述"
+            rules={[{ required: true, message: '请输入模板描述' }]}
+          >
+            <Input.TextArea placeholder="简要描述该模板的用途和适用场景" rows={4} maxLength={200} showCount />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 
   const renderPropsForm = (data: ComponentData) => (
     <div className="panel-content">
-      <div className="form-group"><label>标签 (Label)</label><input type="text" value={data.label} onChange={(e)=>updateData({ label: e.target.value })} /></div>
+      <div className="form-group"><label>标签 (Label)</label><input type="text" value={data.label} onChange={(e) => updateData({ label: e.target.value })} /></div>
       {data.paramId && <div className="form-group"><label>参数ID (paramId)</label><input type="text" value={data.paramId} disabled /></div>}
       {data.metricId && <div className="form-group"><label>指标ID (metricId)</label><input type="text" value={data.metricId} disabled /></div>}
       {data.vizId !== undefined && (
         <div className="form-group">
           <label>图表类型 (vizId)</label>
-          <select value={data.vizId} onChange={(e)=>updateData({ vizId: e.target.value })}>
+          <select value={data.vizId} onChange={(e) => updateData({ vizId: e.target.value })}>
             {vizLibrary.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
           </select>
         </div>
       )}
       {data.defaultValue !== undefined && (
         typeof data.defaultValue === "boolean" ? (
-          <div className="form-group-checkbox"><input type="checkbox" checked={data.defaultValue as boolean} onChange={(e)=>updateData({ defaultValue: e.target.checked })} /><label>默认值</label></div>
+          <div className="form-group-checkbox"><input type="checkbox" checked={data.defaultValue as boolean} onChange={(e) => updateData({ defaultValue: e.target.checked })} /><label>默认值</label></div>
         ) : (
-          <div className="form-group"><label>默认值</label><input type="text" value={String(data.defaultValue)} onChange={(e)=>updateData({ defaultValue: e.target.value })} /></div>
+          <div className="form-group"><label>默认值</label><input type="text" value={String(data.defaultValue)} onChange={(e) => updateData({ defaultValue: e.target.value })} /></div>
         )
       )}
       {data.isDefault !== undefined && (
-        <div className="form-group-checkbox"><input type="checkbox" checked={!!data.isDefault} onChange={(e)=>updateData({ isDefault: e.target.checked })} /><label>默认启用</label></div>
+        <div className="form-group-checkbox"><input type="checkbox" checked={!!data.isDefault} onChange={(e) => updateData({ isDefault: e.target.checked })} /><label>默认启用</label></div>
       )}
       {data.description !== undefined && (
-        <div className="form-group"><label>描述 (Description)</label><textarea rows={3} value={data.description || ""} onChange={(e)=>updateData({ description: e.target.value })} /></div>
+        <div className="form-group"><label>描述 (Description)</label><textarea rows={3} value={data.description || ""} onChange={(e) => updateData({ description: e.target.value })} /></div>
       )}
       {data.tooltip !== undefined && (
-        <div className="form-group"><label>提示信息</label><textarea rows={3} value={data.tooltip || ""} onChange={(e)=>updateData({ tooltip: e.target.value })} /></div>
+        <div className="form-group"><label>提示信息</label><textarea rows={3} value={data.tooltip || ""} onChange={(e) => updateData({ tooltip: e.target.value })} /></div>
       )}
     </div>
   );
@@ -270,8 +420,8 @@ export default function HtmlConfigManagement() {
         ...prev,
         [selectedComponentId]: { ...prev[selectedComponentId], ...partial }
       };
-      setHistory(h => [...h.slice(0, historyIndex + 1), { ...next }]);
-      setHistoryIndex(i => i + 1);
+      setHistory((h: Record<string, ComponentData>[]) => [...h.slice(0, historyIndex + 1), { ...next }]);
+      setHistoryIndex((i: number) => i + 1);
       return next;
     });
   };
@@ -300,8 +450,8 @@ export default function HtmlConfigManagement() {
     const ok = window.confirm("确认恢复默认？");
     if (!ok || !baseline) return;
     setDataStore({ ...baseline });
-    setHistory(h => [...h.slice(0, historyIndex + 1), { ...baseline }]);
-    setHistoryIndex(i => i + 1);
+    setHistory((h: Record<string, ComponentData>[]) => [...h.slice(0, historyIndex + 1), { ...baseline }]);
+    setHistoryIndex((i: number) => i + 1);
   };
 
   const handlePublish = () => {
@@ -320,13 +470,13 @@ export default function HtmlConfigManagement() {
       <style>{extraCss}</style>
       <header className="editor-header">
         <div className="header-group">
-          <button className="btn" onClick={() => setPage("list")}>{"< 返回列表"}</button>
-          <span className="header-title">{templateName}</span>
+          <Button icon={<LeftOutlined />} onClick={() => setPage("list")}>返回列表</Button>
+          <span className="header-title" style={{ marginLeft: 12 }}>{templateName}</span>
         </div>
         <div className="header-group">
           <button className="btn" onClick={handleSaveDraft}>暂存</button>
-          <button className="btn" onClick={handleUndo} disabled={historyIndex<=0}>上一步</button>
-          <button className="btn" onClick={handleRedo} disabled={historyIndex>=history.length-1}>下一步</button>
+          <button className="btn" onClick={handleUndo} disabled={historyIndex <= 0}>上一步</button>
+          <button className="btn" onClick={handleRedo} disabled={historyIndex >= history.length - 1}>下一步</button>
           <button className="btn" onClick={() => setIsPreviewOpen(true)}>预览</button>
           <button className="btn" onClick={handleRestoreDefault}>恢复默认</button>
           <button className="btn btn-primary" onClick={handlePublish}>保存并发布</button>
@@ -340,16 +490,16 @@ export default function HtmlConfigManagement() {
           <Splitter.Panel defaultSize="26%" min="18%" max="40%">
             <aside className="editor-left-panel">
               <nav className="panel-tabs">
-                <div className={`tab-button ${leftTab==='materials'?'active':''}`} onClick={()=>setLeftTab('materials')}>物料</div>
-                <div className={`tab-button ${leftTab==='outline'?'active':''}`} onClick={()=>setLeftTab('outline')}>大纲</div>
-                <div className={`tab-button ${leftTab==='schema'?'active':''}`} onClick={()=>setLeftTab('schema')}>源码</div>
+                <div className={`tab-button ${leftTab === 'materials' ? 'active' : ''}`} onClick={() => setLeftTab('materials')}>物料</div>
+                <div className={`tab-button ${leftTab === 'outline' ? 'active' : ''}`} onClick={() => setLeftTab('outline')}>大纲</div>
+                <div className={`tab-button ${leftTab === 'schema' ? 'active' : ''}`} onClick={() => setLeftTab('schema')}>源码</div>
               </nav>
               <div className="panel-content-wrapper">
                 {leftTab === 'materials' && (
                   <div className="panel-content">
                     <nav className="material-sub-tabs">
-                      <div className={`sub-tab ${materialSubTab==='input'?'active':''}`} onClick={()=>setMaterialSubTab('input')}>输入配置</div>
-                      <div className={`sub-tab ${materialSubTab==='output'?'active':''}`} onClick={()=>setMaterialSubTab('output')}>输出配置</div>
+                      <div className={`sub-tab ${materialSubTab === 'input' ? 'active' : ''}`} onClick={() => setMaterialSubTab('input')}>输入配置</div>
+                      <div className={`sub-tab ${materialSubTab === 'output' ? 'active' : ''}`} onClick={() => setMaterialSubTab('output')}>输出配置</div>
                     </nav>
                     {materialSubTab === 'input' ? (
                       <div className="material-grid">
@@ -382,271 +532,271 @@ export default function HtmlConfigManagement() {
           </Splitter.Panel>
           <Splitter.Panel>
             <section className="editor-canvas-area">
-          {(() => {
-            const isForecasting = !!dataStore.ts_time_column;
-            const isClassification = !!dataStore.class_train_ratio;
-            const isRegression = !!dataStore.reg_train_ratio;
-            if (!isForecasting && !isClassification && !isRegression) {
-              return (
-                <div className="canvas-mockup-card">
-                  <h2 className="mock-section-title">⚙️ 输入配置</h2>
-                  <p style={{textAlign:'center',color:'#909399',margin:'40px 0'}}>从左侧“物料”面板拖拽“输入组件”到这里</p>
-                  <h2 className="mock-section-title" style={{marginTop:30}}>📊 输出配置</h2>
-                  <p style={{textAlign:'center',color:'#909399',margin:'40px 0'}}>从左侧“物料”面板拖拽“输出组件”到这里</p>
-                </div>
-              );
-            }
-            if (isForecasting) {
-              return (
-                <div className="canvas-mockup-card">
-                  <h2 className="mock-section-title">⚙️ 输入配置</h2>
-                  <div className="mock-form-grid">
-                    {dataStore.ts_time_column && (
-                      <div className={`mock-field canvas-item ${selectedComponentId==='ts_time_column'?'selected':''}`} data-component-id="ts_time_column" onClick={()=>{ setSelectedComponentId('ts_time_column'); setPropsTab('properties'); }}>
-                        <label>时间列 <span className="required">*</span> <span className="tooltip">(请先在第2步...)</span></label>
-                        <div className="mock-input-display">{dataStore.ts_time_column.label||'选择时间列'}</div>
-                      </div>
-                    )}
-                    {dataStore.ts_target_column && (
-                      <div className={`mock-field canvas-item ${selectedComponentId==='ts_target_column'?'selected':''}`} data-component-id="ts_target_column" onClick={()=>{ setSelectedComponentId('ts_target_column'); setPropsTab('properties'); }}>
-                        <label>预测目标列 <span className="required">*</span> <span className="tooltip">(请先在第2步...)</span></label>
-                        <div className="mock-input-display">{dataStore.ts_target_column.label||'选择预测目标列'}</div>
-                      </div>
-                    )}
-                    {dataStore.ts_context_len && (
-                      <div className={`mock-field canvas-item ${selectedComponentId==='ts_context_len'?'selected':''}`} data-component-id="ts_context_len" onClick={()=>{ setSelectedComponentId('ts_context_len'); setPropsTab('properties'); }}>
-                        <label>上下文长度 <span className="required">*</span></label>
-                        <div className="mock-input-display">{String(dataStore.ts_context_len.defaultValue ?? '')}</div>
-                      </div>
-                    )}
-                    {dataStore.ts_forecast_horizon && (
-                      <div className={`mock-field canvas-item ${selectedComponentId==='ts_forecast_horizon'?'selected':''}`} data-component-id="ts_forecast_horizon" onClick={()=>{ setSelectedComponentId('ts_forecast_horizon'); setPropsTab('properties'); }}>
-                        <label>预测长度 <span className="required">*</span></label>
-                        <div className="mock-input-display">{String(dataStore.ts_forecast_horizon.defaultValue ?? '')}</div>
-                      </div>
-                    )}
-                    {dataStore.ts_step_size && (
-                      <div className={`mock-field canvas-item ${selectedComponentId==='ts_step_size'?'selected':''}`} data-component-id="ts_step_size" onClick={()=>{ setSelectedComponentId('ts_step_size'); setPropsTab('properties'); }}>
-                        <label>预测步长 <span className="required">*</span></label>
-                        <div className="mock-input-display">{String(dataStore.ts_step_size.defaultValue ?? '')}</div>
-                      </div>
-                    )}
-                    {dataStore.ts_start_time && (
-                      <div className={`mock-field canvas-item ${selectedComponentId==='ts_start_time'?'selected':''}`} data-component-id="ts_start_time" onClick={()=>{ setSelectedComponentId('ts_start_time'); setPropsTab('properties'); }}>
-                        <label>预测开始时间 <span className="tooltip">(可选)</span></label>
-                        <div className="mock-input-display">{String(dataStore.ts_start_time.defaultValue ?? '')||'选择开始时间'}</div>
-                      </div>
-                    )}
-                    {dataStore.ts_primary_file && (
-                      <div className={`mock-field canvas-item ${selectedComponentId==='ts_primary_file'?'selected':''}`} data-component-id="ts_primary_file" onClick={()=>{ setSelectedComponentId('ts_primary_file'); setPropsTab('properties'); }}>
-                        <label>主变量文件 <span className="tooltip">(可选, 互斥)</span></label>
-                        <div className="mock-input-display">{dataStore.ts_primary_file.label||'选择主变量文件'}</div>
-                      </div>
-                    )}
-                    {dataStore.ts_covariate_files && (
-                      <div className={`mock-field canvas-item ${selectedComponentId==='ts_covariate_files'?'selected':''}`} data-component-id="ts_covariate_files" onClick={()=>{ setSelectedComponentId('ts_covariate_files'); setPropsTab('properties'); }}>
-                        <label>协变量文件 <span className="tooltip">(可选, 互斥)</span></label>
-                        <div className="mock-input-display">{dataStore.ts_covariate_files.label||'选择协变量文件'}</div>
-                      </div>
-                    )}
-                  </div>
-                  <h2 className="mock-section-title" style={{marginTop:30}}>📊 输出配置</h2>
-                  <h3 className="mock-output-group-title">评估指标</h3>
-                  <div className="mock-metrics-grid">
-                    {dataStore.metric_mse && (<div className={`mock-metric-item canvas-item ${selectedComponentId==='metric_mse'?'selected':''}`} data-component-id="metric_mse" onClick={()=>{ setSelectedComponentId('metric_mse'); setPropsTab('properties'); }}><label>MSE</label></div>)}
-                    {dataStore.metric_rmse && (<div className={`mock-metric-item canvas-item ${selectedComponentId==='metric_rmse'?'selected':''}`} data-component-id="metric_rmse" onClick={()=>{ setSelectedComponentId('metric_rmse'); setPropsTab('properties'); }}><label>RMSE</label></div>)}
-                    {dataStore.metric_mae && (<div className={`mock-metric-item canvas-item ${selectedComponentId==='metric_mae'?'selected':''}`} data-component-id="metric_mae" onClick={()=>{ setSelectedComponentId('metric_mae'); setPropsTab('properties'); }}><label>MAE</label></div>)}
-                    {dataStore.metric_mape && (<div className={`mock-metric-item canvas-item ${selectedComponentId==='metric_mape'?'selected':''}`} data-component-id="metric_mape" onClick={()=>{ setSelectedComponentId('metric_mape'); setPropsTab('properties'); }}><label>MAPE</label></div>)}
-                    {dataStore.metric_r2 && (<div className={`mock-metric-item canvas-item ${selectedComponentId==='metric_r2'?'selected':''}`} data-component-id="metric_r2" onClick={()=>{ setSelectedComponentId('metric_r2'); setPropsTab('properties'); }}><label>R²</label></div>)}
-                  </div>
-                  <div className="mock-form-grid" style={{marginTop:16}}>
-                    {dataStore.bias_relative && (
-                      <div className={`mock-field canvas-item ${selectedComponentId==='bias_relative'?'selected':''}`} data-component-id="bias_relative" onClick={()=>{ setSelectedComponentId('bias_relative'); setPropsTab('properties'); }}>
-                        <label>相对偏差阈值(±%)</label>
-                        <div className="mock-input-display">{String(dataStore.bias_relative.defaultValue ?? '')}</div>
-                      </div>
-                    )}
-                    {dataStore.bias_absolute && (
-                      <div className={`mock-field canvas-item ${selectedComponentId==='bias_absolute'?'selected':''}`} data-component-id="bias_absolute" onClick={()=>{ setSelectedComponentId('bias_absolute'); setPropsTab('properties'); }}>
-                        <label>绝对偏差阈值(±)</label>
-                        <div className="mock-input-display">{String(dataStore.bias_absolute.defaultValue ?? '')}</div>
-                      </div>
-                    )}
-                  </div>
-                  <h3 className="mock-output-group-title">可视化</h3>
-                  <div className="mock-metrics-grid">
-                    {dataStore.viz_forecast && (<div className={`mock-metric-item canvas-item ${selectedComponentId==='viz_forecast'?'selected':''}`} data-component-id="viz_forecast" onClick={()=>{ setSelectedComponentId('viz_forecast'); setPropsTab('properties'); }}><label>折线图</label></div>)}
-                    {dataStore.viz_residual && (<div className={`mock-metric-item canvas-item ${selectedComponentId==='viz_residual'?'selected':''}`} data-component-id="viz_residual" onClick={()=>{ setSelectedComponentId('viz_residual'); setPropsTab('properties'); }}><label>残差图</label></div>)}
-                    {dataStore.viz_scatter && (<div className={`mock-metric-item canvas-item ${selectedComponentId==='viz_scatter'?'selected':''}`} data-component-id="viz_scatter" onClick={()=>{ setSelectedComponentId('viz_scatter'); setPropsTab('properties'); }}><label>预测vs真实散点</label></div>)}
-                    {dataStore.viz_hist && (<div className={`mock-metric-item canvas-item ${selectedComponentId==='viz_hist'?'selected':''}`} data-component-id="viz_hist" onClick={()=>{ setSelectedComponentId('viz_hist'); setPropsTab('properties'); }}><label>误差直方图</label></div>)}
-                  </div>
-                </div>
-              );
-            }
-            if (isClassification) {
-              return (
-                <div className="canvas-mockup-card">
-                  <h2 className="mock-section-title">⚙️ 输入配置</h2>
-                  <div className="mock-form-grid">
-                    {dataStore.class_train_ratio && (
-                      <div className={`mock-field canvas-item ${selectedComponentId==='class_train_ratio'?'selected':''}`} data-component-id="class_train_ratio" onClick={()=>{ setSelectedComponentId('class_train_ratio'); setPropsTab('properties'); }}>
-                        <label>训练集比例(%)</label>
-                        <div className="mock-input-display">{String(dataStore.class_train_ratio.defaultValue ?? '')}</div>
-                      </div>
-                    )}
-                    {dataStore.class_test_ratio && (
-                      <div className={`mock-field canvas-item ${selectedComponentId==='class_test_ratio'?'selected':''}`} data-component-id="class_test_ratio" onClick={()=>{ setSelectedComponentId('class_test_ratio'); setPropsTab('properties'); }}>
-                        <label>测试集比例(%)</label>
-                        <div className="mock-input-display">{String(dataStore.class_test_ratio.defaultValue ?? '')}</div>
-                      </div>
-                    )}
-                  </div>
-                  {dataStore.class_shuffle && (
-                    <div className={`mock-checkbox-display canvas-item ${selectedComponentId==='class_shuffle'?'selected':''}`} data-component-id="class_shuffle" onClick={()=>{ setSelectedComponentId('class_shuffle'); setPropsTab('properties'); }}>
-                      <label>洗牌(Shuffle)</label>
+              {(() => {
+                const isForecasting = !!dataStore.ts_time_column;
+                const isClassification = !!dataStore.class_train_ratio;
+                const isRegression = !!dataStore.reg_train_ratio;
+                if (!isForecasting && !isClassification && !isRegression) {
+                  return (
+                    <div className="canvas-mockup-card">
+                      <h2 className="mock-section-title">⚙️ 输入配置</h2>
+                      <p style={{ textAlign: 'center', color: '#909399', margin: '40px 0' }}>从左侧“物料”面板拖拽“输入组件”到这里</p>
+                      <h2 className="mock-section-title" style={{ marginTop: 30 }}>📊 输出配置</h2>
+                      <p style={{ textAlign: 'center', color: '#909399', margin: '40px 0' }}>从左侧“物料”面板拖拽“输出组件”到这里</p>
                     </div>
-                  )}
-                  <h2 className="mock-section-title" style={{marginTop:30}}>📊 输出配置</h2>
-                  <h3 className="mock-output-group-title">评估指标与平均方式</h3>
-                  <div className="mock-metrics-grid">
-                    {dataStore.metric_accuracy && (<div className={`mock-metric-item canvas-item ${selectedComponentId==='metric_accuracy'?'selected':''}`} data-component-id="metric_accuracy" onClick={()=>{ setSelectedComponentId('metric_accuracy'); setPropsTab('properties'); }}><label>Accuracy</label></div>)}
-                    {dataStore.metric_precision && (<div className={`mock-metric-item canvas-item ${selectedComponentId==='metric_precision'?'selected':''}`} data-component-id="metric_precision" onClick={()=>{ setSelectedComponentId('metric_precision'); setPropsTab('properties'); }}><label>Precision</label></div>)}
-                    {dataStore.metric_recall && (<div className={`mock-metric-item canvas-item ${selectedComponentId==='metric_recall'?'selected':''}`} data-component-id="metric_recall" onClick={()=>{ setSelectedComponentId('metric_recall'); setPropsTab('properties'); }}><label>Recall</label></div>)}
-                    {dataStore.metric_f1 && (<div className={`mock-metric-item canvas-item ${selectedComponentId==='metric_f1'?'selected':''}`} data-component-id="metric_f1" onClick={()=>{ setSelectedComponentId('metric_f1'); setPropsTab('properties'); }}><label>F1</label></div>)}
-                    {dataStore.metric_roc_auc && (<div className={`mock-metric-item canvas-item ${selectedComponentId==='metric_roc_auc'?'selected':''}`} data-component-id="metric_roc_auc" onClick={()=>{ setSelectedComponentId('metric_roc_auc'); setPropsTab('properties'); }}><label>ROC-AUC</label></div>)}
-                  </div>
-                  {dataStore.averaging_method && (
-                    <div className="mock-form-grid" style={{marginTop:16}}>
-                      <div className={`mock-field canvas-item ${selectedComponentId==='averaging_method'?'selected':''}`} data-component-id="averaging_method" onClick={()=>{ setSelectedComponentId('averaging_method'); setPropsTab('properties'); }}>
-                        <label>平均方式 <span className="tooltip">(Precision/Recall/F1/ROC-AUC)</span></label>
-                        <div className="mock-input-display">{String(dataStore.averaging_method.defaultValue ?? '')}</div>
+                  );
+                }
+                if (isForecasting) {
+                  return (
+                    <div className="canvas-mockup-card">
+                      <h2 className="mock-section-title">⚙️ 输入配置</h2>
+                      <div className="mock-form-grid">
+                        {dataStore.ts_time_column && (
+                          <div className={`mock-field canvas-item ${selectedComponentId === 'ts_time_column' ? 'selected' : ''}`} data-component-id="ts_time_column" onClick={() => { setSelectedComponentId('ts_time_column'); setPropsTab('properties'); }}>
+                            <label>时间列 <span className="required">*</span> <span className="tooltip">(请先在第2步...)</span></label>
+                            <div className="mock-input-display">{dataStore.ts_time_column.label || '选择时间列'}</div>
+                          </div>
+                        )}
+                        {dataStore.ts_target_column && (
+                          <div className={`mock-field canvas-item ${selectedComponentId === 'ts_target_column' ? 'selected' : ''}`} data-component-id="ts_target_column" onClick={() => { setSelectedComponentId('ts_target_column'); setPropsTab('properties'); }}>
+                            <label>预测目标列 <span className="required">*</span> <span className="tooltip">(请先在第2步...)</span></label>
+                            <div className="mock-input-display">{dataStore.ts_target_column.label || '选择预测目标列'}</div>
+                          </div>
+                        )}
+                        {dataStore.ts_context_len && (
+                          <div className={`mock-field canvas-item ${selectedComponentId === 'ts_context_len' ? 'selected' : ''}`} data-component-id="ts_context_len" onClick={() => { setSelectedComponentId('ts_context_len'); setPropsTab('properties'); }}>
+                            <label>上下文长度 <span className="required">*</span></label>
+                            <div className="mock-input-display">{String(dataStore.ts_context_len.defaultValue ?? '')}</div>
+                          </div>
+                        )}
+                        {dataStore.ts_forecast_horizon && (
+                          <div className={`mock-field canvas-item ${selectedComponentId === 'ts_forecast_horizon' ? 'selected' : ''}`} data-component-id="ts_forecast_horizon" onClick={() => { setSelectedComponentId('ts_forecast_horizon'); setPropsTab('properties'); }}>
+                            <label>预测长度 <span className="required">*</span></label>
+                            <div className="mock-input-display">{String(dataStore.ts_forecast_horizon.defaultValue ?? '')}</div>
+                          </div>
+                        )}
+                        {dataStore.ts_step_size && (
+                          <div className={`mock-field canvas-item ${selectedComponentId === 'ts_step_size' ? 'selected' : ''}`} data-component-id="ts_step_size" onClick={() => { setSelectedComponentId('ts_step_size'); setPropsTab('properties'); }}>
+                            <label>预测步长 <span className="required">*</span></label>
+                            <div className="mock-input-display">{String(dataStore.ts_step_size.defaultValue ?? '')}</div>
+                          </div>
+                        )}
+                        {dataStore.ts_start_time && (
+                          <div className={`mock-field canvas-item ${selectedComponentId === 'ts_start_time' ? 'selected' : ''}`} data-component-id="ts_start_time" onClick={() => { setSelectedComponentId('ts_start_time'); setPropsTab('properties'); }}>
+                            <label>预测开始时间 <span className="tooltip">(可选)</span></label>
+                            <div className="mock-input-display">{String(dataStore.ts_start_time.defaultValue ?? '') || '选择开始时间'}</div>
+                          </div>
+                        )}
+                        {dataStore.ts_primary_file && (
+                          <div className={`mock-field canvas-item ${selectedComponentId === 'ts_primary_file' ? 'selected' : ''}`} data-component-id="ts_primary_file" onClick={() => { setSelectedComponentId('ts_primary_file'); setPropsTab('properties'); }}>
+                            <label>主变量文件 <span className="tooltip">(可选, 互斥)</span></label>
+                            <div className="mock-input-display">{dataStore.ts_primary_file.label || '选择主变量文件'}</div>
+                          </div>
+                        )}
+                        {dataStore.ts_covariate_files && (
+                          <div className={`mock-field canvas-item ${selectedComponentId === 'ts_covariate_files' ? 'selected' : ''}`} data-component-id="ts_covariate_files" onClick={() => { setSelectedComponentId('ts_covariate_files'); setPropsTab('properties'); }}>
+                            <label>协变量文件 <span className="tooltip">(可选, 互斥)</span></label>
+                            <div className="mock-input-display">{dataStore.ts_covariate_files.label || '选择协变量文件'}</div>
+                          </div>
+                        )}
+                      </div>
+                      <h2 className="mock-section-title" style={{ marginTop: 30 }}>📊 输出配置</h2>
+                      <h3 className="mock-output-group-title">评估指标</h3>
+                      <div className="mock-metrics-grid">
+                        {dataStore.metric_mse && (<div className={`mock-metric-item canvas-item ${selectedComponentId === 'metric_mse' ? 'selected' : ''}`} data-component-id="metric_mse" onClick={() => { setSelectedComponentId('metric_mse'); setPropsTab('properties'); }}><label>MSE</label></div>)}
+                        {dataStore.metric_rmse && (<div className={`mock-metric-item canvas-item ${selectedComponentId === 'metric_rmse' ? 'selected' : ''}`} data-component-id="metric_rmse" onClick={() => { setSelectedComponentId('metric_rmse'); setPropsTab('properties'); }}><label>RMSE</label></div>)}
+                        {dataStore.metric_mae && (<div className={`mock-metric-item canvas-item ${selectedComponentId === 'metric_mae' ? 'selected' : ''}`} data-component-id="metric_mae" onClick={() => { setSelectedComponentId('metric_mae'); setPropsTab('properties'); }}><label>MAE</label></div>)}
+                        {dataStore.metric_mape && (<div className={`mock-metric-item canvas-item ${selectedComponentId === 'metric_mape' ? 'selected' : ''}`} data-component-id="metric_mape" onClick={() => { setSelectedComponentId('metric_mape'); setPropsTab('properties'); }}><label>MAPE</label></div>)}
+                        {dataStore.metric_r2 && (<div className={`mock-metric-item canvas-item ${selectedComponentId === 'metric_r2' ? 'selected' : ''}`} data-component-id="metric_r2" onClick={() => { setSelectedComponentId('metric_r2'); setPropsTab('properties'); }}><label>R²</label></div>)}
+                      </div>
+                      <div className="mock-form-grid" style={{ marginTop: 16 }}>
+                        {dataStore.bias_relative && (
+                          <div className={`mock-field canvas-item ${selectedComponentId === 'bias_relative' ? 'selected' : ''}`} data-component-id="bias_relative" onClick={() => { setSelectedComponentId('bias_relative'); setPropsTab('properties'); }}>
+                            <label>相对偏差阈值(±%)</label>
+                            <div className="mock-input-display">{String(dataStore.bias_relative.defaultValue ?? '')}</div>
+                          </div>
+                        )}
+                        {dataStore.bias_absolute && (
+                          <div className={`mock-field canvas-item ${selectedComponentId === 'bias_absolute' ? 'selected' : ''}`} data-component-id="bias_absolute" onClick={() => { setSelectedComponentId('bias_absolute'); setPropsTab('properties'); }}>
+                            <label>绝对偏差阈值(±)</label>
+                            <div className="mock-input-display">{String(dataStore.bias_absolute.defaultValue ?? '')}</div>
+                          </div>
+                        )}
+                      </div>
+                      <h3 className="mock-output-group-title">可视化</h3>
+                      <div className="mock-metrics-grid">
+                        {dataStore.viz_forecast && (<div className={`mock-metric-item canvas-item ${selectedComponentId === 'viz_forecast' ? 'selected' : ''}`} data-component-id="viz_forecast" onClick={() => { setSelectedComponentId('viz_forecast'); setPropsTab('properties'); }}><label>折线图</label></div>)}
+                        {dataStore.viz_residual && (<div className={`mock-metric-item canvas-item ${selectedComponentId === 'viz_residual' ? 'selected' : ''}`} data-component-id="viz_residual" onClick={() => { setSelectedComponentId('viz_residual'); setPropsTab('properties'); }}><label>残差图</label></div>)}
+                        {dataStore.viz_scatter && (<div className={`mock-metric-item canvas-item ${selectedComponentId === 'viz_scatter' ? 'selected' : ''}`} data-component-id="viz_scatter" onClick={() => { setSelectedComponentId('viz_scatter'); setPropsTab('properties'); }}><label>预测vs真实散点</label></div>)}
+                        {dataStore.viz_hist && (<div className={`mock-metric-item canvas-item ${selectedComponentId === 'viz_hist' ? 'selected' : ''}`} data-component-id="viz_hist" onClick={() => { setSelectedComponentId('viz_hist'); setPropsTab('properties'); }}><label>误差直方图</label></div>)}
                       </div>
                     </div>
-                  )}
-                  <h3 className="mock-output-group-title">可视化</h3>
-                  <div className="mock-metrics-grid">
-                    {dataStore.viz_roc && (<div className={`mock-metric-item canvas-item ${selectedComponentId==='viz_roc'?'selected':''}`} data-component-id="viz_roc" onClick={()=>{ setSelectedComponentId('viz_roc'); setPropsTab('properties'); }}><label>ROC 曲线</label></div>)}
-                    {dataStore.viz_pr && (<div className={`mock-metric-item canvas-item ${selectedComponentId==='viz_pr'?'selected':''}`} data-component-id="viz_pr" onClick={()=>{ setSelectedComponentId('viz_pr'); setPropsTab('properties'); }}><label>PR 曲线</label></div>)}
-                    {dataStore.viz_cm && (<div className={`mock-metric-item canvas-item ${selectedComponentId==='viz_cm'?'selected':''}`} data-component-id="viz_cm" onClick={()=>{ setSelectedComponentId('viz_cm'); setPropsTab('properties'); }}><label>混淆矩阵</label></div>)}
+                  );
+                }
+                if (isClassification) {
+                  return (
+                    <div className="canvas-mockup-card">
+                      <h2 className="mock-section-title">⚙️ 输入配置</h2>
+                      <div className="mock-form-grid">
+                        {dataStore.class_train_ratio && (
+                          <div className={`mock-field canvas-item ${selectedComponentId === 'class_train_ratio' ? 'selected' : ''}`} data-component-id="class_train_ratio" onClick={() => { setSelectedComponentId('class_train_ratio'); setPropsTab('properties'); }}>
+                            <label>训练集比例(%)</label>
+                            <div className="mock-input-display">{String(dataStore.class_train_ratio.defaultValue ?? '')}</div>
+                          </div>
+                        )}
+                        {dataStore.class_test_ratio && (
+                          <div className={`mock-field canvas-item ${selectedComponentId === 'class_test_ratio' ? 'selected' : ''}`} data-component-id="class_test_ratio" onClick={() => { setSelectedComponentId('class_test_ratio'); setPropsTab('properties'); }}>
+                            <label>测试集比例(%)</label>
+                            <div className="mock-input-display">{String(dataStore.class_test_ratio.defaultValue ?? '')}</div>
+                          </div>
+                        )}
+                      </div>
+                      {dataStore.class_shuffle && (
+                        <div className={`mock-checkbox-display canvas-item ${selectedComponentId === 'class_shuffle' ? 'selected' : ''}`} data-component-id="class_shuffle" onClick={() => { setSelectedComponentId('class_shuffle'); setPropsTab('properties'); }}>
+                          <label>洗牌(Shuffle)</label>
+                        </div>
+                      )}
+                      <h2 className="mock-section-title" style={{ marginTop: 30 }}>📊 输出配置</h2>
+                      <h3 className="mock-output-group-title">评估指标与平均方式</h3>
+                      <div className="mock-metrics-grid">
+                        {dataStore.metric_accuracy && (<div className={`mock-metric-item canvas-item ${selectedComponentId === 'metric_accuracy' ? 'selected' : ''}`} data-component-id="metric_accuracy" onClick={() => { setSelectedComponentId('metric_accuracy'); setPropsTab('properties'); }}><label>Accuracy</label></div>)}
+                        {dataStore.metric_precision && (<div className={`mock-metric-item canvas-item ${selectedComponentId === 'metric_precision' ? 'selected' : ''}`} data-component-id="metric_precision" onClick={() => { setSelectedComponentId('metric_precision'); setPropsTab('properties'); }}><label>Precision</label></div>)}
+                        {dataStore.metric_recall && (<div className={`mock-metric-item canvas-item ${selectedComponentId === 'metric_recall' ? 'selected' : ''}`} data-component-id="metric_recall" onClick={() => { setSelectedComponentId('metric_recall'); setPropsTab('properties'); }}><label>Recall</label></div>)}
+                        {dataStore.metric_f1 && (<div className={`mock-metric-item canvas-item ${selectedComponentId === 'metric_f1' ? 'selected' : ''}`} data-component-id="metric_f1" onClick={() => { setSelectedComponentId('metric_f1'); setPropsTab('properties'); }}><label>F1</label></div>)}
+                        {dataStore.metric_roc_auc && (<div className={`mock-metric-item canvas-item ${selectedComponentId === 'metric_roc_auc' ? 'selected' : ''}`} data-component-id="metric_roc_auc" onClick={() => { setSelectedComponentId('metric_roc_auc'); setPropsTab('properties'); }}><label>ROC-AUC</label></div>)}
+                      </div>
+                      {dataStore.averaging_method && (
+                        <div className="mock-form-grid" style={{ marginTop: 16 }}>
+                          <div className={`mock-field canvas-item ${selectedComponentId === 'averaging_method' ? 'selected' : ''}`} data-component-id="averaging_method" onClick={() => { setSelectedComponentId('averaging_method'); setPropsTab('properties'); }}>
+                            <label>平均方式 <span className="tooltip">(Precision/Recall/F1/ROC-AUC)</span></label>
+                            <div className="mock-input-display">{String(dataStore.averaging_method.defaultValue ?? '')}</div>
+                          </div>
+                        </div>
+                      )}
+                      <h3 className="mock-output-group-title">可视化</h3>
+                      <div className="mock-metrics-grid">
+                        {dataStore.viz_roc && (<div className={`mock-metric-item canvas-item ${selectedComponentId === 'viz_roc' ? 'selected' : ''}`} data-component-id="viz_roc" onClick={() => { setSelectedComponentId('viz_roc'); setPropsTab('properties'); }}><label>ROC 曲线</label></div>)}
+                        {dataStore.viz_pr && (<div className={`mock-metric-item canvas-item ${selectedComponentId === 'viz_pr' ? 'selected' : ''}`} data-component-id="viz_pr" onClick={() => { setSelectedComponentId('viz_pr'); setPropsTab('properties'); }}><label>PR 曲线</label></div>)}
+                        {dataStore.viz_cm && (<div className={`mock-metric-item canvas-item ${selectedComponentId === 'viz_cm' ? 'selected' : ''}`} data-component-id="viz_cm" onClick={() => { setSelectedComponentId('viz_cm'); setPropsTab('properties'); }}><label>混淆矩阵</label></div>)}
+                      </div>
+                    </div>
+                  );
+                }
+                return (
+                  <div className="canvas-mockup-card">
+                    <h2 className="mock-section-title">⚙️ 输入配置</h2>
+                    <div className="mock-form-grid">
+                      {dataStore.reg_train_ratio && (
+                        <div className={`mock-field canvas-item ${selectedComponentId === 'reg_train_ratio' ? 'selected' : ''}`} data-component-id="reg_train_ratio" onClick={() => { setSelectedComponentId('reg_train_ratio'); setPropsTab('properties'); }}>
+                          <label>训练集比例(%)</label>
+                          <div className="mock-input-display">{String(dataStore.reg_train_ratio.defaultValue ?? '')}</div>
+                        </div>
+                      )}
+                      {dataStore.reg_test_ratio && (
+                        <div className={`mock-field canvas-item ${selectedComponentId === 'reg_test_ratio' ? 'selected' : ''}`} data-component-id="reg_test_ratio" onClick={() => { setSelectedComponentId('reg_test_ratio'); setPropsTab('properties'); }}>
+                          <label>测试集比例(%)</label>
+                          <div className="mock-input-display">{String(dataStore.reg_test_ratio.defaultValue ?? '')}</div>
+                        </div>
+                      )}
+                    </div>
+                    {dataStore.reg_shuffle && (
+                      <div className={`mock-checkbox-display canvas-item ${selectedComponentId === 'reg_shuffle' ? 'selected' : ''}`} data-component-id="reg_shuffle" onClick={() => { setSelectedComponentId('reg_shuffle'); setPropsTab('properties'); }}>
+                        <label>洗牌(Shuffle)</label>
+                      </div>
+                    )}
+                    <h2 className="mock-section-title" style={{ marginTop: 30 }}>📊 输出配置</h2>
+                    <h3 className="mock-output-group-title">评估指标</h3>
+                    <div className="mock-metrics-grid">
+                      {dataStore.metric_mse && (<div className={`mock-metric-item canvas-item ${selectedComponentId === 'metric_mse' ? 'selected' : ''}`} data-component-id="metric_mse" onClick={() => { setSelectedComponentId('metric_mse'); setPropsTab('properties'); }}><label>MSE</label></div>)}
+                      {dataStore.metric_rmse && (<div className={`mock-metric-item canvas-item ${selectedComponentId === 'metric_rmse' ? 'selected' : ''}`} data-component-id="metric_rmse" onClick={() => { setSelectedComponentId('metric_rmse'); setPropsTab('properties'); }}><label>RMSE</label></div>)}
+                      {dataStore.metric_mae && (<div className={`mock-metric-item canvas-item ${selectedComponentId === 'metric_mae' ? 'selected' : ''}`} data-component-id="metric_mae" onClick={() => { setSelectedComponentId('metric_mae'); setPropsTab('properties'); }}><label>MAE</label></div>)}
+                      {dataStore.metric_mape && (<div className={`mock-metric-item canvas-item ${selectedComponentId === 'metric_mape' ? 'selected' : ''}`} data-component-id="metric_mape" onClick={() => { setSelectedComponentId('metric_mape'); setPropsTab('properties'); }}><label>MAPE</label></div>)}
+                      {dataStore.metric_r2 && (<div className={`mock-metric-item canvas-item ${selectedComponentId === 'metric_r2' ? 'selected' : ''}`} data-component-id="metric_r2" onClick={() => { setSelectedComponentId('metric_r2'); setPropsTab('properties'); }}><label>R²</label></div>)}
+                    </div>
+                    <div className="mock-form-grid" style={{ marginTop: 16 }}>
+                      {dataStore.bias_relative && (
+                        <div className={`mock-field canvas-item ${selectedComponentId === 'bias_relative' ? 'selected' : ''}`} data-component-id="bias_relative" onClick={() => { setSelectedComponentId('bias_relative'); setPropsTab('properties'); }}>
+                          <label>相对偏差阈值(±%)</label>
+                          <div className="mock-input-display">{String(dataStore.bias_relative.defaultValue ?? '')}</div>
+                        </div>
+                      )}
+                      {dataStore.bias_absolute && (
+                        <div className={`mock-field canvas-item ${selectedComponentId === 'bias_absolute' ? 'selected' : ''}`} data-component-id="bias_absolute" onClick={() => { setSelectedComponentId('bias_absolute'); setPropsTab('properties'); }}>
+                          <label>绝对偏差阈值(±)</label>
+                          <div className="mock-input-display">{String(dataStore.bias_absolute.defaultValue ?? '')}</div>
+                        </div>
+                      )}
+                    </div>
+                    <h3 className="mock-output-group-title">可视化</h3>
+                    <div className="mock-metrics-grid">
+                      {dataStore.viz_residual && (<div className={`mock-metric-item canvas-item ${selectedComponentId === 'viz_residual' ? 'selected' : ''}`} data-component-id="viz_residual" onClick={() => { setSelectedComponentId('viz_residual'); setPropsTab('properties'); }}><label>残差图</label></div>)}
+                      {dataStore.viz_scatter && (<div className={`mock-metric-item canvas-item ${selectedComponentId === 'viz_scatter' ? 'selected' : ''}`} data-component-id="viz_scatter" onClick={() => { setSelectedComponentId('viz_scatter'); setPropsTab('properties'); }}><label>预测vs真实散点</label></div>)}
+                      {dataStore.viz_hist && (<div className={`mock-metric-item canvas-item ${selectedComponentId === 'viz_hist' ? 'selected' : ''}`} data-component-id="viz_hist" onClick={() => { setSelectedComponentId('viz_hist'); setPropsTab('properties'); }}><label>误差直方图</label></div>)}
+                    </div>
                   </div>
-                </div>
-              );
-            }
-            return (
-              <div className="canvas-mockup-card">
-                <h2 className="mock-section-title">⚙️ 输入配置</h2>
-                <div className="mock-form-grid">
-                  {dataStore.reg_train_ratio && (
-                    <div className={`mock-field canvas-item ${selectedComponentId==='reg_train_ratio'?'selected':''}`} data-component-id="reg_train_ratio" onClick={()=>{ setSelectedComponentId('reg_train_ratio'); setPropsTab('properties'); }}>
-                      <label>训练集比例(%)</label>
-                      <div className="mock-input-display">{String(dataStore.reg_train_ratio.defaultValue ?? '')}</div>
-                    </div>
-                  )}
-                  {dataStore.reg_test_ratio && (
-                    <div className={`mock-field canvas-item ${selectedComponentId==='reg_test_ratio'?'selected':''}`} data-component-id="reg_test_ratio" onClick={()=>{ setSelectedComponentId('reg_test_ratio'); setPropsTab('properties'); }}>
-                      <label>测试集比例(%)</label>
-                      <div className="mock-input-display">{String(dataStore.reg_test_ratio.defaultValue ?? '')}</div>
-                    </div>
-                  )}
-                </div>
-                {dataStore.reg_shuffle && (
-                  <div className={`mock-checkbox-display canvas-item ${selectedComponentId==='reg_shuffle'?'selected':''}`} data-component-id="reg_shuffle" onClick={()=>{ setSelectedComponentId('reg_shuffle'); setPropsTab('properties'); }}>
-                    <label>洗牌(Shuffle)</label>
-                  </div>
-                )}
-                <h2 className="mock-section-title" style={{marginTop:30}}>📊 输出配置</h2>
-                <h3 className="mock-output-group-title">评估指标</h3>
-                <div className="mock-metrics-grid">
-                  {dataStore.metric_mse && (<div className={`mock-metric-item canvas-item ${selectedComponentId==='metric_mse'?'selected':''}`} data-component-id="metric_mse" onClick={()=>{ setSelectedComponentId('metric_mse'); setPropsTab('properties'); }}><label>MSE</label></div>)}
-                  {dataStore.metric_rmse && (<div className={`mock-metric-item canvas-item ${selectedComponentId==='metric_rmse'?'selected':''}`} data-component-id="metric_rmse" onClick={()=>{ setSelectedComponentId('metric_rmse'); setPropsTab('properties'); }}><label>RMSE</label></div>)}
-                  {dataStore.metric_mae && (<div className={`mock-metric-item canvas-item ${selectedComponentId==='metric_mae'?'selected':''}`} data-component-id="metric_mae" onClick={()=>{ setSelectedComponentId('metric_mae'); setPropsTab('properties'); }}><label>MAE</label></div>)}
-                  {dataStore.metric_mape && (<div className={`mock-metric-item canvas-item ${selectedComponentId==='metric_mape'?'selected':''}`} data-component-id="metric_mape" onClick={()=>{ setSelectedComponentId('metric_mape'); setPropsTab('properties'); }}><label>MAPE</label></div>)}
-                  {dataStore.metric_r2 && (<div className={`mock-metric-item canvas-item ${selectedComponentId==='metric_r2'?'selected':''}`} data-component-id="metric_r2" onClick={()=>{ setSelectedComponentId('metric_r2'); setPropsTab('properties'); }}><label>R²</label></div>)}
-                </div>
-                <div className="mock-form-grid" style={{marginTop:16}}>
-                  {dataStore.bias_relative && (
-                    <div className={`mock-field canvas-item ${selectedComponentId==='bias_relative'?'selected':''}`} data-component-id="bias_relative" onClick={()=>{ setSelectedComponentId('bias_relative'); setPropsTab('properties'); }}>
-                      <label>相对偏差阈值(±%)</label>
-                      <div className="mock-input-display">{String(dataStore.bias_relative.defaultValue ?? '')}</div>
-                    </div>
-                  )}
-                  {dataStore.bias_absolute && (
-                    <div className={`mock-field canvas-item ${selectedComponentId==='bias_absolute'?'selected':''}`} data-component-id="bias_absolute" onClick={()=>{ setSelectedComponentId('bias_absolute'); setPropsTab('properties'); }}>
-                      <label>绝对偏差阈值(±)</label>
-                      <div className="mock-input-display">{String(dataStore.bias_absolute.defaultValue ?? '')}</div>
-                    </div>
-                  )}
-                </div>
-                <h3 className="mock-output-group-title">可视化</h3>
-                <div className="mock-metrics-grid">
-                  {dataStore.viz_residual && (<div className={`mock-metric-item canvas-item ${selectedComponentId==='viz_residual'?'selected':''}`} data-component-id="viz_residual" onClick={()=>{ setSelectedComponentId('viz_residual'); setPropsTab('properties'); }}><label>残差图</label></div>)}
-                  {dataStore.viz_scatter && (<div className={`mock-metric-item canvas-item ${selectedComponentId==='viz_scatter'?'selected':''}`} data-component-id="viz_scatter" onClick={()=>{ setSelectedComponentId('viz_scatter'); setPropsTab('properties'); }}><label>预测vs真实散点</label></div>)}
-                  {dataStore.viz_hist && (<div className={`mock-metric-item canvas-item ${selectedComponentId==='viz_hist'?'selected':''}`} data-component-id="viz_hist" onClick={()=>{ setSelectedComponentId('viz_hist'); setPropsTab('properties'); }}><label>误差直方图</label></div>)}
-                </div>
-              </div>
-            );
-          })()}
+                );
+              })()}
             </section>
           </Splitter.Panel>
           <Splitter.Panel defaultSize="32%" min="24%" max="48%">
             <aside className="editor-right-panel">
-          {!selectedData ? (
-            <div className="props-panel-placeholder"><p>请在画布中选中一个组件</p><p>以编辑其属性</p></div>
-          ) : (
-            <div>
-              <div className="props-panel-header">
-                <h3>{selectedData.label} [属性]</h3>
-                <p>{selectedData.componentName}</p>
-              </div>
-              <nav className="panel-tabs props-tabs-container">
-                <div className={`tab-button ${propsTab==='properties'?'active':''}`} onClick={()=>setPropsTab('properties')}>属性</div>
-                <div className={`tab-button ${propsTab==='styles'?'active':''}`} onClick={()=>setPropsTab('styles')}>样式</div>
-                <div className={`tab-button ${propsTab==='advanced'?'active':''}`} onClick={()=>setPropsTab('advanced')}>高级</div>
-              </nav>
-              <div className="props-panel-content-wrapper">
-                {propsTab === 'properties' && renderPropsForm(selectedData)}
-                {propsTab === 'styles' && (
-                  <div className="panel-content">
-                    <div className="form-group"><label>宽度 (Width)</label><input type="text" value={selectedData.width || '100%'} onChange={(e)=>updateData({ width: e.target.value })} /></div>
-                    <div className="form-group-checkbox"><input type="checkbox" checked={!!selectedData.fullWidth} onChange={(e)=>updateData({ fullWidth: e.target.checked })} /><label>是否独占一行</label></div>
+              {!selectedData ? (
+                <div className="props-panel-placeholder"><p>请在画布中选中一个组件</p><p>以编辑其属性</p></div>
+              ) : (
+                <div>
+                  <div className="props-panel-header">
+                    <h3>{selectedData.label} [属性]</h3>
+                    <p>{selectedData.componentName}</p>
                   </div>
-                )}
-                {propsTab === 'advanced' && (
-                  <div className="panel-content">
-                    <h4 className="text-sm font-semibold mb-2">校验规则</h4>
-                    {(selectedData.rules || []).length === 0 ? (
-                      <p className="text-xs text-gray-500">此组件无高级配置。</p>
-                    ) : (
-                      (selectedData.rules || []).map((rule, idx) => (
-                        <div key={idx} className="form-group">
-                          <label>{rule.type}</label>
-                          <input type="text" value={rule.message || String(rule.value || '')} onChange={(e)=>{
-                            const next = [...(selectedData.rules || [])];
-                            next[idx] = { ...rule, message: e.target.value };
-                            updateData({ rules: next });
-                          }} />
-                        </div>
-                      ))
+                  <nav className="panel-tabs props-tabs-container">
+                    <div className={`tab-button ${propsTab === 'properties' ? 'active' : ''}`} onClick={() => setPropsTab('properties')}>属性</div>
+                    <div className={`tab-button ${propsTab === 'styles' ? 'active' : ''}`} onClick={() => setPropsTab('styles')}>样式</div>
+                    <div className={`tab-button ${propsTab === 'advanced' ? 'active' : ''}`} onClick={() => setPropsTab('advanced')}>高级</div>
+                  </nav>
+                  <div className="props-panel-content-wrapper">
+                    {propsTab === 'properties' && renderPropsForm(selectedData)}
+                    {propsTab === 'styles' && (
+                      <div className="panel-content">
+                        <div className="form-group"><label>宽度 (Width)</label><input type="text" value={selectedData.width || '100%'} onChange={(e) => updateData({ width: e.target.value })} /></div>
+                        <div className="form-group-checkbox"><input type="checkbox" checked={!!selectedData.fullWidth} onChange={(e) => updateData({ fullWidth: e.target.checked })} /><label>是否独占一行</label></div>
+                      </div>
+                    )}
+                    {propsTab === 'advanced' && (
+                      <div className="panel-content">
+                        <h4 className="text-sm font-semibold mb-2">校验规则</h4>
+                        {(selectedData.rules || []).length === 0 ? (
+                          <p className="text-xs text-gray-500">此组件无高级配置。</p>
+                        ) : (
+                          (selectedData.rules || []).map((rule, idx) => (
+                            <div key={idx} className="form-group">
+                              <label>{rule.type}</label>
+                              <input type="text" value={rule.message || String(rule.value || '')} onChange={(e) => {
+                                const next = [...(selectedData.rules || [])];
+                                next[idx] = { ...rule, message: e.target.value };
+                                updateData({ rules: next });
+                              }} />
+                            </div>
+                          ))
+                        )}
+                      </div>
                     )}
                   </div>
-                )}
-              </div>
-            </div>
-          )}
+                </div>
+              )}
             </aside>
           </Splitter.Panel>
         </Splitter>
       </main>
       {isPreviewOpen && (
         <div className="modal-overlay" onClick={() => setIsPreviewOpen(false)}>
-          <div className="modal-content" onClick={e=>e.stopPropagation()}>
-            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
-              <div style={{fontWeight:600}}>预览渲染</div>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <div style={{ fontWeight: 600 }}>预览渲染</div>
               <button className="btn" onClick={() => setIsPreviewOpen(false)}>关闭</button>
             </div>
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               <div>
-                <div style={{fontWeight:600,marginBottom:8}}>输入配置</div>
+                <div style={{ fontWeight: 600, marginBottom: 8 }}>输入配置</div>
                 {dataStore.ts_time_column && (
                   <div className="canvas-item"><div>时间列</div><div>{dataStore.ts_time_column.label}</div></div>
                 )}
@@ -669,11 +819,11 @@ export default function HtmlConfigManagement() {
                   <div className="canvas-item"><div>训练集比例(%)</div><div>{String(dataStore.reg_train_ratio.defaultValue ?? '')}</div></div>
                 )}
                 {(dataStore.class_shuffle || dataStore.reg_shuffle) && (
-                  <div className="canvas-item"><div>数据洗牌</div><div>{String((dataStore.class_shuffle||dataStore.reg_shuffle).defaultValue ?? false)}</div></div>
+                  <div className="canvas-item"><div>数据洗牌</div><div>{String((dataStore.class_shuffle || dataStore.reg_shuffle).defaultValue ?? false)}</div></div>
                 )}
               </div>
               <div>
-                <div style={{fontWeight:600,marginBottom:8}}>输出配置</div>
+                <div style={{ fontWeight: 600, marginBottom: 8 }}>输出配置</div>
                 {dataStore.metric_mse && (<div className="canvas-item"><div>MSE</div><div>mse</div></div>)}
                 {dataStore.metric_rmse && (<div className="canvas-item"><div>RMSE</div><div>rmse</div></div>)}
                 {dataStore.metric_mae && (<div className="canvas-item"><div>MAE</div><div>mae</div></div>)}
@@ -694,7 +844,7 @@ export default function HtmlConfigManagement() {
               </div>
             </div>
             {publishedSnapshot && (
-              <div style={{marginTop:16,fontSize:12,color:'#555'}}>当前已发布配置版本对新建任务生效</div>
+              <div style={{ marginTop: 16, fontSize: 12, color: '#555' }}>当前已发布配置版本对新建任务生效</div>
             )}
           </div>
         </div>
@@ -702,9 +852,9 @@ export default function HtmlConfigManagement() {
     </div>
   );
 
-return (
-  <div className="p-6">
-    {page === "list" ? renderListPage() : renderEditorPage()}
-  </div>
-);
+  return (
+    <div className="p-6">
+      {page === "list" ? renderListPage() : renderEditorPage()}
+    </div>
+  );
 }

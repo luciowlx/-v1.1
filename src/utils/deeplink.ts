@@ -24,23 +24,34 @@ export function buildDataDetailUrl(id: number, tab: DataDetailTab = 'overview'):
 }
 
 /**
+ * 构建 Notebook 详情页的深链 URL（哈希路由）。
+ */
+export function buildNotebookDetailUrl(id: string): string {
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  const pathname = typeof window !== 'undefined' ? window.location.pathname : '/';
+  const base = `${origin}${pathname}`.replace(/\/$/, '/');
+  const params = new URLSearchParams({ id });
+  return `${base}#notebook-detail?${params.toString()}`;
+}
+
+/**
  * 解析当前 location.hash，支持形如：
- * #data-detail?id=123&tab=versions
+ * #notebook-detail?id=NB-123
  * @returns 解析结果对象：view、id、tab
  */
-export function parseHashParams(): { view?: string; id?: number; tab?: DataDetailTab } {
+export function parseHashParams(): { view?: string; id?: string; tab?: DataDetailTab } {
   if (typeof window === 'undefined') return {};
   const { hash } = window.location;
   if (!hash) return {};
   // 期望格式：#data-detail?key=value&key=value
   const [viewRaw, queryRaw] = hash.replace(/^#/, '').split('?');
   const view = viewRaw || undefined;
-  const result: { view?: string; id?: number; tab?: DataDetailTab } = { view };
+  const result: { view?: string; id?: string; tab?: DataDetailTab } = { view };
   if (queryRaw) {
     const qs = new URLSearchParams(queryRaw);
     const idStr = qs.get('id');
     const tabStr = qs.get('tab') as DataDetailTab | null;
-    if (idStr) result.id = Number(idStr);
+    if (idStr) result.id = idStr;
     if (tabStr) result.tab = tabStr;
   }
   return result;

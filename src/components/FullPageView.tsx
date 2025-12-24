@@ -7,7 +7,7 @@ import GlobalAIAssistant from "./GlobalAIAssistant";
 import ErrorBoundary from "./ErrorBoundary";
 
 interface FullPageViewProps {
-  type: 'personal-center' | 'personalization-settings' | 'notification-center' | 'ai-assistant' | null;
+  type: 'personal-center' | 'personalization-settings' | 'notification-center' | 'ai-assistant' | 'notebook-detail' | null;
   onClose: () => void;
   // 新增：通知中心初始页签（notifications | activity），用于从看板“查看全部”打开活动中心
   notificationCenterInitialTab?: 'notifications' | 'activity';
@@ -26,6 +26,8 @@ export function FullPageView({ type, onClose, notificationCenterInitialTab = 'no
         return '通知中心';
       case 'ai-assistant':
         return '智能助手';
+      case 'notebook-detail':
+        return 'Notebook 详情';
       default:
         return '';
     }

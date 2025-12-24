@@ -12,6 +12,7 @@ const messages: Record<Lang, Record<string, string>> = {
     "nav.config": "配置管理",
     "nav.task": "任务管理",
     "nav.model": "模型管理",
+    "nav.notebook": "开发空间",
     "nav.system": "系统管理",
     "header.personalCenter": "个人中心",
     "header.personalization": "个性化设置",
@@ -447,7 +448,7 @@ const messages: Record<Lang, Record<string, string>> = {
     "data.subscription.fields.ftp.path": "文件路径",
     "data.subscription.fields.ftp.fileType": "文件类型",
     "data.subscription.fields.ftp.fileType.all": "所有类型",
-    
+
     // Personal Center 页面
     "personal.center.title": "个人中心",
     "personal.center.description": "管理您的个人信息和账户设置",
@@ -704,6 +705,7 @@ const messages: Record<Lang, Record<string, string>> = {
     "nav.config": "Configuration",
     "nav.task": "Tasks",
     "nav.model": "Models",
+    "nav.notebook": "Dev Space",
     "nav.system": "System",
     "header.personalCenter": "Profile",
     "header.personalization": "Personalization Settings",
@@ -1141,7 +1143,7 @@ const messages: Record<Lang, Record<string, string>> = {
     "data.subscription.fields.ftp.path": "File Path",
     "data.subscription.fields.ftp.fileType": "File Type",
     "data.subscription.fields.ftp.fileType.all": "All Types",
-    
+
     // Personal Center
     "personal.center.title": "Profile Center",
     "personal.center.description": "Manage your personal information and account settings",
@@ -1405,14 +1407,14 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     try {
       const stored = localStorage.getItem("lang");
       if (stored === "zh" || stored === "en") return stored as Lang;
-    } catch {}
+    } catch { }
     const n = typeof navigator !== "undefined" ? navigator.language?.toLowerCase() : "zh";
     return n && n.startsWith("zh") ? "zh" : "en";
   });
 
   const setLang = (l: Lang) => {
     setLangState(l);
-    try { localStorage.setItem("lang", l); } catch {}
+    try { localStorage.setItem("lang", l); } catch { }
     if (typeof document !== "undefined") {
       document.documentElement.lang = l === "zh" ? "zh-CN" : "en";
     }

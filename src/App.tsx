@@ -11,6 +11,9 @@ import { SoloMode } from "./components/SoloMode";
 import { FullPageView } from "./components/FullPageView";
 import { ReportView } from "./components/ReportView";
 import { DataDetailFullPage } from "./components/DataDetailFullPage";
+import { NotebookManagement } from "./components/NotebookManagement";
+import { NotebookDetail } from "./components/NotebookDetail";
+import { JupyterLabMock, SSHRootTerminalMock } from "./components/NotebookMocks";
 import { TASK_TYPES } from "./utils/taskTypes";
 import { ProjectCard } from "./components/ProjectCard";
 import { ProjectDetailCards } from "./components/ProjectDetailCards";
@@ -25,8 +28,9 @@ import { Button } from "./components/ui/button";
 import { Badge } from "./components/ui/badge";
 // 统计卡片复用
 import { Card, CardContent } from "./components/ui/card";
-import { X, Search, Grid3X3, List, ChevronDown, Calendar, Users, Database, TrendingUp, Clock, CheckCircle, Settings, UserPlus, Mail, Trash2, Eye, Archive, Copy, ToggleLeft, ToggleRight, Filter, ArrowUpDown, Plus, AlertTriangle } from "lucide-react";
+import { X, Search, Grid3X3, List, ChevronDown, Calendar, Users, Database, TrendingUp, Clock, CheckCircle, Settings, UserPlus, Mail, Trash2, Eye, Archive, Copy, ToggleLeft, ToggleRight, Filter, ArrowUpDown, Plus, AlertTriangle, Link as LinkIcon, Code, Terminal } from "lucide-react";
 import { Toaster } from "./components/ui/sonner";
+import { message, Modal } from "antd";
 import { Checkbox } from "./components/ui/checkbox";
 import FloatingAssistantEntry from "./components/FloatingAssistantEntry";
 import TeamMemberSelector from "./components/TeamMemberSelector";
@@ -49,8 +53,16 @@ import { getDatasetById } from "./mock/datasets";
  */
 export default function App() {
   const { t, lang } = useLanguage();
-  // Login state - default to false to show login page first
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  // Login state - 使用 localStorage 持久化，确保新标签页直接进入系统
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
+    return localStorage.getItem('limix_is_logged_in') === 'true';
+  });
+
+  // Notebook 全局 Mock 状态
+  const [activeNotebookMockView, setActiveNotebookMockView] = useState<'jupyter' | 'ssh' | null>(null);
+  const [isNotebookConnectModalOpen, setIsNotebookConnectModalOpen] = useState(false);
+  const [selectedNotebookForMock, setSelectedNotebookForMock] = useState<any>(null);
+
   const [activeTab, setActiveTab] = useState("看板");
   const [showModelTuning, setShowModelTuning] = useState(false);
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
@@ -98,6 +110,15 @@ export default function App() {
 
   // 个人中心状态
   const [isPersonalCenterOpen, setIsPersonalCenterOpen] = useState(false);
+  const [isJupyterStandalone, setIsJupyterStandalone] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('view') === 'jupyter-mock') {
+      setIsJupyterStandalone(true);
+    }
+  }, []);
+
 
   // 个性化设置状态
   const [isPersonalizationSettingsOpen, setIsPersonalizationSettingsOpen] = useState(false);
@@ -112,7 +133,7 @@ export default function App() {
   const [systemManagementSubTab, setSystemManagementSubTab] = useState("overview");
 
   // 全页面视图状态
-  const [fullPageViewType, setFullPageViewType] = useState<'personal-center' | 'personalization-settings' | 'notification-center' | 'ai-assistant' | 'data-detail' | 'task-detail' | null>(null);
+  const [fullPageViewType, setFullPageViewType] = useState<'personal-center' | 'personalization-settings' | 'notification-center' | 'ai-assistant' | 'data-detail' | 'task-detail' | 'notebook-detail' | null>(null);
   const [isReportViewOpen, setIsReportViewOpen] = useState(false);
   // 新增：通知中心初始页签（notifications/activity），用于从看板打开活动中心
   const [notificationCenterInitialTab, setNotificationCenterInitialTab] = useState<'notifications' | 'activity' | null>(null);
@@ -124,6 +145,8 @@ export default function App() {
 
   // 任务详情全页面状态
   const [selectedTaskForFullPage, setSelectedTaskForFullPage] = useState<any>(null);
+  // 新增：Notebook 详情全页面状态
+  const [selectedNotebookForFullPage, setSelectedNotebookForFullPage] = useState<any>(null);
   // 来自任务详情页的外部任务补丁（用于同步到列表）
   const [externalTaskPatch, setExternalTaskPatch] = useState<{ id: string; patch: Partial<any> } | null>(null);
 
@@ -380,6 +403,17 @@ export default function App() {
     }
   };
 
+  const handleNotebookConnect = (instance: any, type: 'jupyter' | 'vscode' | 'ssh') => {
+    setSelectedNotebookForMock(instance);
+    if (type === 'vscode') {
+      setIsNotebookConnectModalOpen(true);
+    } else if (type === 'jupyter') {
+      setActiveNotebookMockView('jupyter');
+    } else if (type === 'ssh') {
+      setActiveNotebookMockView('ssh');
+    }
+  };
+
   const handleCreateProject = () => {
     // 验证必填字段
 
@@ -544,7 +578,8 @@ export default function App() {
   const handleLogout = () => {
     // 处理退出登录逻辑
     console.log("用户退出登录");
-    // 这里可以添加清除用户数据、跳转到登录页等逻辑
+    localStorage.removeItem('limix_is_logged_in');
+    setIsLoggedIn(false);
     alert("退出登录成功！");
   };
 
@@ -601,6 +636,12 @@ export default function App() {
     setFullPageViewType('task-detail');
   };
 
+  // Notebook 详情全页面处理函数
+  const handleOpenNotebookDetailFullPage = (notebook: any) => {
+    setSelectedNotebookForFullPage(notebook);
+    setFullPageViewType('notebook-detail');
+  };
+
   /**
    * 接收 TaskDetailFullPage 的任务补丁，并进行双向同步：
    * 1) 合并到本地 selectedTaskForFullPage，确保详情页即时回显；
@@ -646,8 +687,9 @@ export default function App() {
     const applyHashRoute = () => {
       const { view, id, tab } = parseHashParams();
       if (view === 'data-detail' && id) {
-        const dataset = getDatasetById(id) || {
-          id,
+        const datasetId = Number(id);
+        const dataset = getDatasetById(datasetId) || {
+          id: datasetId,
           title: `数据集 ${id}`,
           description: '原型演示：未在共享数据源中找到该数据集，使用占位信息展示。',
           categories: [],
@@ -668,6 +710,21 @@ export default function App() {
         setTimeout(() => {
           setIsRouteLoading(false);
           handleOpenDataDetailFullPage(dataset, tab ?? 'overview');
+        }, 150);
+      } else if (view === 'notebook-detail' && id) {
+        const mockNotebook = {
+          id: id,
+          name: id.startsWith('NB') ? `实例 ${id}` : '缺陷检测模型开发',
+          status: 'Running',
+          image: 'PyTorch 2.1.0-CUDA 11.8',
+          spec: 'NVIDIA A100 (40GB) x 1 | 12 vCPU | 64GB',
+          url: `https://jupyter.limix.ai/${id.toLowerCase()}`
+        };
+        setIsRouteLoading(true);
+        setTimeout(() => {
+          setIsRouteLoading(false);
+          setActiveTab("开发空间"); // 同步切换后台页签
+          handleOpenNotebookDetailFullPage(mockNotebook);
         }, 150);
       }
     };
@@ -1570,6 +1627,19 @@ export default function App() {
             <SystemManagement defaultSubTab={systemManagementSubTab} />
           </div>
         );
+      case "开发空间":
+        return (
+          <div>
+            <div className="mb-6">
+              <h1 className="text-2xl font-semibold text-gray-900 mb-2">开发空间</h1>
+              <p className="text-gray-600">管理您的 Notebook 开发环境，支持 JupyterLab、SSH 及 VS Code 接入</p>
+            </div>
+            <NotebookManagement
+              onOpenDetail={handleOpenNotebookDetailFullPage}
+              onConnect={handleNotebookConnect}
+            />
+          </div>
+        );
       default:
         return (
           <div className="text-center py-12">
@@ -1655,9 +1725,17 @@ export default function App() {
     );
   }
 
+  // JupyterLab 独立仿真页面模式 - 优先于登录检查
+  if (isJupyterStandalone) {
+    return <JupyterLabMock onClose={() => window.close()} />;
+  }
+
   // If not logged in, show login page (full screen)
   if (!isLoggedIn) {
-    return <Login onLogin={() => setIsLoggedIn(true)} />;
+    return <Login onLogin={() => {
+      localStorage.setItem('limix_is_logged_in', 'true');
+      setIsLoggedIn(true);
+    }} />;
   }
 
   return (
@@ -1691,7 +1769,42 @@ export default function App() {
           onTaskPatched={handleTaskPatched}
         />
       )}
-      {fullPageViewType && fullPageViewType !== 'data-detail' && fullPageViewType !== 'task-detail' && (
+      {fullPageViewType === 'notebook-detail' && selectedNotebookForFullPage && (
+        <NotebookDetail
+          instance={selectedNotebookForFullPage}
+          onBack={handleCloseFullPageView}
+          onStart={(id: string) => {
+            message.loading({ content: `正在下发实例 ${id} 启动指令...`, key: 'nb_op' });
+            setTimeout(() => {
+              message.success({ content: '启动指令已送达，实例状态更新中', key: 'nb_op' });
+            }, 1000);
+          }}
+          onStop={(id: string) => {
+            Modal.confirm({
+              title: '停止 Notebook 实例',
+              icon: <AlertTriangle className="w-5 h-5 text-orange-500" />,
+              content: '停止后，/home/ma-user/work 目录下的数据会保存，其余目录下内容会被清理。',
+              okText: '确认停止',
+              cancelText: '取消',
+              onOk: () => {
+                message.loading({ content: `正在下发实例 ${id} 停止指令...`, key: 'nb_op' });
+                setTimeout(() => {
+                  message.success({ content: '停止指令已送达，实例状态更新中', key: 'nb_op' });
+                }, 1000);
+              }
+            });
+          }}
+          onConnect={handleNotebookConnect}
+          onUpdateDescription={(id, desc) => {
+            message.loading({ content: '正在同步更新描述...', key: 'nb_upd' });
+            setTimeout(() => {
+              setSelectedNotebookForFullPage((prev: any) => ({ ...prev, description: desc }));
+              message.success({ content: '描述信息已更新', key: 'nb_upd' });
+            }, 600);
+          }}
+        />
+      )}
+      {fullPageViewType && fullPageViewType !== 'data-detail' && fullPageViewType !== 'task-detail' && fullPageViewType !== 'notebook-detail' && (
         <FullPageView
           type={fullPageViewType}
           onClose={handleCloseFullPageView}
@@ -1732,6 +1845,100 @@ export default function App() {
 
       {/* 全局悬浮动态助手入口（与右上角智能助手按钮同源） */}
       <FloatingAssistantEntry onOpenAIAssistant={handleOpenAIAssistant} />
+
+      {/* Notebook 全局连接仿真弹窗 */}
+      <Modal
+        title={
+          <div className="flex items-center gap-2 border-b border-slate-100 pb-3 mb-4">
+            <div className="p-1.5 bg-blue-100 rounded">
+              <LinkIcon className="w-4 h-4 text-blue-600" />
+            </div>
+            <span>连接 Notebook 实例: {selectedNotebookForMock?.name}</span>
+          </div>
+        }
+        open={isNotebookConnectModalOpen}
+        onCancel={() => setIsNotebookConnectModalOpen(false)}
+        footer={[
+          <Button key="close" onClick={() => setIsNotebookConnectModalOpen(false)}>暂不连接</Button>,
+          <Button key="jupyter" type="primary" onClick={() => {
+            setIsNotebookConnectModalOpen(false);
+            setActiveNotebookMockView('jupyter');
+          }}>
+            进入 JupyterLab
+          </Button>
+        ]}
+        width={700}
+      >
+        <div className="space-y-6">
+          <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
+            <h4 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
+              <Code className="w-4 h-4 text-blue-600" /> VS Code Remote - SSH 开发接入
+            </h4>
+            <div className="space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">1</div>
+                <div>
+                  <p className="text-xs font-bold text-slate-700 m-0">在本地打开 VS Code</p>
+                  <p className="text-[11px] text-slate-500 m-0">确保已安装 <b>"Remote - SSH"</b> 官方扩展插件组件包。</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">2</div>
+                <div className="flex-1">
+                  <p className="text-xs font-bold text-slate-700 m-0">直接粘贴 SSH 连接命令</p>
+                  <p className="text-[11px] text-slate-500 mb-2">点击 Command Palette (F1) {'->'} SSH: Connect to Host...</p>
+                  <div className="relative group">
+                    <pre className="bg-slate-900 text-slate-300 p-3 rounded text-[11px] overflow-hidden whitespace-nowrap text-ellipsis border border-slate-700 pr-12">
+                      {selectedNotebookForMock?.sshCommand || 'ssh -p 30022 root@192.168.1.100'}
+                    </pre>
+                    <Button
+                      size="small"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-slate-800 border-slate-600 text-slate-300 group-hover:bg-slate-700"
+                      onClick={() => {
+                        message.success('已复制到剪贴板');
+                        navigator.clipboard.writeText(selectedNotebookForMock?.sshCommand || '');
+                      }}
+                    >
+                      <Copy className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">3</div>
+                <div>
+                  <p className="text-xs font-bold text-slate-700 m-0">输入密码或确认密钥</p>
+                  <p className="text-[11px] text-slate-500 m-0">若尚未配置免密登录，请在提示框中输入该环境对应的连接密码或生成新的密钥对上传。</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Modal>
+
+
+      {/* Notebook 仿真界面 Overlay */}
+      {activeNotebookMockView === 'ssh' && (
+        <SSHRootTerminalMock
+          instanceName={selectedNotebookForMock?.name || ''}
+          onClose={() => setActiveNotebookMockView(null)}
+        />
+      )}
+      {activeNotebookMockView === 'jupyter' && (
+        <JupyterLabMock
+          onClose={() => {
+            Modal.confirm({
+              title: '确定要关闭 JupyterLab 吗？',
+              icon: <AlertTriangle className="w-5 h-5 text-orange-500" />,
+              content: '未保存的更改可能会丢失。',
+              okText: '确认关闭',
+              cancelText: '取消',
+              okButtonProps: { danger: true },
+              onOk: () => setActiveNotebookMockView(null)
+            });
+          }}
+        />
+      )}
 
       <Toaster />
     </div>

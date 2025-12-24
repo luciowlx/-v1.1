@@ -27,6 +27,7 @@ export function Header({ activeTab, onTabChange, onOpenPersonalCenter, onOpenPer
     { id: "data", zh: "数据管理", label: t("nav.data") },
     { id: "task", zh: "任务管理", label: t("nav.task") },
     { id: "model", zh: "模型管理", label: t("nav.model") },
+    { id: "notebook", zh: "开发空间", label: t("nav.notebook") },
     { id: "system", zh: "系统管理", label: t("nav.system") },
   ];
 
