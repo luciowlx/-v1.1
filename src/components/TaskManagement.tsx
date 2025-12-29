@@ -323,6 +323,7 @@ interface FormData {
     testRatio: number; // 测试集比例(%)
     trainFile?: string; // 训练集文件（当选中2个文件时使用）
     testFile?: string; // 测试集文件（当选中2个文件时使用）
+    targetColumn?: string; // 预测目标列（新增）
     shuffle: boolean; // 是否洗牌
   };
   regressionConfig: {
@@ -330,6 +331,7 @@ interface FormData {
     testRatio: number; // 测试集比例(%)
     trainFile?: string; // 训练集文件（当选中2个文件时使用）
     testFile?: string; // 测试集文件（当选中2个文件时使用）
+    targetColumn?: string; // 预测目标列（新增）
     shuffle: boolean; // 是否洗牌
   };
   // 新增：输出配置（按任务类型）
@@ -450,11 +452,13 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
     classificationConfig: {
       trainRatio: 80,
       testRatio: 20,
+      targetColumn: '',
       shuffle: false
     },
     regressionConfig: {
       trainRatio: 80,
       testRatio: 20,
+      targetColumn: '',
       shuffle: false
     },
     // 新增：输出配置默认值（默认全选）
@@ -749,6 +753,36 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
       }
     }
   }, [formData.availableFields, formData.forecastingConfig.timeColumn, formData.taskType]);
+
+  /**
+   * 当公共字段变化时，校正/预填 分类/回归 任务的预测目标列。
+   */
+  useEffect(() => {
+    const isClassification = formData.taskType === TASK_TYPES.classification;
+    const isRegression = formData.taskType === TASK_TYPES.regression;
+    if (!isClassification && !isRegression) return;
+
+    const fields = formData.availableFields || [];
+    const configKey = isClassification ? 'classificationConfig' : 'regressionConfig';
+    const currentTarget = formData[configKey]?.targetColumn || '';
+
+    // 若当前目标列不在公共字段中，清空
+    if (currentTarget && !fields.includes(currentTarget)) {
+      setFormData(prev => ({
+        ...prev,
+        [configKey]: { ...prev[configKey], targetColumn: '' }
+      }));
+      return;
+    }
+
+    // 若为空则尝试自动预填第一个字段
+    if (!currentTarget && fields.length > 0) {
+      setFormData(prev => ({
+        ...prev,
+        [configKey]: { ...prev[configKey], targetColumn: fields[0] }
+      }));
+    }
+  }, [formData.availableFields, formData.taskType]);
 
   // 聚合可选文件名：来自已选数据集(selectedDatasets)与当前选择(selectedDataset)
   const aggregatedFileOptions = useMemo(() => {
@@ -2514,11 +2548,13 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
                 classificationConfig: {
                   trainRatio: 80,
                   testRatio: 20,
+                  targetColumn: '',
                   shuffle: false
                 },
                 regressionConfig: {
                   trainRatio: 80,
                   testRatio: 20,
+                  targetColumn: '',
                   shuffle: false
                 },
                 // 输出配置默认值（关闭弹窗时重置）
@@ -4121,6 +4157,42 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
                                 </div>
                               </div>
                             )}
+
+                            {/* 回归任务预测目标列（新增） */}
+                            <div className="pt-2">
+                              <Label htmlFor="regressionTargetColumn" className="flex items-center space-x-1">
+                                <span>预测目标列</span>
+                                <span className="text-red-500">*</span>
+                              </Label>
+                              {formData.availableFields.length > 0 ? (
+                                <Select
+                                  value={formData.regressionConfig.targetColumn || ''}
+                                  onValueChange={(value: string) =>
+                                    handleInputChange('regressionConfig', {
+                                      ...formData.regressionConfig,
+                                      targetColumn: value,
+                                    })
+                                  }
+                                >
+                                  <SelectTrigger className={formErrors.regressionTargetColumn ? 'border-red-500' : ''}>
+                                    <SelectValue placeholder="从公共字段中选择回归目标列" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {formData.availableFields.map((field) => (
+                                      <SelectItem key={field} value={field}>{field}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              ) : (
+                                <Input id="regressionTargetColumn" disabled placeholder="请先在第2步选择数据集以获取字段" />
+                              )}
+                              {formData.selectedFiles.length === 2 && (
+                                <p className="text-xs text-blue-600 mt-1">提示：当前已选择 2 个文件，此处选择的是测试集文件中的目标列。</p>
+                              )}
+                              {formErrors.regressionTargetColumn && (
+                                <p className="text-xs text-red-500 mt-1">{formErrors.regressionTargetColumn}</p>
+                              )}
+                            </div>
 
                             <div className="flex items-center space-x-2">
                               <Checkbox

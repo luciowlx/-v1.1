@@ -263,7 +263,7 @@ const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ onClose }) => {
   const { styles } = useStyle();
   const abortController = useRef<AbortController | null>(null);
   const replyTimerRef = useRef<number | null>(null);
-  
+
   // ==================== State ====================
   const [messageHistory, setMessageHistory] = useState<Record<string, any[]>>({});
   const [conversations, setConversations] = useState(DEFAULT_CONVERSATIONS_ITEMS);
@@ -287,18 +287,18 @@ const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ onClose }) => {
   const buildMockReply = (input: string): string => {
     const lower = input.toLowerCase();
     if (lower.includes('项目') || lower.includes('project')) {
-        return t('assistant.quick.project.plan');
+      return t('assistant.quick.project.plan');
     }
     if (lower.includes('团队') || lower.includes('协作')) {
-        return t('assistant.quick.collaboration.plan');
+      return t('assistant.quick.collaboration.plan');
     }
     if (lower.includes('数据') || lower.includes('分析')) {
-        return t('assistant.quick.analysis.plan');
+      return t('assistant.quick.analysis.plan');
     }
     if (lower.includes('帮助') || lower.includes('使用')) {
-      return '系统使用指南：\n- 左侧导航进入看板/项目/数据/任务/模型/系统管理\n- 右上角「智能助手」为统一入口，支持多会话、上传附件与快捷提示\n- 任何页面均可唤起助手获取解释或生成报告\n需要我按你的需求生成一个「快速上手清单」吗？';
+      return '系统使用指南：\n- 左侧导航进入系统总览/项目管理/数据资产/决策推理/开发空间/模型管理/系统管理\n- 右上角「智能助手」为统一入口，支持多会话、上传附件与快捷提示\n- 任何页面均可唤起助手获取解释或生成报告\n需要我按你的需求生成一个「快速上手清单」吗？';
     }
-        return t('assistant.reply.template').replace('${chatInput}', input);
+    return t('assistant.reply.template').replace('${chatInput}', input);
   };
 
   /**
@@ -328,9 +328,9 @@ const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ onClose }) => {
     <div className={styles.sider}>
       {/* Logo */}
       <div className={styles.logo}>
-        <div style={{ 
-          width: 24, 
-          height: 24, 
+        <div style={{
+          width: 24,
+          height: 24,
           background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
           borderRadius: '6px',
           display: 'flex',
@@ -342,7 +342,7 @@ const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ onClose }) => {
         }}>
           AI
         </div>
-            <span>{t('assistant.floating.title')}</span>
+        <span>{t('assistant.floating.title')}</span>
       </div>
 
       {/* 添加会话 */}
@@ -369,7 +369,7 @@ const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ onClose }) => {
         className={styles.addBtn}
         icon={<PlusOutlined />}
       >
-            {t('assistant.actions.newChat')}
+        {t('assistant.actions.newChat')}
       </Button>
 
       {/* 会话管理 */}
@@ -389,12 +389,12 @@ const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ onClose }) => {
         menu={(conversation: any) => ({
           items: [
             {
-            label: t('common.rename'),
+              label: t('common.rename'),
               key: 'rename',
               icon: <EditOutlined />,
             },
             {
-            label: t('common.delete'),
+              label: t('common.delete'),
               key: 'delete',
               icon: <DeleteOutlined />,
               danger: true,
@@ -460,9 +460,9 @@ const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ onClose }) => {
           <Welcome
             variant="borderless"
             icon={
-              <div style={{ 
-                width: 48, 
-                height: 48, 
+              <div style={{
+                width: 48,
+                height: 48,
                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                 borderRadius: '12px',
                 display: 'flex',
@@ -516,12 +516,12 @@ const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ onClose }) => {
               }}
               onItemClick={(info: any) => {
                 // 点击“数据分析”展示 CSV 演示工作台，其它项走常规聊天流程
-            if (
-              info?.data?.label === t('assistant.quick.analysis') ||
-              info?.data?.label === '数据分析' ||
-              String(info?.data?.description || '').includes(t('assistant.quick.analysis')) ||
-              String(info?.data?.description || '').includes('数据分析')
-            ) {
+                if (
+                  info?.data?.label === t('assistant.quick.analysis') ||
+                  info?.data?.label === '数据分析' ||
+                  String(info?.data?.description || '').includes(t('assistant.quick.analysis')) ||
+                  String(info?.data?.description || '').includes('数据分析')
+                ) {
                   setShowAnalysisDemo(true);
                 } else {
                   onSubmit(info.data.description);
@@ -542,7 +542,7 @@ const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ onClose }) => {
 
   const senderHeader = (
     <Sender.Header
-            title={t('assistant.upload.title')}
+      title={t('assistant.upload.title')}
       open={attachmentsOpen}
       onOpenChange={setAttachmentsOpen}
       styles={{ content: { padding: 0 } }}
@@ -555,10 +555,10 @@ const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ onClose }) => {
           type === 'drop'
             ? { title: t('assistant.upload.dragHere') }
             : {
-                icon: <CloudUploadOutlined />,
-            title: t('assistant.upload.title'),
-            description: t('assistant.upload.description'),
-              }
+              icon: <CloudUploadOutlined />,
+              title: t('assistant.upload.title'),
+              description: t('assistant.upload.description'),
+            }
         }
       />
     </Sender.Header>
@@ -571,7 +571,7 @@ const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ onClose }) => {
         items={SENDER_PROMPTS}
         onItemClick={(info: any) => {
           const text = String(info?.data?.description || '');
-            if (text.includes('数据分析') || text.includes(t('assistant.quick.analysis'))) {
+          if (text.includes('数据分析') || text.includes(t('assistant.quick.analysis'))) {
             setShowAnalysisDemo(true);
           } else {
             onSubmit(info.data.description);
@@ -618,7 +618,7 @@ const GlobalAIAssistant: React.FC<GlobalAIAssistantProps> = ({ onClose }) => {
             </div>
           );
         }}
-            placeholder={t('assistant.input.placeholder')}
+        placeholder={t('assistant.input.placeholder')}
       />
     </>
   );

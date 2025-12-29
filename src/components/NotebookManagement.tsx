@@ -574,7 +574,7 @@ export function NotebookManagement({ onOpenDetail, onConnect }: { onOpenDetail?:
                     <p className="text-xs text-blue-600 leading-relaxed m-0">
                         所有 Notebook 实例均已自动挂载项目根目录至容器内 <code>/workspace/projects</code>。
                         在该目录下产生的代码、数据集、训练结果将自动同步到 Web 系统的“项目管理”、“数据管理”和“任务管理”模块。
-                        系统每 5 分钟执行一次全量扫描，以确保前端可视化看板数据的一致性。
+                        系统每 5 分钟执行一次全量扫描，以确保前端可视化系统总览数据的一致性。
                     </p>
                 </div>
             </div>

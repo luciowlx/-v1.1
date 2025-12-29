@@ -22,7 +22,7 @@ export function Header({ activeTab, onTabChange, onOpenPersonalCenter, onOpenPer
   const { lang, t, setLang, toggleLang } = useLanguage();
 
   const navItems = [
-    { id: "dashboard", zh: "看板", label: t("nav.dashboard") },
+    { id: "dashboard", zh: "系统总览", label: t("nav.dashboard") },
     { id: "project", zh: "项目管理", label: t("nav.project") },
     { id: "data", zh: "数据资产", label: t("nav.data") },
     { id: "task", zh: "决策推理", label: t("nav.task") },

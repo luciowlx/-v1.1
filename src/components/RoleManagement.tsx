@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Modal, message } from "antd";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -51,7 +52,7 @@ const permissionTree: PermissionGroup[] = [
     id: "dashboard",
     name: "首页/统计",
     submodules: [
-      { id: "dashboard_overview", name: "查看全局统计看板", actions: [{ id: "dashboard_view", name: "查看统计" }] },
+      { id: "dashboard_overview", name: "查看全局统计系统总览", actions: [{ id: "dashboard_view", name: "查看统计" }] },
       {
         id: "dashboard_quick",
         name: "快速操作",
@@ -338,8 +339,40 @@ export function RoleManagement() {
     }
   };
 
+  /**
+   * 删除角色
+   * 当角色下存在用户，或角色是启用状态时无法删除，显示警告提示；
+   * 否则，弹出二次确认框，确认后删除。
+   * @param roleId 角色ID
+   */
   const handleDeleteRole = (roleId: string) => {
-    setRoles(roles.filter(role => role.id !== roleId));
+    const role = roles.find(r => r.id === roleId);
+    if (!role) return;
+
+    const userCount = getUserCount(role.name);
+    // 检查是否有关联用户或处于启用状态
+    if (userCount > 0 || role.status === "active") {
+      Modal.warning({
+        title: "无法删除",
+        content: "无法删除：该角色尚有关联用户或处于启用状态",
+        okText: "确定",
+      });
+      return;
+    }
+
+    // 二次确认删除
+    Modal.confirm({
+      title: "确认删除",
+      content: `确定要删除角色 "${role.name}" 吗？此操作不可撤销。`,
+      okText: "确定",
+      cancelText: "取消",
+      centered: true,
+      onOk: () => {
+        setRoles(roles.filter(r => r.id !== roleId));
+        message.success("角色删除成功");
+      },
+      okButtonProps: { danger: true },
+    });
   };
 
   /**

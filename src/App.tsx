@@ -63,7 +63,7 @@ export default function App() {
   const [isNotebookConnectModalOpen, setIsNotebookConnectModalOpen] = useState(false);
   const [selectedNotebookForMock, setSelectedNotebookForMock] = useState<any>(null);
 
-  const [activeTab, setActiveTab] = useState("看板");
+  const [activeTab, setActiveTab] = useState("系统总览");
   const [showModelTuning, setShowModelTuning] = useState(false);
   const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
   const [projectFormData, setProjectFormData] = useState({
@@ -742,7 +742,7 @@ export default function App() {
     }
 
     switch (activeTab) {
-      case "看板":
+      case "系统总览":
         return (
           <div>
             <Dashboard
@@ -762,7 +762,7 @@ export default function App() {
                 setActiveTab("模型管理");
                 setShowModelTuning(true);
               }}
-              // 新增：从看板打开统一活动中心
+              // 新增：从系统总览打开统一活动中心
               onOpenActivityCenter={handleOpenActivityCenter}
               // 新增：最近项目-查看全部 跳转到项目管理总览
               onNavigateToProjectOverview={handleGoToProjectOverview}
