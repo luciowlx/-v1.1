@@ -1329,6 +1329,11 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
       if (!cc) {
         errors.classificationSplit = '请完善分类任务的训练/测试集配置';
       } else {
+        // 分类任务目标列校验
+        if (!cc.targetColumn || !cc.targetColumn.trim()) {
+          errors.classificationTargetColumn = '请选择分类目标列（来自公共字段）';
+        }
+
         // 分类任务：根据文件数量选择验证逻辑
         if (formData.selectedFiles.length === 2) {
           if (!cc.trainFile || !cc.testFile) {
@@ -1527,7 +1532,14 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
             };
             base.output = { ...formData.outputConfig.forecasting };
           } else if (formData.taskType === TASK_TYPES.classification) {
-            base.classification = { ...formData.classificationConfig };
+            // 实现特征列自动推断逻辑：从 targetFields 中排除 targetColumn
+            const targetColumn = formData.classificationConfig?.targetColumn || '';
+            const inferredFeatures = formData.targetFields.filter(f => f !== targetColumn);
+
+            base.classification = {
+              ...formData.classificationConfig,
+              features: inferredFeatures // 增加推断后的特征列
+            };
             base.output = { ...formData.outputConfig.classification };
           } else if (formData.taskType === TASK_TYPES.regression) {
             base.regression = { ...formData.regressionConfig };
@@ -1622,7 +1634,14 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
               };
               base.output = { ...formData.outputConfig.forecasting };
             } else if (formData.taskType === TASK_TYPES.classification) {
-              base.classification = { ...formData.classificationConfig };
+              // 实现特征列自动推断逻辑：从 targetFields 中排除 targetColumn
+              const targetColumn = formData.classificationConfig?.targetColumn || '';
+              const inferredFeatures = formData.targetFields.filter(f => f !== targetColumn);
+
+              base.classification = {
+                ...formData.classificationConfig,
+                features: inferredFeatures // 增加推断后的特征列
+              };
               base.output = { ...formData.outputConfig.classification };
             } else if (formData.taskType === TASK_TYPES.regression) {
               base.regression = { ...formData.regressionConfig };
@@ -4058,6 +4077,43 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
                               />
                               <Label htmlFor="class-shuffle">洗牌(Shuffle)</Label>
                             </div>
+
+                            {/* 分类任务预测目标列（新增） */}
+                            <div className="pt-2 border-t mt-2">
+                              <Label htmlFor="classificationTargetColumn" className="flex items-center space-x-1">
+                                <span>预测目标列</span>
+                                <span className="text-red-500">*</span>
+                              </Label>
+                              {formData.availableFields.length > 0 ? (
+                                <Select
+                                  value={formData.classificationConfig.targetColumn || ''}
+                                  onValueChange={(value: string) =>
+                                    handleInputChange('classificationConfig', {
+                                      ...formData.classificationConfig,
+                                      targetColumn: value,
+                                    })
+                                  }
+                                >
+                                  <SelectTrigger className={formErrors.classificationTargetColumn ? 'border-red-500' : ''}>
+                                    <SelectValue placeholder="从公共字段中选择分类目标列" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {formData.availableFields.map((field) => (
+                                      <SelectItem key={field} value={field}>{field}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              ) : (
+                                <Input id="classificationTargetColumn" disabled placeholder="请先在第2步选择数据集以获取字段" />
+                              )}
+                              {formData.selectedFiles.length === 2 && (
+                                <p className="text-xs text-blue-600 mt-1">提示：当前已选择 2 个文件，此处选择的是测试集文件中的目标列。</p>
+                              )}
+                              {formErrors.classificationTargetColumn && (
+                                <p className="text-xs text-red-500 mt-1">{formErrors.classificationTargetColumn}</p>
+                              )}
+                            </div>
+
                             {formErrors.classificationSplit && (
                               <p className="text-xs text-red-500 mt-1">{formErrors.classificationSplit}</p>
                             )}
