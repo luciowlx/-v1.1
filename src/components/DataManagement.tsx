@@ -15,7 +15,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { Calendar } from "./ui/calendar";
 import { useLanguage } from "../i18n/LanguageContext";
 import { buildDataDetailUrl } from "../utils/deeplink";
-import { mockDatasets } from "../mock/datasets";
+import { mockDatasets as initialMockDatasets } from "../mock/datasets";
 import type { DateRange } from "react-day-picker";
 import { GrayLabels } from "./data/GrayLabels";
 import { DatasetGrid } from "./data/DatasetGrid";
@@ -30,6 +30,15 @@ import { formatYYYYMMDD, parseDateFlexible, toDateOnly, toEndOfDay, isDateWithin
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
+import {
+  Modal,
+  Radio,
+  Space,
+  Typography,
+  Tooltip as AntTooltip,
+  message as antMessage
+} from "antd";
+const { Text: AntText } = Typography;
 import {
   Upload,
   Database,
@@ -135,6 +144,18 @@ export function DataManagement({
   const { lang, t } = useLanguage();
   // 视图模式：默认优先列表
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+
+  // 数据集列表状态：初始化为导入的 mock 数据
+  const [datasets, setDatasets] = useState<Dataset[]>(initialMockDatasets as Dataset[]);
+
+  // 监听全局数据集更新事件，实现原型下的跨组件刷新
+  useEffect(() => {
+    const handleUpdate = () => {
+      setDatasets([...initialMockDatasets] as Dataset[]);
+    };
+    window.addEventListener('datasets-updated', handleUpdate);
+    return () => window.removeEventListener('datasets-updated', handleUpdate);
+  }, []);
   const [isLocalUploadDialogOpen, setIsLocalUploadDialogOpen] = useState(false);
   const [isAddDataSourceModalOpen, setIsAddDataSourceModalOpen] = useState(false);
   const [isDataSubscriptionOpen, setIsDataSubscriptionOpen] = useState(false);
@@ -149,6 +170,7 @@ export function DataManagement({
   const [editingDataset, setEditingDataset] = useState<Dataset | null>(null);
   const [isCopyDialogOpen, setIsCopyDialogOpen] = useState(false);
   const [copyingDataset, setCopyingDataset] = useState<Dataset | null>(null);
+
   const [isDataDetailDialogOpen, setIsDataDetailDialogOpen] = useState(false);
   const [selectedDatasetForDetail, setSelectedDatasetForDetail] = useState<Dataset | null>(null);
 
@@ -445,90 +467,7 @@ export function DataManagement({
     setIsLocalUploadDialogOpen(isUploadDialogOpen);
   }, [isUploadDialogOpen]);
 
-  // 模拟数据
-  // 统一从共享数据源初始化，保证新标签页与列表数据一致
-  const [datasets, setDatasets] = useState<Dataset[]>([
-    {
-      id: 1,
-      title: "销售数据集",
-      description: "包含2023年全年销售记录，涵盖产品信息、客户数据、交易金额等关键指标",
-      categories: [
-        { name: "销售", color: "bg-blue-100 text-blue-800" },
-        { name: "财务", color: "bg-green-100 text-green-800" }
-      ],
-      tags: [
-        { name: "交易数据", color: "bg-gray-100 text-gray-800" },
-        { name: "客户数据", color: "bg-green-100 text-green-800" }
-      ],
-      formats: ["CSV", "Parquet", "JSONL"],
-      size: "2.5MB",
-      rows: "10,234",
-      columns: "15",
-      completeness: 95,
-      source: "文件上传",
-      version: "v1.2",
-      versionCount: 3,
-      fileCount: 3,
-      updateTime: "2024-01-15 14:30",
-      status: 'success',
-      color: "border-l-blue-500"
-    },
-    {
-      id: 2,
-      title: "用户行为数据",
-      description: "网站用户行为追踪数据，包含页面访问、点击事件、停留时间等用户交互信息",
-      categories: [
-        { name: "用户行为", color: "bg-purple-100 text-purple-800" },
-        { name: "网站分析", color: "bg-orange-100 text-orange-800" }
-      ],
-      tags: [
-        { name: "客户数据", color: "bg-gray-100 text-gray-800" },
-        { name: "交易数据", color: "bg-blue-100 text-blue-800" }
-      ],
-      formats: ["JSON", "JSONL"],
-      size: "15.8MB",
-      rows: "45,678",
-      columns: "12",
-      completeness: 88,
-      source: "API接口",
-      version: "v2.1",
-      versionCount: 5,
-      fileCount: 12,
-      updateTime: "2024-01-14 09:15",
-      status: 'processing',
-      color: "border-l-purple-500"
-    },
-    {
-      id: 3,
-      title: "产品库存数据",
-      description: "实时产品库存信息，包含商品编码、库存数量、仓库位置、供应商信息等",
-      categories: [
-        { name: "库存管理", color: "bg-green-100 text-green-800" },
-        { name: "供应链", color: "bg-yellow-100 text-yellow-800" }
-      ],
-      tags: [
-        { name: "供应商数据", color: "bg-gray-100 text-gray-800" },
-        { name: "库存数据", color: "bg-red-100 text-red-800" }
-      ],
-      formats: ["Excel", "CSV"],
-      size: "8.2MB",
-      rows: "23,456",
-      columns: "18",
-      completeness: 72,
-      source: "数据库同步",
-      version: "v1.0",
-      versionCount: 2,
-      fileCount: 6,
-      updateTime: "2024-01-13 16:45",
-      status: 'failed',
-      color: "border-l-green-500",
-      previousUploadItems: [
-        { name: 'inventory_2024_q4_part1.csv', size: '3.1MB', status: 'success' },
-        { name: 'inventory_2024_q4_part2.csv', size: '2.7MB', status: 'failed', error: '列数不一致：第 243 行' },
-        { name: 'inventory_locations.xlsx', size: '2.4MB', status: 'success' }
-      ]
-    }
-  ]);
+  // 模拟数据逻辑已迁移至上方 useEffect 之前
 
   // 获取所有可用的标签和格式选项
   const availableTags = Array.from(new Set(datasets.flatMap(d => d.tags.map(t => t.name))));
@@ -734,6 +673,11 @@ export function DataManagement({
     // 添加到数据集列表
     setDatasets(prevDatasets => [...prevDatasets, newDataset]);
 
+    antMessage.success(lang === 'zh'
+      ? `数据集复制成功`
+      : `Dataset copy success`);
+
+
     toast.success(t('data.toast.copyDatasetSuccess'), {
       description: lang === 'zh'
         ? `已复制数据集：${newDataset.title}`
@@ -741,6 +685,7 @@ export function DataManagement({
     });
     setIsCopyDialogOpen(false);
     setCopyingDataset(null);
+
   };
 
   // 编辑弹窗的标签管理
@@ -1433,9 +1378,11 @@ export function DataManagement({
                     ...copyingDataset,
                     description: e.target.value
                   })}
-                  rows={3}
+                  rows={2}
                 />
               </div>
+
+
 
               <div className="flex justify-end space-x-2 pt-4">
                 <Button
@@ -1443,6 +1390,7 @@ export function DataManagement({
                   onClick={() => {
                     setIsCopyDialogOpen(false);
                     setCopyingDataset(null);
+
                   }}
                 >
                   {t('common.cancel')}

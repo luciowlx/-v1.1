@@ -6,13 +6,23 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
-import { ArrowUpDown, Search, Eye, GitCompare, RotateCcw, ArrowLeft, GitBranch, GitMerge, ZoomIn, ZoomOut, Filter } from 'lucide-react';
+import { ArrowUpDown, Search, Eye, GitCompare, RotateCcw, ArrowLeft, GitBranch, GitMerge, ZoomIn, ZoomOut, Filter, Copy } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
+import {
+  Modal,
+  Radio,
+  Space,
+  Typography,
+  message as antMessage
+} from "antd";
+const { Text: AntText } = Typography;
 import { Label } from './ui/label';
+import { Textarea } from './ui/textarea';
 import { toast } from 'sonner';
 import VersionDetail from './VersionDetail';
 import VersionCompare from './VersionCompare';
+import { addMockDataset, MockDataset } from '../mock/datasets';
 
 interface Version {
   id: string;
@@ -60,101 +70,108 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({ datasetId, datasetName,
   const [compareVersions, setCompareVersions] = useState<[Version, Version] | null>(null);
   const [graphScale, setGraphScale] = useState(1);
 
-// 版本关系边（用于横向树：父 -> 子）
-const edges: { parent: string; child: string; type?: 'branch' | 'merge' }[] = [
-  { parent: '1', child: '2', type: 'branch' },
-  { parent: '1', child: '3', type: 'branch' },
-  { parent: '2', child: '4', type: 'branch' },
-];
+  // 复制功能相关状态
+  const [isCopyDialogOpen, setIsCopyDialogOpen] = useState(false);
+  const [copyingVersion, setCopyingVersion] = useState<Version | null>(null);
 
-// 模拟版本数据
-const [versions] = useState<Version[]>([
-  {
-    id: '1',
-    versionNumber: 'v1.0',
-    source: '上传',
-    createTime: '2024-01-15 10:30:00',
-    creator: '张三',
-    size: '2.5MB',
-    status: '成功',
-    description: '初始版本',
-    fieldCount: 15,
-    sampleCount: 10000,
-    missingRate: 5.2,
-    anomalyRate: 2.1,
-    rules: ['缺失值填充', '异常值处理']
-  },
-  {
-    id: '2',
-    versionNumber: 'v1.1',
-    source: '清洗',
-    createTime: '2024-01-16 14:20:00',
-    creator: '李四',
-    size: '2.3MB',
-    status: '成功',
-    description: '数据清洗后版本',
-    fieldCount: 15,
-    sampleCount: 9800,
-    missingRate: 0.8,
-    anomalyRate: 0.5,
-    rules: ['缺失值填充', '异常值处理', '数据标准化'],
-    tags: ['清洗后', '低缺失', '标准化']
-  },
-  {
-    id: '3',
-    versionNumber: 'v1.2',
-    source: '订阅',
-    createTime: '2024-01-17 09:15:00',
-    creator: '王五',
-    size: '2.8MB',
-    status: '成功',
-    description: '订阅更新版本',
-    fieldCount: 16,
-    sampleCount: 11200,
-    missingRate: 3.1,
-    anomalyRate: 1.8,
-    rules: ['自动同步']
-  },
-  {
-    id: '4',
-    versionNumber: 'v1.3',
-    source: '清洗',
-    createTime: '2024-01-18 16:45:00',
-    creator: '赵六',
-    size: '0MB',
-    status: '失败',
-    description: '清洗失败',
-    fieldCount: 0,
-    sampleCount: 0,
-    missingRate: 0,
-    anomalyRate: 0,
-    rules: [],
-    tags: ['清洗失败']
-  }
-]);
+  const [copyTitle, setCopyTitle] = useState('');
+  const [copyDescription, setCopyDescription] = useState('');
 
-// 筛选和排序逻辑
-const filteredVersions = versions
-  .filter(version => {
-    const matchesSearch = version.versionNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          version.creator.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || version.status === statusFilter;
-    const matchesSource = sourceFilter === 'all' || version.source === sourceFilter;
-    return matchesSearch && matchesStatus && matchesSource;
-  })
-  .sort((a, b) => {
-    let aValue: any = a[sortBy as keyof Version];
-    let bValue: any = b[sortBy as keyof Version];
-    if (sortBy === 'createTime') {
-      aValue = new Date(aValue).getTime();
-      bValue = new Date(bValue).getTime();
+  // 版本关系边（用于横向树：父 -> 子）
+  const edges: { parent: string; child: string; type?: 'branch' | 'merge' }[] = [
+    { parent: '1', child: '2', type: 'branch' },
+    { parent: '1', child: '3', type: 'branch' },
+    { parent: '2', child: '4', type: 'branch' },
+  ];
+
+  // 模拟版本数据
+  const [versions] = useState<Version[]>([
+    {
+      id: '1',
+      versionNumber: 'v1.0',
+      source: '上传',
+      createTime: '2024-01-15 10:30:00',
+      creator: '张三',
+      size: '2.5MB',
+      status: '成功',
+      description: '初始版本',
+      fieldCount: 15,
+      sampleCount: 10000,
+      missingRate: 5.2,
+      anomalyRate: 2.1,
+      rules: ['缺失值填充', '异常值处理']
+    },
+    {
+      id: '2',
+      versionNumber: 'v1.1',
+      source: '清洗',
+      createTime: '2024-01-16 14:20:00',
+      creator: '李四',
+      size: '2.3MB',
+      status: '成功',
+      description: '数据清洗后版本',
+      fieldCount: 15,
+      sampleCount: 9800,
+      missingRate: 0.8,
+      anomalyRate: 0.5,
+      rules: ['缺失值填充', '异常值处理', '数据标准化'],
+      tags: ['清洗后', '低缺失', '标准化']
+    },
+    {
+      id: '3',
+      versionNumber: 'v1.2',
+      source: '订阅',
+      createTime: '2024-01-17 09:15:00',
+      creator: '王五',
+      size: '2.8MB',
+      status: '成功',
+      description: '订阅更新版本',
+      fieldCount: 16,
+      sampleCount: 11200,
+      missingRate: 3.1,
+      anomalyRate: 1.8,
+      rules: ['自动同步']
+    },
+    {
+      id: '4',
+      versionNumber: 'v1.3',
+      source: '清洗',
+      createTime: '2024-01-18 16:45:00',
+      creator: '赵六',
+      size: '0MB',
+      status: '失败',
+      description: '清洗失败',
+      fieldCount: 0,
+      sampleCount: 0,
+      missingRate: 0,
+      anomalyRate: 0,
+      rules: [],
+      tags: ['清洗失败']
     }
-    if (sortOrder === 'asc') {
-      return aValue > bValue ? 1 : -1;
-    } else {
-      return aValue < bValue ? 1 : -1;
-    }
-  });
+  ]);
+
+  // 筛选和排序逻辑
+  const filteredVersions = versions
+    .filter(version => {
+      const matchesSearch = version.versionNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        version.creator.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = statusFilter === 'all' || version.status === statusFilter;
+      const matchesSource = sourceFilter === 'all' || version.source === sourceFilter;
+      return matchesSearch && matchesStatus && matchesSource;
+    })
+    .sort((a, b) => {
+      let aValue: any = a[sortBy as keyof Version];
+      let bValue: any = b[sortBy as keyof Version];
+      if (sortBy === 'createTime') {
+        aValue = new Date(aValue).getTime();
+        bValue = new Date(bValue).getTime();
+      }
+      if (sortOrder === 'asc') {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
+      }
+    });
 
   const handleGraphSelect = (id: string) => {
     setSelectedVersions(prev => {
@@ -334,6 +351,54 @@ const filteredVersions = versions
     }
   };
 
+  const handleCopyVersion = (version: Version) => {
+    setCopyingVersion(version);
+    setCopyTitle(`${datasetName}-副本`);
+    setCopyDescription(version.description || '');
+    setIsCopyDialogOpen(true);
+  };
+
+  const handleSaveCopy = () => {
+    if (!copyingVersion) return;
+
+    // 创建新的数据集对象以同步到列表
+    const newDataset: MockDataset = {
+      id: Date.now(), // 简单生成唯一ID
+      title: copyTitle,
+      description: copyDescription,
+      categories: [
+        { name: "副本", color: "bg-blue-100 text-blue-800" },
+        { name: copyingVersion.source, color: "bg-gray-100 text-gray-800" }
+      ],
+      tags: copyingVersion.tags?.map(t => ({ name: t, color: "bg-gray-100 text-gray-800" })) || [],
+      formats: ["CSV"],
+      size: copyingVersion.size,
+      rows: String(copyingVersion.sampleCount),
+      columns: String(copyingVersion.fieldCount),
+      completeness: 100 - copyingVersion.missingRate,
+      source: "数据集副本",
+      version: copyingVersion.versionNumber,
+      versionCount: 1, // 副本仅包含单版本
+      updateTime: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString().slice(0, 5),
+      status: 'success',
+      color: "border-l-blue-500"
+    };
+
+    // 调用全局 Mock 添加函数
+    addMockDataset(newDataset);
+
+    // 模拟成功反馈
+    antMessage.success(`数据集版本复制成功`);
+
+    toast.success(`已复制数据集副本：${copyTitle}`);
+    setIsCopyDialogOpen(false);
+    setCopyingVersion(null);
+
+
+    // 确定之后，页面跳转到数据资产的一级页面
+    onBack();
+  };
+
   const getStatusBadge = (status: string) => {
     return (
       <Badge variant={status === '成功' ? 'default' : 'destructive'}>
@@ -426,21 +491,21 @@ const filteredVersions = versions
                           }}
                         />
                       </TableHead>
-                      <TableHead 
+                      <TableHead
                         className="cursor-pointer"
                         onClick={() => handleSort('versionNumber')}
                       >
                         版本号 <ArrowUpDown className="inline h-4 w-4" />
                       </TableHead>
-                      
-                      <TableHead 
+
+                      <TableHead
                         className="cursor-pointer"
                         onClick={() => handleSort('createTime')}
                       >
                         创建时间 <ArrowUpDown className="inline h-4 w-4" />
                       </TableHead>
                       <TableHead>创建人</TableHead>
-                      <TableHead 
+                      <TableHead
                         className="cursor-pointer"
                         onClick={() => handleSort('size')}
                       >
@@ -502,7 +567,7 @@ const filteredVersions = versions
                           />
                         </TableCell>
                         <TableCell className="font-medium">{version.versionNumber}</TableCell>
-                        
+
                         <TableCell>{version.createTime}</TableCell>
                         <TableCell>{version.creator}</TableCell>
                         <TableCell>{version.size}</TableCell>
@@ -524,6 +589,16 @@ const filteredVersions = versions
                             >
                               <RotateCcw className="h-4 w-4" />
                             </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleCopyVersion(version)}
+                              disabled={version.status === '失败'}
+                              aria-label={`复制${version.versionNumber}`}
+                              title="复制该版本"
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
                             {/* 切换查看按钮按需求移除 */}
                           </div>
                         </TableCell>
@@ -539,8 +614,8 @@ const filteredVersions = versions
 
 
       {/* 原底部版本列表已移除，版本列表现已在右侧区域展示 */}
-            {/* 底部版本列表的表格内容已删除 */}
- 
+      {/* 底部版本列表的表格内容已删除 */}
+
 
       {/* 版本对比弹窗 */}
       <Dialog open={isCompareDialogOpen} onOpenChange={setIsCompareDialogOpen}>
@@ -552,11 +627,11 @@ const filteredVersions = versions
             {selectedVersions.slice(0, 2).map((versionId, index) => {
               const version = versions.find(v => v.id === versionId);
               if (!version) return null;
-              
+
               return (
                 <div key={versionId} className="space-y-4">
                   <h3 className="font-semibold text-lg">{version.versionNumber}</h3>
-                  
+
                   <Card>
                     <CardHeader>
                       <CardTitle className="text-sm">基本信息</CardTitle>
@@ -666,6 +741,58 @@ const filteredVersions = versions
               datasetName={datasetName}
               onBack={() => setIsVersionCompareOpen(false)}
             />
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* 复制数据集对话框 */}
+      {isCopyDialogOpen && (
+        <Dialog open={isCopyDialogOpen} onOpenChange={setIsCopyDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>复制数据集</DialogTitle>
+              <div className="text-sm text-gray-500 mt-1">创建数据集的副本</div>
+            </DialogHeader>
+            <div className="space-y-4 pt-2">
+              <div>
+                <Label htmlFor="copy-title">数据集名称</Label>
+                <Input
+                  id="copy-title"
+                  className="mt-1.5"
+                  value={copyTitle}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCopyTitle(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="copy-description">描述</Label>
+                <Textarea
+                  id="copy-description"
+                  className="mt-1.5"
+                  value={copyDescription}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setCopyDescription(e.target.value)}
+                  rows={2}
+                />
+              </div>
+
+
+
+              <div className="flex justify-end space-x-2 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsCopyDialogOpen(false);
+                    setCopyingVersion(null);
+
+                  }}
+                >
+                  取消
+                </Button>
+                <Button variant="outline" onClick={handleSaveCopy} className="border-black text-black hover:bg-gray-50">
+                  确定
+                </Button>
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
       )}

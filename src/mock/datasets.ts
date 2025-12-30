@@ -37,9 +37,9 @@ export function getDatasetById(id: number): MockDataset | undefined {
 }
 
 /**
- * 原型数据列表（与 DataManagement 初始数据同步）。
+ * 原型数据初始列表
  */
-export const mockDatasets: MockDataset[] = [
+const initialDatasets: MockDataset[] = [
   {
     id: 1,
     title: "销售数据集",
@@ -116,3 +116,41 @@ export const mockDatasets: MockDataset[] = [
     color: "border-l-green-500"
   }
 ];
+
+// 缓存 Key
+const STORAGE_KEY = 'limix_mock_datasets';
+
+/**
+ * 初始化并导出 mockDatasets
+ * 优先从 localStorage 获取，实现原型演示中的持久化
+ */
+export const mockDatasets: MockDataset[] = (() => {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    try {
+      return JSON.parse(saved);
+    } catch (e) {
+      console.error('Failed to parse saved datasets', e);
+    }
+  }
+  return [...initialDatasets];
+})();
+
+/**
+ * 向全局列表添加新数据集并持久化
+ * @param dataset 新数据集对象
+ */
+export function addMockDataset(dataset: MockDataset) {
+  mockDatasets.unshift(dataset);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(mockDatasets));
+  // 触发一个自定义事件，通知页面刷新数据
+  window.dispatchEvent(new CustomEvent('datasets-updated'));
+}
+
+/**
+ * 重置数据（原型测试用）
+ */
+export function resetMockDatasets() {
+  localStorage.removeItem(STORAGE_KEY);
+  window.location.reload();
+}
