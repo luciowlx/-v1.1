@@ -14,6 +14,7 @@ import { ReportView } from "./components/ReportView";
 import { DataDetailFullPage } from "./components/DataDetailFullPage";
 import { NotebookManagement } from "./components/NotebookManagement";
 import { NotebookDetail } from "./components/NotebookDetail";
+import CausalInsight from "./components/causal/CausalInsight";
 import { JupyterLabMock, SSHRootTerminalMock } from "./components/NotebookMocks";
 import { TASK_TYPES } from "./utils/taskTypes";
 import { ProjectCard } from "./components/ProjectCard";
@@ -1611,6 +1612,8 @@ export default function App() {
             />
           </div>
         );
+      case "因果洞察":
+        return <CausalInsight />;
       case "模型管理":
         console.log("正在渲染模型管理页面, showModelTuning:", showModelTuning); // 添加调试日志
         if (showModelTuning) {

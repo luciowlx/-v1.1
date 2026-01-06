@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>因果洞察 · 高保真原型</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+<!-- 顶部导航 -->
+<header class="bg-white border-b px-6 py-4 flex items-center justify-between">
+  <div class="text-xl font-semibold">因果洞察 · Causal Insights</div>
+  <div class="text-sm text-gray-500">项目：能源调度分析平台</div>
+</header>
+
+<!-- 页面主体 -->
+<main class="max-w-[1400px] mx-auto px-6 py-6 space-y-10">
+
+  <!-- ================= 创建任务页 ================= -->
+  <section class="bg-white rounded-xl shadow">
+    <div class="border-b px-6 py-4 flex justify-between items-center">
+      <h2 class="text-lg font-semibold">创建因果洞察任务</h2>
+      <span class="text-sm text-gray-500">Step 3 / 4 · 样本筛选</span>
+    </div>
+
+    <div class="p-6 grid grid-cols-12 gap-6">
+
+      <!-- 左侧：配置区 -->
+      <div class="col-span-4 space-y-6">
+
+        <!-- 数据源 -->
+        <div>
+          <label class="block text-sm font-medium mb-1">决策推理任务</label>
+          <select class="w-full border rounded px-3 py-2">
+            <option>任务 A｜新能源出清策略推理（8760 样本）</option>
+            <option>任务 B｜日前电价预测推理</option>
+          </select>
+        </div>
+
+        <!-- X 选择 -->
+        <div>
+          <label class="block text-sm font-medium mb-1">X（影响因子）</label>
+          <div class="border rounded p-2 h-40 overflow-auto space-y-1 text-sm">
+            <label class="flex items-center gap-2"><input type="checkbox" checked> 风力发电_日前</label>
+            <label class="flex items-center gap-2"><input type="checkbox" checked> 光伏发电_日前</label>
+            <label class="flex items-center gap-2"><input type="checkbox"> 负荷预测值</label>
+            <label class="flex items-center gap-2"><input type="checkbox"> 竞价空间</label>
+          </div>
+        </div>
+
+        <!-- Y 选择 -->
+        <div>
+          <label class="block text-sm font-medium mb-1">Y（分析目标）</label>
+          <select class="w-full border rounded px-3 py-2">
+            <option>现货出清电价（Numeric）</option>
+            <option>实时-日前偏差_label（Categorical）</option>
+          </select>
+        </div>
+
+        <!-- Y 范围（Numeric 示例） -->
+        <div>
+          <label class="block text-sm font-medium mb-1">Y 范围（电价）</label>
+          <div class="flex items-center gap-2">
+            <input type="number" class="border rounded px-2 py-1 w-24" value="200" />
+            <span class="text-gray-400">—</span>
+            <input type="number" class="border rounded px-2 py-1 w-24" value="600" />
+            <span class="text-xs text-gray-500">元/MWh</span>
+          </div>
+        </div>
+
+        <!-- 样本数 -->
+        <div class="bg-gray-50 border rounded p-3 text-sm">
+          当前命中样本：<strong>312</strong> / 8760（3.6%）
+          <div class="text-yellow-600 text-xs mt-1">样本较少，请谨慎解读结果</div>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div class="flex gap-2">
+          <button class="px-4 py-2 border rounded">保存草稿</button>
+          <button class="px-4 py-2 bg-blue-600 text-white rounded">保存并运行</button>
+        </div>
+
+      </div>
+
+      <!-- 右侧：条件构造区 -->
+      <div class="col-span-8">
+        <h3 class="text-sm font-medium mb-2">X / 样本条件过滤</h3>
+        <table class="w-full text-sm border rounded overflow-hidden">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-3 py-2 text-left">字段</th>
+              <th class="px-3 py-2 text-left">操作符</th>
+              <th class="px-3 py-2 text-left">值</th>
+              <th class="px-3 py-2"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t">
+              <td class="px-3 py-2">风力发电_日前</td>
+              <td class="px-3 py-2">BETWEEN</td>
+              <td class="px-3 py-2">0.2 ～ 0.4</td>
+              <td class="px-3 py-2 text-right"><button class="text-red-500">删除</button></td>
+            </tr>
+            <tr class="border-t">
+              <td class="px-3 py-2">时间</td>
+              <td class="px-3 py-2">BETWEEN</td>
+              <td class="px-3 py-2">2025-08-01 ～ 2025-08-07</td>
+              <td class="px-3 py-2 text-right"><button class="text-red-500">删除</button></td>
+            </tr>
+          </tbody>
+        </table>
+        <button id="addConditionBtn" class="mt-2 text-blue-600 text-sm">+ 添加条件</button>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ================= 任务详情页 ================= -->
+  <section class="bg-white rounded-xl shadow">
+    <div class="border-b px-6 py-4 flex justify-between items-center">
+      <h2 class="text-lg font-semibold">因果洞察任务详情</h2>
+      <div class="flex gap-2">
+        <button class="px-3 py-1 border rounded text-sm">导出</button>
+        <button class="px-3 py-1 bg-blue-600 text-white rounded text-sm">复制并编辑</button>
+      </div>
+    </div>
+
+    <div class="p-6 space-y-6">
+
+      <!-- 基本信息 -->
+      <div class="grid grid-cols-4 gap-4 text-sm">
+        <div><div class="text-gray-500">任务名称</div><div>高电价场景因果分析</div></div>
+        <div><div class="text-gray-500">来源任务</div><div>新能源出清策略推理</div></div>
+        <div><div class="text-gray-500">状态</div><div class="text-green-600">SUCCEEDED</div></div>
+        <div><div class="text-gray-500">样本命中</div><div>312 / 8760</div></div>
+      </div>
+
+      <!-- 图表占位 -->
+      <div class="grid grid-cols-2 gap-6">
+        <div class="border rounded h-64 flex items-center justify-center text-gray-400">因果热力图（Heatmap）</div>
+        <div class="border rounded h-64 flex items-center justify-center text-gray-400">影响因子条形图（Bar Chart）</div>
+      </div>
+
+      <!-- 结果数据表 -->
+      <div>
+        <h3 class="text-sm font-medium mb-2">影响因子结果（Top 5）</h3>
+        <table class="w-full text-sm border rounded">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-3 py-2 text-left">特征</th>
+              <th class="px-3 py-2 text-left">影响分数</th>
+              <th class="px-3 py-2 text-left">方向</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t"><td class="px-3 py-2">风力发电_日前</td><td class="px-3 py-2">+0.42</td><td class="px-3 py-2 text-red-600">正向</td></tr>
+            <tr class="border-t"><td class="px-3 py-2">光伏发电_日前</td><td class="px-3 py-2">-0.31</td><td class="px-3 py-2 text-blue-600">负向</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<!-- 添加条件弹窗 -->
+<div id="conditionModal" class="fixed inset-0 bg-black/40 hidden items-center justify-center">
+  <div class="bg-white w-[420px] rounded-lg shadow p-4 space-y-3">
+    <h3 class="font-medium">添加筛选条件</h3>
+    <div>
+      <label class="text-sm">字段</label>
+      <select id="condField" class="w-full border rounded px-2 py-1">
+        <option>风力发电_日前</option>
+        <option>光伏发电_日前</option>
+        <option>负荷预测值</option>
+        <option>时间</option>
+      </select>
+    </div>
+    <div>
+      <label class="text-sm">操作符</label>
+      <select id="condOp" class="w-full border rounded px-2 py-1">
+        <option>BETWEEN</option>
+        <option>&gt;</option>
+        <option>&lt;</option>
+        <option>=</option>
+      </select>
+    </div>
+    <div>
+      <label class="text-sm">值</label>
+      <input id="condValue" class="w-full border rounded px-2 py-1" placeholder="如：0.3 ~ 0.6" />
+    </div>
+    <div class="flex justify-end gap-2 pt-2">
+      <button id="cancelCond" class="px-3 py-1 border rounded">取消</button>
+      <button id="confirmCond" class="px-3 py-1 bg-blue-600 text-white rounded">确认</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const btn = document.getElementById('addConditionBtn');
+const modal = document.getElementById('conditionModal');
+const cancelBtn = document.getElementById('cancelCond');
+const confirmBtn = document.getElementById('confirmCond');
+const tbody = document.querySelector('table tbody');
+
+btn.onclick = () => modal.classList.remove('hidden');
+cancelBtn.onclick = () => modal.classList.add('hidden');
+
+confirmBtn.onclick = () => {
+  const f = document.getElementById('condField').value;
+  const o = document.getElementById('condOp').value;
+  const v = document.getElementById('condValue').value || '-';
+  const tr = document.createElement('tr');
+  tr.className = 'border-t';
+  tr.innerHTML = `<td class="px-3 py-2">${f}</td><td class="px-3 py-2">${o}</td><td class="px-3 py-2">${v}</td><td class="px-3 py-2 text-right"><button class="text-red-500" onclick="this.closest('tr').remove()">删除</button></td>`;
+  tbody.appendChild(tr);
+  modal.classList.add('hidden');
+};
+</script>
+</body>
+
+</body>
+</html>
