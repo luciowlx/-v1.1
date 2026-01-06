@@ -1,71 +1,108 @@
 .floating-assistant-container {
   position: fixed;
-  right: 20px;
-  bottom: 20px;
   z-index: 9999;
+  user-select: none;
+  touch-action: none;
 }
 
-/* 初始加载动画：从底部滑入结合淡入 */
+.floating-assistant-container.is-dragging {
+  transition: none !important;
+  opacity: 0.9;
+  z-index: 10000;
+}
+
+/* 初始加载动画：从右侧滑入 */
 .fade-slide-in {
-  animation: slideUpFade 600ms ease-out both;
+  animation: slideInRight 600ms ease-out both;
 }
 
-@keyframes slideUpFade {
+@keyframes slideInRight {
   0% {
     opacity: 0;
-    transform: translateY(24px);
+    transform: translateX(30px);
   }
+
   100% {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateX(0);
   }
 }
 
-/* 闲置状态：一次上下浮动10px（2秒） */
+/* 闲置状态：轻微左右抖动 */
 .idle-float-once {
-  animation: floatUpDown 2s ease-in-out 1;
+  animation: nudgeLeft 2s ease-in-out 1;
 }
 
-@keyframes floatUpDown {
-  0% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
-  100% { transform: translateY(0); }
+@keyframes nudgeLeft {
+  0% {
+    transform: translateX(0);
+  }
+
+  50% {
+    transform: translateX(-8px);
+  }
+
+  100% {
+    transform: translateX(0);
+  }
 }
 
 .assistant-button {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background-color: #165DFF; /* 默认蓝色 */
+  width: 48px;
+  height: 64px;
+  border-radius: 32px 0 0 32px;
+  /* 左侧圆角，右侧直边 */
+  background: linear-gradient(135deg, #7C3AED 0%, #6366F1 100%);
+  /* 紫色渐变 */
   color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 10px 22px rgba(22, 93, 255, 0.35);
+  box-shadow: -4px 0 16px rgba(124, 58, 237, 0.3);
   cursor: pointer;
-  transition: all 220ms ease;
+  transition: width 300ms, background 300ms, box-shadow 300ms, border-radius 300ms;
+  padding-right: 4px;
+}
+
+.floating-assistant-container:not(.is-dragging) {
+  transition: left 300ms cubic-bezier(0.18, 0.89, 0.32, 1.28), top 150ms ease-out;
 }
 
 .assistant-button.is-hover {
-  width: 70px;
-  height: 70px;
-  background-color: #0E42D2; /* 悬停深蓝色 */
+  width: 58px;
+  background: linear-gradient(135deg, #6D28D9 0%, #4F46E5 100%);
+  box-shadow: -6px 0 20px rgba(124, 58, 237, 0.45);
 }
 
 .assistant-icon {
-  font-size: 28px;
+  font-size: 24px;
 }
 
 .assistant-tooltip {
   position: absolute;
-  bottom: calc(100% + 10px);
-  right: 0;
-  transform: translateX(-10%);
-  background: #ffffff;
-  color: #333333;
+  top: 50%;
+  right: 60px;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  color: #ffffff;
   font-size: 12px;
-  padding: 6px 10px;
-  border-radius: 8px;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+  padding: 6px 12px;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   white-space: nowrap;
+  pointer-events: none;
+  animation: fadeIn 200ms ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) translateX(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+  }
 }

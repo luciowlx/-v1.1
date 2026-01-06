@@ -10,6 +10,7 @@ import { Checkbox } from "./ui/checkbox";
 import { Switch } from "./ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
+import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
 import { Plus, Edit, Trash2, Shield, Users, Settings, Search, Eye, UserPlus, Mail, Lock, ToggleLeft, ToggleRight } from "lucide-react";
 import type { User } from "../types/user";
 import { registeredUsers } from "../mock/users";
@@ -266,6 +267,9 @@ export function RoleManagement() {
     description: "",
     permissions: [] as string[]
   });
+
+  // 模拟当前登录身份（仅用于原型演示权限控制）
+  const [simulatedRole, setSimulatedRole] = useState<"超级管理员" | "普通用户">("超级管理员");
 
   const operationLogs = [
     {
@@ -542,6 +546,29 @@ export function RoleManagement() {
           <h2 className="text-2xl font-bold text-gray-900">角色管理</h2>
           <p className="text-gray-600 mt-1">管理系统角色和权限配置</p>
         </div>
+        <div className="flex items-center gap-4 bg-amber-50 border border-amber-200 px-4 py-2 rounded-lg">
+          <div className="flex items-center gap-2 text-sm text-amber-800 font-medium">
+            <Lock className="w-4 h-4" />
+            演示身份切换：
+          </div>
+          <RadioGroup
+            defaultValue="超级管理员"
+            className="flex gap-4"
+            onValueChange={(val: any) => {
+              setSimulatedRole(val);
+              message.info(`已切换至 ${val} 视图`);
+            }}
+          >
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="超级管理员" id="sim-admin" />
+              <Label htmlFor="sim-admin" className="cursor-pointer">后台超级管理员</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="普通用户" id="sim-user" />
+              <Label htmlFor="sim-user" className="cursor-pointer">系统用户</Label>
+            </div>
+          </RadioGroup>
+        </div>
         <div className="flex gap-3">
           {selectedRoles.length > 0 && (
             <>
@@ -715,7 +742,11 @@ export function RoleManagement() {
                   <TableCell className="text-gray-600">{role.createdAt}</TableCell>
                   <TableCell>
                     <div className="flex gap-2">
-                      {!role.isDefault && (
+                      {/* 操作按钮：
+                           1. 非默认角色：显示编辑、配置、删除
+                           2. 默认角色：仅当模拟身份为超级管理员时，显示配置图标
+                       */}
+                      {!role.isDefault ? (
                         <>
                           <Button
                             variant="ghost"
@@ -741,6 +772,19 @@ export function RoleManagement() {
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </>
+                      ) : (
+                        // 默认角色的特殊逻辑
+                        simulatedRole === "超级管理员" && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openPermissionDialog(role)}
+                            className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                            title="配置默认角色权限"
+                          >
+                            <Settings className="w-4 h-4" />
+                          </Button>
+                        )
                       )}
                       <Button
                         variant="ghost"
@@ -1106,6 +1150,6 @@ export function RoleManagement() {
         </DialogContent>
       </Dialog>
 
-    </div>
+    </div >
   );
 }

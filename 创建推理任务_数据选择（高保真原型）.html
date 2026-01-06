@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>创建推理任务 · 数据选择</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --panel: #ffffff;
+      --primary: #1677ff;
+      --border: #e5e7eb;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --danger: #ef4444;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    header {
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 24px;
+      font-weight: 600;
+    }
+    .steps {
+      display: flex;
+      gap: 24px;
+      font-size: 14px;
+      margin-top: 8px;
+    }
+    .step.active { color: var(--primary); }
+    .container { padding: 16px 24px; }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 16px;
+      height: 520px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .panel-header {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+      font-weight: 600;
+      background: #fafafa;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .panel-body {
+      padding: 8px 12px;
+      overflow: auto;
+      font-size: 13px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    /* Tree（层级上下展示，避免横向挤压） */
+    .tree ul { list-style: none; padding-left: 16px; margin: 6px 0; }
+    .tree li { margin: 6px 0; }
+    .tree .branch {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      user-select: none;
+    }
+    .tree .caret {
+      width: 14px;
+      display: inline-flex;
+      justify-content: center;
+      color: var(--muted);
+    }
+    .tree .branch-title {
+      flex: 1;
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .tree .children { margin-top: 6px; }
+    .tree .children[data-collapsed="true"] { display: none; }
+
+    .tree .file-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding-left: 18px;
+    }
+    .tree .file-main {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex: 1;
+      min-width: 0;
+    }
+    .tree .file-name {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .tree .file-name.active {
+      font-weight: 600;
+      color: var(--primary);
+    }
+    .tree input[type="checkbox"] { margin: 0; }
+
+    .preview-icon {
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--muted);
+      padding: 2px 8px;
+      border-radius: 6px;
+      flex-shrink: 0;
+      border: 1px solid transparent;
+    }
+    .preview-icon:hover { border-color: var(--border); }
+    .preview-icon.active { color: #fff; background: var(--primary); border-color: var(--primary); }
+
+    /* Preview table */
+    table {
+      border-collapse: collapse;
+      width: max-content;   /* 关键：列多时触发横向滚动 */
+      min-width: 100%;
+      font-size: 12px;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 4px 6px;
+      white-space: nowrap;
+    }
+    th { background: #f3f4f6; }
+
+    /* Bottom config */
+    .config {
+      margin-top: 16px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px;
+    }
+    .config h3 {
+      margin: 0 0 8px;
+      font-size: 14px;
+    }
+    .hint { font-size: 12px; color: var(--muted); margin: 6px 0; }
+    .hint.danger { color: var(--danger); }
+
+    .file-role-table {
+      width: 100%;
+      margin-bottom: 12px;
+      border-collapse: collapse;
+    }
+    .file-role-table th, .file-role-table td {
+      font-size: 12px;
+      border: 1px solid var(--border);
+      padding: 6px;
+    }
+    .tag {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      margin: 2px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .tag.selected { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+    footer {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 24px;
+      background: var(--panel);
+      border-top: 1px solid var(--border);
+    }
+    button {
+      padding: 6px 14px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      background: #fff;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    button.primary {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+
+    .header-actions { display:flex; align-items:center; gap:8px; }
+    .ghost {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: #fff;
+      border: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+<header>
+  创建推理任务
+  <div class="steps">
+    <div class="step">① 基本信息</div>
+    <div class="step active">② 数据与目标</div>
+    <div class="step">③ 参数配置</div>
+  </div>
+</header>
+
+<div class="container">
+  <div class="workspace">
+    <!-- Left: Tree -->
+    <div class="panel">
+      <div class="panel-header">数据资产</div>
+      <div class="panel-body tree" id="treeRoot">
+        <ul>
+          <li>
+            <div class="branch" data-branch="dataset_sensors">
+              <span class="caret">▾</span>
+              <span class="branch-title">生产线传感器</span>
+            </div>
+            <div class="children" data-collapsed="false">
+              <ul>
+                <li>
+                  <div class="branch" data-branch="ver_v11">
+                    <span class="caret">▾</span>
+                    <span class="branch-title">生产线传感器数据集 v1.1</span>
+                  </div>
+                  <div class="children" data-collapsed="false">
+                    <ul>
+                      <li class="file-row" data-file="生产线传感器1.csv">
+                        <div class="file-main">
+                          <input type="checkbox" checked />
+                          <span class="file-name active">生产线传感器1.csv</span>
+                        </div>
+                        <span class="preview-icon active" title="预览" data-file="生产线传感器1.csv">👁</span>
+                      </li>
+                      <li class="file-row" data-file="生产线传感器2.csv">
+                        <div class="file-main">
+                          <input type="checkbox" checked />
+                          <span class="file-name">生产线传感器2.csv</span>
+                        </div>
+                        <span class="preview-icon" title="预览" data-file="生产线传感器2.csv">👁</span>
+                      </li>
+                      <li class="file-row" data-file="生产线传感器3.csv">
+                        <div class="file-main">
+                          <input type="checkbox" checked />
+                          <span class="file-name">生产线传感器3.csv</span>
+                        </div>
+                        <span class="preview-icon" title="预览" data-file="生产线传感器3.csv">👁</span>
+                      </li>
+                    </ul>
+                  </div>
+                </li>
+                <li>
+                  <div class="branch" data-branch="ver_v12">
+                    <span class="caret">▸</span>
+                    <span class="branch-title">生产线传感器数据集 v1.2</span>
+                  </div>
+                  <div class="children" data-collapsed="true">
+                    <ul>
+                      <li class="file-row" data-file="生产线传感器_2025Q1.csv">
+                        <div class="file-main">
+                          <input type="checkbox" />
+                          <span class="file-name">生产线传感器_2025Q1.csv</span>
+                        </div>
+                        <span class="preview-icon" title="预览" data-file="生产线传感器_2025Q1.csv">👁</span>
+                      </li>
+                    </ul>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </li>
+
+          <li>
+            <div class="branch" data-branch="dataset_erp">
+              <span class="caret">▸</span>
+              <span class="branch-title">ERP 系统数据集</span>
+            </div>
+            <div class="children" data-collapsed="true">
+              <ul>
+                <li>
+                  <div class="branch" data-branch="erp_v11">
+                    <span class="caret">▸</span>
+                    <span class="branch-title">ERP 数据集 v1.1</span>
+                  </div>
+                  <div class="children" data-collapsed="true">
+                    <ul>
+                      <li class="file-row" data-file="erp_orders.csv">
+                        <div class="file-main">
+                          <input type="checkbox" />
+                          <span class="file-name">erp_orders.csv</span>
+                        </div>
+                        <span class="preview-icon" title="预览" data-file="erp_orders.csv">👁</span>
+                      </li>
+                    </ul>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </li>
+
+          <li>
+            <div class="branch" data-branch="dataset_maint">
+              <span class="caret">▸</span>
+              <span class="branch-title">设备维修日志</span>
+            </div>
+            <div class="children" data-collapsed="true">
+              <ul>
+                <li class="file-row" data-file="maintenance_logs.csv">
+                  <div class="file-main">
+                    <input type="checkbox" />
+                    <span class="file-name">maintenance_logs.csv</span>
+                  </div>
+                  <span class="preview-icon" title="预览" data-file="maintenance_logs.csv">👁</span>
+                </li>
+              </ul>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Right: Preview -->
+    <div class="panel" id="previewPanel">
+      <div class="panel-header">
+        <span id="previewTitle">数据预览（已选择 3 个文件）</span>
+        <div class="header-actions">
+          <button class="ghost" id="fullscreenBtn" type="button">全屏</button>
+        </div>
+      </div>
+      <div class="panel-body" id="previewBody">
+        <table>
+          <thead>
+            <tr>
+              <th>timestamp</th>
+              <th>temperature</th>
+              <th>humidity</th>
+              <th>pressure</th>
+              <th>vibration</th>
+              <th>voltage</th>
+              <th>current</th>
+              <th>rpm</th>
+              <th>torque</th>
+              <th>power</th>
+              <th>energy</th>
+              <th>status_code</th>
+            </tr>
+          </thead>
+          <tbody id="previewTbody">
+            <!-- 多行 + 多列 mock，验证上下 / 左右滚动 -->
+            <tr><td>2024-12-01</td><td>-1.2</td><td>52</td><td>101.5</td><td>0.09</td><td>220</td><td>5.1</td><td>1450</td><td>12.3</td><td>2.7</td><td>18.2</td><td>0</td></tr>
+            <tr><td>2024-12-02</td><td>-0.8</td><td>53</td><td>101.4</td><td>0.11</td><td>221</td><td>5.0</td><td>1460</td><td>12.5</td><td>2.8</td><td>18.6</td><td>0</td></tr>
+            <tr><td>2024-12-03</td><td>-0.3</td><td>54</td><td>101.3</td><td>0.10</td><td>219</td><td>5.2</td><td>1470</td><td>12.7</td><td>2.9</td><td>19.0</td><td>1</td></tr>
+            <tr><td>2024-12-04</td><td>0.1</td><td>55</td><td>101.2</td><td>0.12</td><td>222</td><td>5.3</td><td>1480</td><td>12.9</td><td>3.0</td><td>19.5</td><td>0</td></tr>
+            <tr><td>2024-12-05</td><td>0.6</td><td>56</td><td>101.1</td><td>0.13</td><td>223</td><td>5.4</td><td>1490</td><td>13.1</td><td>3.1</td><td>20.0</td><td>0</td></tr>
+            <tr><td>2024-12-06</td><td>1.0</td><td>57</td><td>101.0</td><td>0.14</td><td>224</td><td>5.5</td><td>1500</td><td>13.4</td><td>3.2</td><td>20.6</td><td>2</td></tr>
+            <tr><td>2024-12-07</td><td>1.5</td><td>58</td><td>100.9</td><td>0.15</td><td>225</td><td>5.6</td><td>1510</td><td>13.7</td><td>3.3</td><td>21.1</td><td>0</td></tr>
+            <tr><td>2024-12-08</td><td>1.9</td><td>59</td><td>100.8</td><td>0.16</td><td>226</td><td>5.7</td><td>1520</td><td>14.0</td><td>3.4</td><td>21.7</td><td>0</td></tr>
+            <tr><td>2024-12-09</td><td>2.3</td><td>60</td><td>100.7</td><td>0.17</td><td>227</td><td>5.8</td><td>1530</td><td>14.3</td><td>3.5</td><td>22.3</td><td>1</td></tr>
+            <tr><td>2024-12-10</td><td>-0.5</td><td>53</td><td>101.2</td><td>0.12</td><td>221</td><td>5.1</td><td>1465</td><td>12.6</td><td>2.8</td><td>18.9</td><td>0</td></tr>
+            <tr><td>2024-12-11</td><td>1.3</td><td>55</td><td>100.9</td><td>0.10</td><td>222</td><td>5.0</td><td>1475</td><td>12.8</td><td>2.9</td><td>19.2</td><td>0</td></tr>
+            <tr><td>2024-12-12</td><td>-0.3</td><td>54</td><td>101.0</td><td>0.11</td><td>220</td><td>5.2</td><td>1485</td><td>13.0</td><td>3.0</td><td>19.6</td><td>1</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom config -->
+  <div class="config">
+    <h3 id="splitOrRoleTitle">训练 / 测试配置</h3>
+
+    <!-- 单文件：比例切分 -->
+    <div id="singleSplitBox" style="display:none;">
+      <div class="hint">单文件将按比例切分训练集 / 测试集（支持 0% / 100%）。</div>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <label style="font-size:12px; width:72px;">训练比例</label>
+        <input id="trainPct" type="range" min="0" max="100" value="80" style="flex:1;" />
+        <div style="display:flex; align-items:center; gap:8px; font-size:12px;">
+          <span><b id="trainPctText">80</b>% 训练</span>
+          <span style="color:var(--muted);">/</span>
+          <span><b id="testPctText">20</b>% 测试</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 多文件：文件角色划分 -->
+    <div id="multiRoleBox" style="display:none;">
+      <div class="hint">多文件时请指定训练文件（可多个）与测试文件（仅 1 个）。</div>
+      <div class="hint danger" id="multiRoleWarning" style="display:none;">请指定一个测试文件，否则无法进入下一步。</div>
+      <table class="file-role-table">
+        <thead><tr><th>文件名</th><th>角色</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <h3 style="margin-top:12px;">特征列选择</h3>
+    <div>
+      <span class="tag selected">temperature</span>
+      <span class="tag selected">humidity</span>
+      <span class="tag">pressure</span>
+      <span class="tag">vibration</span>
+      <span class="tag">voltage</span>
+      <span class="tag">current</span>
+      <span class="tag">rpm</span>
+      <span class="tag">torque</span>
+    </div>
+
+    <h3 style="margin-top:12px;">预测目标</h3>
+    <div>
+      <select style="font-size:12px; padding:4px;">
+        <option selected>vibration</option>
+        <option>temperature</option>
+        <option>humidity</option>
+        <option>pressure</option>
+        <option>power</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <button type="button">上一步</button>
+  <button class="primary" id="nextBtn" type="button">下一步</button>
+</footer>
+
+<script>
+  // ====== 状态模型 ======
+  const state = {
+    selectedFiles: new Set(["生产线传感器1.csv","生产线传感器2.csv","生产线传感器3.csv"]),
+    fileRoles: {
+      "生产线传感器1.csv": "测试集",
+      "生产线传感器2.csv": "训练集",
+      "生产线传感器3.csv": "训练集"
+    },
+    previewFile: "生产线传感器1.csv",
+    splitTrainPct: 80
+  };
+
+  // ====== 事件绑定 ======
+  document.querySelectorAll('.tree .file-row .preview-icon').forEach(icon => {
+    icon.addEventListener('click', () => setPreview(icon.dataset.file));
+  });
+
+  document.querySelectorAll('.tree .file-row input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener('change', onFileSelectionChange);
+  });
+
+  document.getElementById('fullscreenBtn').addEventListener('click', toggleFullscreen);
+  document.addEventListener('fullscreenchange', syncFullscreenButton);
+
+  // 展开 / 收起
+  document.querySelectorAll('.tree .branch').forEach(b => {
+    b.addEventListener('click', () => {
+      const children = b.nextElementSibling;
+      if (!children || !children.classList.contains('children')) return;
+      const collapsed = children.getAttribute('data-collapsed') === 'true';
+      children.setAttribute('data-collapsed', collapsed ? 'false' : 'true');
+      const caret = b.querySelector('.caret');
+      if (caret) caret.textContent = collapsed ? '▾' : '▸';
+    });
+  });
+
+  // 下一步按钮演示：多文件时必须有且仅有一个测试集
+  document.getElementById('nextBtn').addEventListener('click', () => {
+    const files = Array.from(state.selectedFiles);
+    if (files.length > 1) {
+      const testCount = files.filter(f => state.fileRoles[f] === '测试集').length;
+      if (testCount !== 1) {
+        alert('请先指定 1 个测试文件。');
+        return;
+      }
+    }
+    alert('原型演示：通过校验，可以进入下一步。');
+  });
+
+  function onFileSelectionChange() {
+    state.selectedFiles.clear();
+
+    document.querySelectorAll('.tree .file-row').forEach(row => {
+      const cb = row.querySelector('input[type="checkbox"]');
+      const file = row.getAttribute('data-file');
+      if (cb && cb.checked) state.selectedFiles.add(file);
+    });
+
+    // 清理 fileRoles 中已取消选择的文件
+    Object.keys(state.fileRoles).forEach(f => {
+      if (!state.selectedFiles.has(f)) delete state.fileRoles[f];
+    });
+
+    // 如果预览文件被取消勾选，自动切换到第一个选中
+    if (state.previewFile && !state.selectedFiles.has(state.previewFile)) {
+      const next = Array.from(state.selectedFiles)[0] || '';
+      if (next) setPreview(next);
+    }
+
+    // 多文件场景：保证最多只有一个测试集
+    enforceSingleTestRole();
+
+    renderTrainTestConfig();
+  }
+
+  function setPreview(file) {
+    state.previewFile = file;
+
+    // 选中态：左侧文件名 + 预览 icon
+    document.querySelectorAll('.tree .file-row').forEach(row => {
+      const f = row.getAttribute('data-file');
+      const nameEl = row.querySelector('.file-name');
+      const iconEl = row.querySelector('.preview-icon');
+      if (nameEl) nameEl.classList.toggle('active', f === file);
+      if (iconEl) iconEl.classList.toggle('active', f === file);
+    });
+
+    // 标题显示
+    updatePreviewHeader();
+
+    // 原型：不做真实数据切换，只做“当前预览”状态演示
+  }
+
+  function updatePreviewHeader() {
+    const files = Array.from(state.selectedFiles);
+    const title = document.getElementById('previewTitle');
+    const current = state.previewFile ? `（当前预览：${state.previewFile}）` : '';
+    title.textContent = `数据预览（已选择 ${files.length} 个文件）${current}`;
+  }
+
+  function toggleFullscreen() {
+    const panel = document.getElementById('previewPanel');
+    if (!document.fullscreenElement) {
+      if (panel.requestFullscreen) panel.requestFullscreen();
+    } else {
+      if (document.exitFullscreen) document.exitFullscreen();
+    }
+  }
+
+  function syncFullscreenButton() {
+    const btn = document.getElementById('fullscreenBtn');
+    btn.textContent = document.fullscreenElement ? '退出全屏' : '全屏';
+  }
+
+  function enforceSingleTestRole() {
+    const files = Array.from(state.selectedFiles);
+
+    if (files.length <= 1) {
+      // 单文件不需要 fileRoles
+      return;
+    }
+
+    // 如果没有测试集，默认给第一个文件测试集（仅用于原型演示，避免“空状态”）
+    let testFile = files.find(f => state.fileRoles[f] === '测试集');
+    if (!testFile) {
+      testFile = files[0];
+      state.fileRoles[testFile] = '测试集';
+    }
+
+    // 其他文件全部训练集
+    files.forEach(f => {
+      if (f !== testFile) state.fileRoles[f] = '训练集';
+    });
+  }
+
+  function renderTrainTestConfig() {
+    const files = Array.from(state.selectedFiles);
+
+    updatePreviewHeader();
+
+    const singleBox = document.getElementById('singleSplitBox');
+    const multiBox  = document.getElementById('multiRoleBox');
+    const titleEl   = document.getElementById('splitOrRoleTitle');
+    const warnEl    = document.getElementById('multiRoleWarning');
+
+    if (files.length === 1) {
+      // 单文件
+      titleEl.textContent = '训练 / 测试比例（单文件切分）';
+      singleBox.style.display = '';
+      multiBox.style.display = 'none';
+
+      const slider = document.getElementById('trainPct');
+      const trainText = document.getElementById('trainPctText');
+      const testText  = document.getElementById('testPctText');
+
+      slider.value = String(state.splitTrainPct);
+      trainText.textContent = String(state.splitTrainPct);
+      testText.textContent  = String(100 - state.splitTrainPct);
+
+      slider.oninput = () => {
+        state.splitTrainPct = Number(slider.value);
+        trainText.textContent = String(state.splitTrainPct);
+        testText.textContent  = String(100 - state.splitTrainPct);
+      };
+
+      return;
+    }
+
+    // 多文件
+    titleEl.textContent = '训练 / 测试文件划分（多文件）';
+    singleBox.style.display = 'none';
+    multiBox.style.display = '';
+
+    enforceSingleTestRole();
+
+    const tbody = document.querySelector('#multiRoleBox .file-role-table tbody');
+    tbody.innerHTML = '';
+
+    files.forEach(file => {
+      if (!state.fileRoles[file]) state.fileRoles[file] = '训练集';
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${escapeHtml(file)}</td>
+        <td>
+          <select data-file="${escapeAttr(file)}">
+            <option value="训练集" ${state.fileRoles[file] === '训练集' ? 'selected' : ''}>训练集</option>
+            <option value="测试集" ${state.fileRoles[file] === '测试集' ? 'selected' : ''}>测试集</option>
+          </select>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+
+    // 绑定 select 的 change（避免 inline onchange 导致的字符串注入/转义问题）
+    tbody.querySelectorAll('select').forEach(sel => {
+      sel.addEventListener('change', () => {
+        const file = sel.getAttribute('data-file');
+        const role = sel.value;
+        onRoleChange(file, role);
+      });
+    });
+
+    // 校验提示
+    const testCount = files.filter(f => state.fileRoles[f] === '测试集').length;
+    warnEl.style.display = testCount === 1 ? 'none' : '';
+  }
+
+  function onRoleChange(file, role) {
+    // 允许多个训练集；测试集只能 1 个
+    if (role === '测试集') {
+      Object.keys(state.fileRoles).forEach(f => {
+        if (f !== file) state.fileRoles[f] = '训练集';
+      });
+    }
+    state.fileRoles[file] = role;
+
+    renderTrainTestConfig();
+  }
+
+  // ====== 小工具：转义（防止原型里写死的文件名含引号时炸 DOM） ======
+  function escapeHtml(s) {
+    return String(s)
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
+  }
+  function escapeAttr(s) { return escapeHtml(s); }
+
+  // ====== 简单自测（方便你快速验证多文件/单文件逻辑没有断） ======
+  function runTests() {
+    try {
+      // 1) 角色表行数 = 选中文件数（多文件时）
+      const files = Array.from(state.selectedFiles);
+      renderTrainTestConfig();
+      if (files.length > 1) {
+        const rows = document.querySelectorAll('#multiRoleBox tbody tr').length;
+        console.assert(rows === files.length, `role table rows(${rows}) should equal selected files(${files.length})`);
+
+        const testCount = files.filter(f => state.fileRoles[f] === '测试集').length;
+        console.assert(testCount === 1, `test file count should be 1, got ${testCount}`);
+      }
+
+      // 2) 预览 title 不应丢失全屏按钮（我们用独立 title span 已规避）
+      const btn = document.getElementById('fullscreenBtn');
+      console.assert(!!btn, 'fullscreenBtn should exist');
+
+    } catch (e) {
+      console.error('Self tests failed:', e);
+    }
+  }
+
+  // 初始渲染
+  setPreview(state.previewFile);
+  renderTrainTestConfig();
+  runTests();
+</script>
+</body>
+</html>

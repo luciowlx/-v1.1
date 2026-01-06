@@ -3,6 +3,7 @@ import { Header } from "./components/Header";
 import { Dashboard } from "./components/Dashboard";
 import { DataManagement } from "./components/data";
 import { TaskManagement, TaskDetailFullPage, TaskCompare } from "./components/tasks";
+import { CreateTaskPage } from "./components/CreateTaskPage";
 import { ModelManagement, ModelTuning } from "./components/models";
 import { SystemManagement } from "./components/SystemManagement";
 import { PersonalCenterDialog } from "./components/PersonalCenterDialog";
@@ -135,6 +136,8 @@ export default function App() {
   // 全页面视图状态
   const [fullPageViewType, setFullPageViewType] = useState<'personal-center' | 'personalization-settings' | 'notification-center' | 'ai-assistant' | 'data-detail' | 'task-detail' | 'notebook-detail' | null>(null);
   const [isReportViewOpen, setIsReportViewOpen] = useState(false);
+  const [isFullPageTaskCreateOpen, setIsFullPageTaskCreateOpen] = useState(false);
+  const [editingTaskForPage, setEditingTaskForPage] = useState<any>(null);
   // 新增：通知中心初始页签（notifications/activity），用于从看板打开活动中心
   const [notificationCenterInitialTab, setNotificationCenterInitialTab] = useState<'notifications' | 'activity' | null>(null);
 
@@ -1598,8 +1601,11 @@ export default function App() {
               <p className="text-gray-600">创建、监控和管理AI模型训练任务，实时跟踪任务进度和性能指标</p>
             </div>
             <TaskManagement
-              isCreateTaskDialogOpen={isCreateTaskDialogOpen}
-              onCreateTaskDialogChange={(open: boolean) => setIsCreateTaskDialogOpen(open)}
+              onOpenCreateTaskPage={() => setIsFullPageTaskCreateOpen(true)}
+              onEditTask={(task: any) => {
+                setEditingTaskForPage(task);
+                setIsFullPageTaskCreateOpen(true);
+              }}
               onOpenTaskDetailFullPage={handleOpenTaskDetailFullPage}
               externalTaskPatch={externalTaskPatch}
             />
@@ -1804,6 +1810,27 @@ export default function App() {
           }}
         />
       )}
+
+      {/* 任务创建全屏页面 */}
+      {isFullPageTaskCreateOpen && (
+        <CreateTaskPage
+          onClose={() => {
+            setIsFullPageTaskCreateOpen(false);
+            setEditingTaskForPage(null);
+          }}
+          onSuccess={(task) => {
+            setIsFullPageTaskCreateOpen(false);
+            setEditingTaskForPage(null);
+            // 可以在此处添加逻辑，将新任务添加到全局任务列表中，或者触发 TaskManagement 的刷新
+            // message.success('任务操作成功');
+          }}
+          isEditMode={!!editingTaskForPage}
+          editingTask={editingTaskForPage}
+          availableDatasets={[]} // 后续可以传入真实数据，目前 CreateTaskPage 内部有 Mock
+          availableModels={[]}   // 后续可以传入真实数据，目前 CreateTaskPage 内部有 Mock
+        />
+      )}
+
       {fullPageViewType && fullPageViewType !== 'data-detail' && fullPageViewType !== 'task-detail' && fullPageViewType !== 'notebook-detail' && (
         <FullPageView
           type={fullPageViewType}

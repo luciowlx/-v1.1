@@ -1,56 +1,52 @@
-// Mock dataset preview rows for multiple example datasets used by DataPreprocessing
-// Each dataset id corresponds to DataPreprocessing.datasetOptions ids: '1', '2', '3', '4'
+/**
+ * 辅助函数：生成模拟行业数据
+ * @param prefix 字段名前缀
+ * @param cols 列数
+ * @param rows 行数
+ * @param seedData 基础数据模板
+ */
+function generateIndustryData(prefix: string, fields: string[], rows: number): any[] {
+  return Array.from({ length: rows }).map((_, rIdx) => {
+    const row: any = { datatime: `2025-01-04 10:${String(rIdx).padStart(2, '0')}:00` };
+    fields.forEach((field, fIdx) => {
+      if (field === 'datatime') return;
+      // 生成随机但合理的物理数值
+      const base = 40 + (fIdx % 5) * 10;
+      row[field] = Number((base + Math.random() * 5 + Math.sin(rIdx) * 2).toFixed(2));
+    });
+    return row;
+  });
+}
+
+const STEEL_FIELDS = ["datatime", "Rolling_Force", "Rolling_Speed", "Entry_Tension", "Exit_Tension", "Motor_Current", "Motor_Voltage", "Coolant_Pressure", "Coolant_Temp", "Strip_Thickness", "Strip_Width", "Work_Roll_Gap", "Leveller_Current", "Coiler_Tension", "Uncoiler_Tension", "Edge_Temp_L", "Edge_Temp_R", "Center_Temp", "Vibration_Level", "Lubrication_Flow", "Strip_Speed_Exit", "Load_Cell_LC1", "Load_Cell_LC2", "Drive_Torque", "Brake_Pressure"];
+const PROCESS_FIELDS = ["datatime", "Tower_Pressure", "Top_Temp", "Middle_Temp", "Bottom_Temp", "Feed_Flow", "Reflux_Ratio", "Steam_Flow", "Product_Purity", "Catalyst_Level", "Cooling_Water_In", "Cooling_Water_Out", "Exchanger_DP", "Pump_Frequency", "Valve_Opening", "Ambient_Temp", "Heater_Current", "Heater_Voltage", "O2_Concentration", "CO_Concentration", "Viscosity_Index", "Density_Sensor", "Flow_Meter_1", "Flow_Meter_2", "Level_Indicator"];
+const EQUIP_FIELDS = ["datatime", "Vibration_RMS", "Vibration_Peak", "Bearing_Temp_DE", "Bearing_Temp_NDE", "Winding_Temp_U", "Winding_Temp_V", "Winding_Temp_W", "Oil_Pressure", "Oil_Temp", "Inlet_Filter_DP", "Discharge_Temp", "Discharge_Pressure", "Motor_Speed", "Input_Current", "Input_Voltage", "Power_Factor", "Active_Power", "Reactive_Power", "Ambient_Humidity", "Cooler_Fan_Status", "Running_Hours", "Starts_Count", "Load_Cycle", "Unload_Cycle"];
+const WIND_FIELDS = ["datatime", "WROT_TemAxis1Ctrl", "WROT_TemAxis2Ctrl", "WROT_TemAxis3Ctrl", "WROT_PtCapTemBl1", "WROT_PtCapTemBl2", "WROT_PtCapTemBl3", "WROT_TemB1Mot", "WROT_TemB2Mot", "WROT_TemB3Mot", "WROT_TemHub", "WROT_TemHub2", "WROT_TemHub3", "WROT_Pitch1CapHighVol", "WROT_Pitch2CapHighVol", "WROT_Pitch3CapHighVol", "WROT_CurBlade1Motor", "WROT_CurBlade2Motor", "WROT_CurBlade3Motor", "WROT_Blade1Position", "WROT_Blade2Position", "WROT_Blade3Position", "WROT_TemBlade1Inver", "WROT_TemBlade2Inver", "WROT_TemBlade3Inver", "WTRM_TemGeaOil", "WTRM_TemGeaMSDE", "WTRM_TemGeaZSDE", "WTRM_GBoxOilPmpP", "WTRM_TemGBoxOilE", "WCNV_GridPPower", "WCNV_GridQPower", "WWPP_APProduction", "WGEN_TemGenDriEnd", "WGEN_TemGenNonDE", "WGEN_TemGenStaU", "WGEN_TemGenStaV", "WGEN_TemGenStaW", "WGEN_TemGenStaU2", "WGEN_TemGenStaV2", "WGEN_TemGenStaW3", "WGEN_GenCoolAirTem", "WNAC_WindSpeed", "WNAC_WindDirection", "WNAC_TemOut", "WNAC_TemNacelleCab", "WNAC_TemNacelleCabOut", "WVIB_VibrationLFil", "WVIB_VibrationVFil", "WYAW_YawPosition", "WYAW_Brake_Pressure", "WTOW_TemTowerCab", "WTRM_RotorSpd", "WTRM_PowerStoreTRBS", "WTRM_TemMainBearing", "WTRM_TemMainBearing2", "WGEN_GenActivePW", "WGEN_GenReactivePW", "WGEN_GenSpd", "WGEN_Torque", "WGEN_TorqueSetpoint"];
 
 export type PreviewRow = Record<string, any>;
 
 export const datasetPreviewRows: Record<string, PreviewRow[]> = {
-  '1': [
-    { timestamp: '2025-03-01', device_id: 'D-1000', temperature: 26.2, humidity: 48.1, pressure: 101.3, vibration: 0.12, current: 3.2, voltage: 220.1, status: 'OK', alarm_code: '', operator: '张三', shift: 'A', line_no: 'L1', product_id: 'P-01', batch_no: 'B-20250301', process: '组装', station: 'S-01', remarks: '例行采集', tags: ['iot','daily'], meta: { fw: '1.2.0', sn: 'SN-001' }, location: 'Z1' },
-    { timestamp: '2025-03-01', device_id: 'D-1000', temperature: 26.8, humidity: 50.3, pressure: 101.2, vibration: 0.13, current: 3.1, voltage: 220.0, status: 'OK', alarm_code: '', operator: '李四', shift: 'A', line_no: 'L1', product_id: 'P-01', batch_no: 'B-20250301', process: '组装', station: 'S-02', remarks: '', tags: ['iot'], meta: { fw: '1.2.0' }, location: 'Z1' },
-    { timestamp: '2025-03-01', device_id: 'D-1001', temperature: 27.5, humidity: 49.0, pressure: 100.9, vibration: 0.11, current: 3.0, voltage: 219.8, status: 'WARN', alarm_code: 'W01', operator: '王五', shift: 'A', line_no: 'L2', product_id: 'P-02', batch_no: 'B-202503A', process: '测试', station: 'S-03', remarks: '温度偏高', tags: ['iot','warn'], meta: { fw: '1.2.0' }, location: 'Z2' },
-    { timestamp: '2025-03-02', device_id: 'D-1002', temperature: 24.8, humidity: 46.7, pressure: 101.0, vibration: 0.10, current: 2.8, voltage: 220.2, status: 'OK', alarm_code: '', operator: '赵六', shift: 'B', line_no: 'L2', product_id: 'P-02', batch_no: 'B-202503B', process: '老化', station: 'S-01', remarks: '', tags: [], meta: { fw: '1.2.1' }, location: 'Z3' },
-    { timestamp: '2025-03-02', device_id: 'D-1003', temperature: 25.3, humidity: 47.5, pressure: 101.1, vibration: 0.09, current: 2.9, voltage: 220.4, status: 'OK', alarm_code: '', operator: '张三', shift: 'B', line_no: 'L3', product_id: 'P-03', batch_no: 'B-202503C', process: '包装', station: 'S-02', remarks: '抽检', tags: ['qa'], meta: { fw: '1.2.1' }, location: 'Z3' },
-    { timestamp: '2025-03-02', device_id: 'D-1001', temperature: 28.1, humidity: 52.0, pressure: 100.7, vibration: 0.15, current: 3.4, voltage: 219.5, status: 'ERROR', alarm_code: 'E12', operator: '李四', shift: 'B', line_no: 'L1', product_id: 'P-01', batch_no: 'B-20250301', process: '测试', station: 'S-03', remarks: '报警触发', tags: ['iot','error'], meta: { fw: '1.2.0' }, location: 'Z2' },
-    { timestamp: '2025-03-03', device_id: 'D-1000', temperature: 26.0, humidity: 48.8, pressure: 101.4, vibration: 0.12, current: 3.2, voltage: 220.0, status: 'OK', alarm_code: '', operator: '王五', shift: 'C', line_no: 'L1', product_id: 'P-01', batch_no: 'B-20250301', process: '组装', station: 'S-01', remarks: '', tags: ['iot'], meta: { fw: '1.2.0' }, location: 'Z1' },
-    { timestamp: '2025-03-03', device_id: 'D-1004', temperature: 23.9, humidity: 45.0, pressure: 101.3, vibration: 0.08, current: 2.5, voltage: 220.3, status: 'OK', alarm_code: '', operator: '赵六', shift: 'C', line_no: 'L4', product_id: 'P-04', batch_no: 'B-202503D', process: '入库', station: 'S-04', remarks: '正常', tags: [], meta: { fw: '1.3.0' }, location: 'Z4' },
-    { timestamp: '2025-03-03', device_id: 'D-1002', temperature: 25.0, humidity: 47.2, pressure: 101.0, vibration: 0.09, current: 2.7, voltage: 220.2, status: 'OK', alarm_code: '', operator: '张三', shift: 'C', line_no: 'L2', product_id: 'P-02', batch_no: 'B-202503B', process: '老化', station: 'S-01', remarks: '复检', tags: ['qa'], meta: { fw: '1.2.1' }, location: 'Z3' },
-    { timestamp: '2025-03-03', device_id: 'D-1003', temperature: 25.1, humidity: 47.4, pressure: 101.1, vibration: 0.09, current: 2.9, voltage: 220.1, status: 'OK', alarm_code: '', operator: '李四', shift: 'C', line_no: 'L3', product_id: 'P-03', batch_no: 'B-202503C', process: '包装', station: 'S-02', remarks: '', tags: [], meta: { fw: '1.2.1' }, location: 'Z3' },
-  ],
-  '2': [
-    { order_id: 'O-10001', customer_id: 'C-001', order_date: '2025-03-01', product_id: 'P-01', quantity: 10, price: 99.9, amount: 999, status: 'paid', channel: 'online', region: '华东', sales_rep: 'Alice', payment_method: 'alipay', shipping_date: '2025-03-02', delivery_status: 'shipped', coupon: 'SPRING', discount: 50, note: '', created_at: '2025-03-01 10:00', updated_at: '2025-03-01 10:10', invoice_no: 'INV-10001', operator_id: 'U-001', warehouse: 'W1' },
-    { order_id: 'O-10002', customer_id: 'C-002', order_date: '2025-03-01', product_id: 'P-02', quantity: 5, price: 199.0, amount: 995, status: 'paid', channel: 'offline', region: '华南', sales_rep: 'Bob', payment_method: 'wechat', shipping_date: '2025-03-03', delivery_status: 'pending', coupon: '', discount: 0, note: '加急', created_at: '2025-03-01 11:00', updated_at: '2025-03-01 11:20', invoice_no: 'INV-10002', operator_id: 'U-002', warehouse: 'W2' },
-    { order_id: 'O-10003', customer_id: 'C-003', order_date: '2025-03-02', product_id: 'P-03', quantity: 2, price: 599.0, amount: 1198, status: 'refunded', channel: 'online', region: '华北', sales_rep: 'Carol', payment_method: 'alipay', shipping_date: '2025-03-02', delivery_status: 'returned', coupon: 'VIP', discount: 100, note: '质量问题', created_at: '2025-03-02 09:30', updated_at: '2025-03-02 10:00', invoice_no: 'INV-10003', operator_id: 'U-003', warehouse: 'W1' },
-    { order_id: 'O-10004', customer_id: 'C-001', order_date: '2025-03-02', product_id: 'P-01', quantity: 1, price: 99.9, amount: 99.9, status: 'paid', channel: 'online', region: '华东', sales_rep: 'Alice', payment_method: 'alipay', shipping_date: '2025-03-03', delivery_status: 'shipped', coupon: '', discount: 0, note: '', created_at: '2025-03-02 12:00', updated_at: '2025-03-02 12:02', invoice_no: 'INV-10004', operator_id: 'U-001', warehouse: 'W1' },
-    { order_id: 'O-10005', customer_id: 'C-004', order_date: '2025-03-03', product_id: 'P-02', quantity: 20, price: 189.0, amount: 3780, status: 'pending', channel: 'offline', region: '华中', sales_rep: 'David', payment_method: 'cash', shipping_date: '', delivery_status: 'created', coupon: '', discount: 0, note: '渠道商首单', created_at: '2025-03-03 08:00', updated_at: '2025-03-03 08:30', invoice_no: 'INV-10005', operator_id: 'U-004', warehouse: 'W3' },
-    { order_id: 'O-10006', customer_id: 'C-005', order_date: '2025-03-03', product_id: 'P-03', quantity: 3, price: 599.0, amount: 1797, status: 'paid', channel: 'online', region: '西南', sales_rep: 'Eve', payment_method: 'wechat', shipping_date: '2025-03-04', delivery_status: 'pending', coupon: 'SPRING', discount: 150, note: '', created_at: '2025-03-03 09:00', updated_at: '2025-03-03 09:05', invoice_no: 'INV-10006', operator_id: 'U-005', warehouse: 'W2' },
-    { order_id: 'O-10007', customer_id: 'C-006', order_date: '2025-03-03', product_id: 'P-01', quantity: 15, price: 95.0, amount: 1425, status: 'paid', channel: 'offline', region: '东北', sales_rep: 'Frank', payment_method: 'cash', shipping_date: '2025-03-05', delivery_status: 'pending', coupon: '', discount: 0, note: '促销活动', created_at: '2025-03-03 10:00', updated_at: '2025-03-03 10:20', invoice_no: 'INV-10007', operator_id: 'U-006', warehouse: 'W2' },
-    { order_id: 'O-10008', customer_id: 'C-007', order_date: '2025-03-03', product_id: 'P-04', quantity: 1, price: 1299.0, amount: 1299.0, status: 'paid', channel: 'online', region: '华东', sales_rep: 'Grace', payment_method: 'alipay', shipping_date: '2025-03-04', delivery_status: 'pending', coupon: 'VIP', discount: 200, note: '', created_at: '2025-03-03 11:00', updated_at: '2025-03-03 11:02', invoice_no: 'INV-10008', operator_id: 'U-007', warehouse: 'W1' },
-    { order_id: 'O-10009', customer_id: 'C-008', order_date: '2025-03-03', product_id: 'P-02', quantity: 7, price: 189.0, amount: 1323, status: 'paid', channel: 'online', region: '华南', sales_rep: 'Henry', payment_method: 'wechat', shipping_date: '2025-03-04', delivery_status: 'shipped', coupon: '', discount: 0, note: '', created_at: '2025-03-03 12:00', updated_at: '2025-03-03 12:10', invoice_no: 'INV-10009', operator_id: 'U-008', warehouse: 'W3' },
-    { order_id: 'O-10010', customer_id: 'C-009', order_date: '2025-03-03', product_id: 'P-01', quantity: 4, price: 99.9, amount: 399.6, status: 'pending', channel: 'offline', region: '华北', sales_rep: 'Ivy', payment_method: 'cash', shipping_date: '', delivery_status: 'created', coupon: '', discount: 0, note: '', created_at: '2025-03-03 13:00', updated_at: '2025-03-03 13:05', invoice_no: 'INV-10010', operator_id: 'U-009', warehouse: 'W1' },
-  ],
-  '3': [
-    { log_id: 'L-20001', device_id: 'D-1001', event: 'connect', level: 'info', message: 'device connected', created_at: '2025-03-01 10:00:00', duration_ms: 120, error_code: '', stack: '', module: 'net', ip: '10.0.0.11' },
-    { log_id: 'L-20002', device_id: 'D-1001', event: 'heartbeat', level: 'info', message: 'heartbeat ok', created_at: '2025-03-01 10:05:00', duration_ms: 5, error_code: '', stack: '', module: 'core', ip: '10.0.0.11' },
-    { log_id: 'L-20003', device_id: 'D-1001', event: 'temp_warn', level: 'warn', message: 'temperature high', created_at: '2025-03-01 10:06:00', duration_ms: 0, error_code: 'W01', stack: '', module: 'sensor', ip: '10.0.0.11' },
-    { log_id: 'L-20004', device_id: 'D-1002', event: 'connect', level: 'info', message: 'device connected', created_at: '2025-03-01 11:00:00', duration_ms: 130, error_code: '', stack: '', module: 'net', ip: '10.0.0.12' },
-    { log_id: 'L-20005', device_id: 'D-1002', event: 'error', level: 'error', message: 'sensor failure', created_at: '2025-03-01 11:02:00', duration_ms: 0, error_code: 'E12', stack: 'Trace...', module: 'sensor', ip: '10.0.0.12' },
-    { log_id: 'L-20006', device_id: 'D-1003', event: 'connect', level: 'info', message: 'device connected', created_at: '2025-03-02 09:00:00', duration_ms: 95, error_code: '', stack: '', module: 'net', ip: '10.0.0.13' },
-    { log_id: 'L-20007', device_id: 'D-1003', event: 'disconnect', level: 'warn', message: 'network unstable', created_at: '2025-03-02 09:30:00', duration_ms: 0, error_code: 'W02', stack: '', module: 'net', ip: '10.0.0.13' },
-    { log_id: 'L-20008', device_id: 'D-1004', event: 'connect', level: 'info', message: 'device connected', created_at: '2025-03-03 08:00:00', duration_ms: 110, error_code: '', stack: '', module: 'net', ip: '10.0.0.14' },
-    { log_id: 'L-20009', device_id: 'D-1004', event: 'heartbeat', level: 'info', message: 'heartbeat ok', created_at: '2025-03-03 08:05:00', duration_ms: 5, error_code: '', stack: '', module: 'core', ip: '10.0.0.14' },
-    { log_id: 'L-20010', device_id: 'D-1004', event: 'error', level: 'error', message: 'power issue', created_at: '2025-03-03 08:06:00', duration_ms: 0, error_code: 'E01', stack: 'Trace...', module: 'power', ip: '10.0.0.14' },
-  ],
-  '4': [
-    { sample_id: 'S-30001', inspection_item: '尺寸', result: '合格', value: 10.2, unit: 'mm', spec_lower: 9.8, spec_upper: 10.5, judge: 'OK', inspector: '张三', station: 'QC-01', batch_no: 'B-20250301', lot_no: 'L-01', timestamp: '2025-03-01', method: '卡尺', image_url: '', remarks: '' },
-    { sample_id: 'S-30002', inspection_item: '尺寸', result: '不合格', value: 10.6, unit: 'mm', spec_lower: 9.8, spec_upper: 10.5, judge: 'NG', inspector: '李四', station: 'QC-01', batch_no: 'B-20250301', lot_no: 'L-01', timestamp: '2025-03-01', method: '卡尺', image_url: '', remarks: '超上限' },
-    { sample_id: 'S-30003', inspection_item: '外观', result: '合格', value: 0, unit: '', spec_lower: 0, spec_upper: 0, judge: 'OK', inspector: '王五', station: 'QC-02', batch_no: 'B-20250302', lot_no: 'L-02', timestamp: '2025-03-02', method: '目检', image_url: '', remarks: '' },
-    { sample_id: 'S-30004', inspection_item: '重量', result: '合格', value: 15.2, unit: 'g', spec_lower: 15.0, spec_upper: 15.5, judge: 'OK', inspector: '赵六', station: 'QC-03', batch_no: 'B-20250302', lot_no: 'L-02', timestamp: '2025-03-02', method: '电子秤', image_url: '', remarks: '' },
-    { sample_id: 'S-30005', inspection_item: '重量', result: '不合格', value: 15.6, unit: 'g', spec_lower: 15.0, spec_upper: 15.5, judge: 'NG', inspector: '张三', station: 'QC-03', batch_no: 'B-20250303', lot_no: 'L-03', timestamp: '2025-03-03', method: '电子秤', image_url: '', remarks: '偏重' },
-    { sample_id: 'S-30006', inspection_item: '尺寸', result: '合格', value: 10.1, unit: 'mm', spec_lower: 9.8, spec_upper: 10.5, judge: 'OK', inspector: '李四', station: 'QC-01', batch_no: 'B-20250303', lot_no: 'L-03', timestamp: '2025-03-03', method: '卡尺', image_url: '', remarks: '' },
-    { sample_id: 'S-30007', inspection_item: '外观', result: '不合格', value: 1, unit: '', spec_lower: 0, spec_upper: 0, judge: 'NG', inspector: '王五', station: 'QC-02', batch_no: 'B-20250303', lot_no: 'L-03', timestamp: '2025-03-03', method: '目检', image_url: '', remarks: '划痕' },
-    { sample_id: 'S-30008', inspection_item: '重量', result: '合格', value: 15.4, unit: 'g', spec_lower: 15.0, spec_upper: 15.5, judge: 'OK', inspector: '赵六', station: 'QC-03', batch_no: 'B-20250303', lot_no: 'L-03', timestamp: '2025-03-03', method: '电子秤', image_url: '', remarks: '' },
-    { sample_id: 'S-30009', inspection_item: '尺寸', result: '合格', value: 10.0, unit: 'mm', spec_lower: 9.8, spec_upper: 10.5, judge: 'OK', inspector: '张三', station: 'QC-01', batch_no: 'B-20250304', lot_no: 'L-04', timestamp: '2025-03-04', method: '卡尺', image_url: '', remarks: '' },
-    { sample_id: 'S-30010', inspection_item: '外观', result: '合格', value: 0, unit: '', spec_lower: 0, spec_upper: 0, judge: 'OK', inspector: '李四', station: 'QC-02', batch_no: 'B-20250304', lot_no: 'L-04', timestamp: '2025-03-04', method: '目检', image_url: '', remarks: '' },
+  // 钢铁冷轧
+  '冷轧生产参数_2024.csv': generateIndustryData('STEEL', STEEL_FIELDS, 20),
+
+  // 化工工艺
+  '反应塔时序参数.csv': generateIndustryData('PROC', PROCESS_FIELDS, 20),
+
+  // 设备监控
+  '空压机健康监测.csv': generateIndustryData('EQUIP', EQUIP_FIELDS, 20),
+
+  // 风电 SCADA (仅为 C7, C8, C9 生成演示数据，其余保持为空或复用)
+  'C7.csv': generateIndustryData('WIND', WIND_FIELDS, 20),
+  'C8.csv': generateIndustryData('WIND', WIND_FIELDS, 20),
+  'C9.csv': generateIndustryData('WIND', WIND_FIELDS, 20),
+  'C64.csv': generateIndustryData('WIND', WIND_FIELDS, 20),
+  'C65.csv': generateIndustryData('WIND', WIND_FIELDS, 20),
+
+  // 保留原有基础数据用于其他演示
+  '生产线传感器1.csv': generateIndustryData('SENSE', ["datatime", "temperature", "humidity", "pressure", "vibration", "voltage", "current", "rpm", "torque", "power", "energy", "status_code"], 10),
+  '订单明细.csv': [
+    { order_id: 'ORD001', product_id: 'P100', quantity: 10, price: 99.9, customer_id: 'C001', status: '已完成', order_date: '2024-12-10', ship_date: '2024-12-12', region: '华东', sales_rep: '张三', payment_method: '支付宝', discount: 10, tax: 5, total_amount: 1004, notes: '' },
+    { order_id: 'ORD002', product_id: 'P101', quantity: 5, price: 199.0, customer_id: 'C002', status: '待发货', order_date: '2024-12-11', ship_date: '', region: '华北', sales_rep: '李四', payment_method: '微信', discount: 0, tax: 10, total_amount: 1005, notes: '加急' },
   ],
 };
 
