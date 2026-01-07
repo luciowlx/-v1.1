@@ -984,31 +984,35 @@ export const CreateTaskPage: React.FC<CreateTaskPageProps> = ({
                                                         </TooltipProvider>
                                                     </div>
 
+                                                    {/* 全局配置：时序预测任务的时间列选择 (单文件/多文件通用) */}
+                                                    {formData.taskType === TASK_TYPES.forecasting && formData.selectedFilesMetadata.length > 0 && (
+                                                        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                                                            <div className="flex items-center space-x-4">
+                                                                <Label className="text-sm font-medium text-gray-700 whitespace-nowrap">
+                                                                    <span className="text-red-500 mr-1">*</span>时间列
+                                                                </Label>
+                                                                <Select
+                                                                    value={formData.forecastingConfig.timeColumn}
+                                                                    onValueChange={(v: string) => handleInputChange('forecastingConfig', { ...formData.forecastingConfig, timeColumn: v })}
+                                                                >
+                                                                    <SelectTrigger className="flex-1 bg-gray-50/50">
+                                                                        <SelectValue placeholder="请选择时间列" />
+                                                                    </SelectTrigger>
+                                                                    <SelectContent>
+                                                                        {featureFieldsIntersection.map(f => (
+                                                                            <SelectItem key={f} value={f}>{f}</SelectItem>
+                                                                        ))}
+                                                                    </SelectContent>
+                                                                </Select>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
                                                     {formData.selectedFilesMetadata.length === 1 ? (
                                                         formData.taskType === TASK_TYPES.forecasting ? (
                                                             /* 时序预测专用数据划分配置 */
                                                             <div className="space-y-6">
-                                                                {/* 时间列选择 */}
-                                                                <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                                                                    <div className="flex items-center space-x-4">
-                                                                        <Label className="text-sm font-medium text-gray-700 whitespace-nowrap">
-                                                                            <span className="text-red-500 mr-1">*</span>时间列
-                                                                        </Label>
-                                                                        <Select
-                                                                            value={formData.forecastingConfig.timeColumn}
-                                                                            onValueChange={(v: string) => handleInputChange('forecastingConfig', { ...formData.forecastingConfig, timeColumn: v })}
-                                                                        >
-                                                                            <SelectTrigger className="flex-1 bg-gray-50/50">
-                                                                                <SelectValue placeholder="请选择时间列" />
-                                                                            </SelectTrigger>
-                                                                            <SelectContent>
-                                                                                {featureFieldsIntersection.map(f => (
-                                                                                    <SelectItem key={f} value={f}>{f}</SelectItem>
-                                                                                ))}
-                                                                            </SelectContent>
-                                                                        </Select>
-                                                                    </div>
-                                                                </div>
+                                                                {/* (REMOVED: Time column selection moved to top level) */}
 
                                                                 {/* 数据划分配置 */}
                                                                 <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-5">

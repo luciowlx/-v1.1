@@ -3,7 +3,8 @@ import {
     Search, Plus, Filter, MoreHorizontal, Clock, Activity, CheckCircle, XCircle,
     AlertCircle, AlertTriangle, ChevronRight, ChevronLeft, ArrowRight, Database, BarChart3,
     Flame, Download, Copy, Trash2, RefreshCcw, Target, FileText, LayoutGrid,
-    Settings2, Eye, MoreVertical, History, X, Play, Calendar, List
+    Settings2, Eye, MoreVertical, History, X, Play, Calendar, List, Pencil,
+    Table as TableIcon
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -250,7 +251,6 @@ function CreateCITask({ onBack, onSubmit }: any) {
 
     const [schema, setSchema] = useState<any>(null); // 恢复 schema 状态
     const [currentYSchema, setCurrentYSchema] = useState<any>(null);
-    const [xSearch, setXSearch] = useState(''); // 新增：X 因子搜索关键词
     // 监听 Y 字段变化，更新 currentYSchema
     useEffect(() => {
         if (schema && formData.yField) {
@@ -263,7 +263,7 @@ function CreateCITask({ onBack, onSubmit }: any) {
     const [estimating, setEstimating] = useState(false);
     const [estimateResult, setEstimateResult] = useState({ total: 10000, hit: 312 });
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
-    const [editingFilter, setEditingFilter] = useState<{ field: string, op: string, value: any }>({ field: '', op: 'BETWEEN', value: null });
+    const [editingFilter, setEditingFilter] = useState<{ id?: number, field: string, op: string, value: any }>({ field: '', op: 'BETWEEN', value: null });
 
     // 模拟字段元数据
     useEffect(() => {
@@ -285,63 +285,26 @@ function CreateCITask({ onBack, onSubmit }: any) {
         }
     }, [formData.filters, formData.xFields, formData.yField, formData.yRange, formData.sourceTaskId]);
 
-
-
-    // 过滤出的 X 字段列表
-    const filteredXFields = useMemo(() => {
-        if (!schema) return [];
-        return schema.fields
-            .filter((f: any) => f.name !== 'Time' && f.name !== formData.yField)
-            .filter((f: any) => f.displayName.includes(xSearch) || f.name.includes(xSearch));
-    }, [schema, formData.yField, xSearch]);
-
-    // 判断当前过滤列表是否已全选
-    const isAllSelected = filteredXFields.length > 0 && filteredXFields.every((f: any) => formData.xFields.includes(f.name));
-
-    // 全选/取消全选逻辑
-    const handleSelectAll = () => {
-        const visibleNames = filteredXFields.map((f: any) => f.name);
-
-        let newXFields;
-        if (isAllSelected) {
-            // 取消全选 visible
-            newXFields = formData.xFields.filter((name: string) => !visibleNames.includes(name));
-        } else {
-            // 全选 visible
-            const toAdd = visibleNames.filter((name: string) => !formData.xFields.includes(name));
-            newXFields = [...formData.xFields, ...toAdd];
-        }
-        setFormData({ ...formData, xFields: newXFields });
+    const openEditModal = (filter: any) => {
+        setEditingFilter({ ...filter });
+        setIsFilterModalOpen(true);
     };
 
-    const handleSubmit = (status: 'DRAFT' | 'QUEUED') => {
-        const newTask: CausalInsightTask = {
-            id: `CI-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
-            name: formData.name,
-            projectId: 'proj_001',
-            sourceDecisionTaskId: formData.sourceTaskId,
-            sourceDecisionTaskName: '销售数据预测模型训练',
-            datasetSnapshotId: 'SNAP-NEW',
-            xSpec: { mode: 'explicit', fields: formData.xFields },
-            ySpec: { field: formData.yField, filterType: currentYSchema?.filterType || 'Numeric' },
-            filters: formData.filters,
-            status: status,
-            progress: 0,
-            sampleTotal: estimateResult.total,
-            sampleHit: estimateResult.hit,
-            createdAt: new Date().toLocaleString(),
-            createdBy: '当前用户',
-            updatedAt: new Date().toLocaleString()
-        };
-        onSubmit(newTask);
-    };
-
-    const addFilter = () => {
+    const handleSaveFilter = () => {
         if (editingFilter.field && editingFilter.value) {
-            setFormData({
-                ...formData,
-                filters: [...formData.filters, { ...editingFilter, id: Date.now() }]
-            });
+            if (editingFilter.id) {
+                // 编辑模式：更新
+                setFormData({
+                    ...formData,
+                    filters: formData.filters.map(f => f.id === editingFilter.id ? editingFilter : f)
+                });
+            } else {
+                // 新增模式：添加
+                setFormData({
+                    ...formData,
+                    filters: [...formData.filters, { ...editingFilter, id: Date.now() }]
+                });
+            }
             setIsFilterModalOpen(false);
             setEditingFilter({ field: '', op: 'BETWEEN', value: '' });
         }
@@ -398,63 +361,7 @@ function CreateCITask({ onBack, onSubmit }: any) {
                                 />
                             </div>
 
-                            {/* X 影响因子 */}
-                            <div className="space-y-3">
-                                <div className="flex justify-between items-center ml-1">
-                                    <Label className="text-sm font-bold text-slate-700">X (影响因子)</Label>
-                                    <div className="flex items-center space-x-3">
-                                        {filteredXFields.length > 0 && (
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                onClick={handleSelectAll}
-                                                className="h-6 text-xs text-blue-500 hover:text-blue-600 hover:bg-blue-50 -mr-2 px-2"
-                                            >
-                                                {isAllSelected ? '取消全选' : '全选'}
-                                            </Button>
-                                        )}
-                                        <span className="text-[10px] font-black text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full uppercase tracking-wider">已选 {formData.xFields.length}</span>
-                                    </div>
-                                </div>
-                                {/* 新增搜索框 (修复 prefix 属性问题) */}
-                                {schema && (
-                                    <div className="relative">
-                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-                                        <Input
-                                            placeholder="搜索字段..."
-                                            className="h-9 rounded-xl border-slate-100 bg-slate-50/50 text-xs pl-9"
-                                            value={xSearch}
-                                            onChange={(e) => setXSearch(e.target.value)}
-                                        />
-                                    </div>
-                                )}
-                                <div className="bg-slate-50/50 border border-slate-100 rounded-2xl p-4 max-h-[220px] overflow-y-auto custom-scrollbar flex flex-wrap gap-2">
-                                    {schema ? (
-                                        filteredXFields.map((f: any) => (
-                                            <div
-                                                key={f.name}
-                                                onClick={() => {
-                                                    const next = formData.xFields.includes(f.name)
-                                                        ? formData.xFields.filter(x => x !== f.name)
-                                                        : [...formData.xFields, f.name];
-                                                    setFormData({ ...formData, xFields: next });
-                                                }}
-                                                className={`flex items-center px-4 py-2 rounded-xl border-2 cursor-pointer transition-all duration-200 select-none ${formData.xFields.includes(f.name)
-                                                    ? 'bg-blue-600 border-blue-600 text-white shadow-md shadow-blue-100'
-                                                    : 'bg-white border-white text-slate-600 hover:border-blue-200'
-                                                    }`}
-                                            >
-                                                <Checkbox checked={formData.xFields.includes(f.name)} className="mr-2 border-white/50 data-[state=checked]:bg-white data-[state=checked]:text-blue-600 hidden" />
-                                                <div className="flex flex-col">
-                                                    <span className="text-xs font-bold leading-tight">{f.displayName}</span>
-                                                </div>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <div className="w-full py-8 text-center text-slate-300 italic text-xs font-medium">请先选择来源任务</div>
-                                    )}
-                                </div>
-                            </div>
+
 
                             {/* Y 分析目标 */}
                             <div className="space-y-6 pt-2 border-t border-slate-50">
@@ -595,25 +502,40 @@ function CreateCITask({ onBack, onSubmit }: any) {
                                     </TableHeader>
                                     <TableBody>
                                         {formData.filters.length > 0 ? (
-                                            formData.filters.map((f, idx) => (
-                                                <TableRow key={f.id} className="hover:bg-slate-50/50 border-slate-50 transition-colors group">
-                                                    <TableCell className="font-bold text-slate-700 h-14 pl-6">{f.field}</TableCell>
-                                                    <TableCell className="font-mono text-[11px] font-black text-slate-400">{f.op}</TableCell>
-                                                    <TableCell className="text-sm font-medium text-slate-600">
-                                                        {Array.isArray(f.value) ? f.value.join(' ~ ') : f.value}
-                                                    </TableCell>
-                                                    <TableCell className="text-right pr-6">
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            onClick={() => removeFilter(f.id)}
-                                                            className="h-8 w-8 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors"
-                                                        >
-                                                            <Trash2 className="w-4 h-4" />
-                                                        </Button>
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))
+                                            formData.filters.map((f, idx) => {
+                                                const fieldInfo = schema?.fields.find((field: any) => field.name === f.field);
+                                                return (
+                                                    <TableRow key={f.id} className="hover:bg-slate-50/50 border-slate-50 transition-colors group">
+                                                        <TableCell className="font-bold text-slate-700 h-14 pl-6">
+                                                            {fieldInfo ? fieldInfo.displayName : f.field}
+                                                        </TableCell>
+                                                        <TableCell className="font-mono text-[11px] font-black text-slate-400">{f.op}</TableCell>
+                                                        <TableCell className="text-sm font-medium text-slate-600">
+                                                            {Array.isArray(f.value) ? f.value.join(' ~ ') : f.value}
+                                                        </TableCell>
+                                                        <TableCell className="text-right pr-6">
+                                                            <div className="flex justify-end space-x-1">
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    onClick={() => openEditModal(f)}
+                                                                    className="h-8 w-8 text-slate-300 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
+                                                                >
+                                                                    <Pencil className="w-4 h-4" />
+                                                                </Button>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    onClick={() => removeFilter(f.id)}
+                                                                    className="h-8 w-8 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                                >
+                                                                    <Trash2 className="w-4 h-4" />
+                                                                </Button>
+                                                            </div>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                );
+                                            })
                                         ) : (
                                             <TableRow>
                                                 <TableCell colSpan={4} className="h-64 text-center">
@@ -866,11 +788,11 @@ function CreateCITask({ onBack, onSubmit }: any) {
                     <div className="flex gap-4 pt-4">
                         <Button variant="ghost" onClick={() => setIsFilterModalOpen(false)} className="flex-1 h-12 rounded-2xl font-bold text-slate-500">放弃</Button>
                         <Button
-                            onClick={addFilter}
+                            onClick={handleSaveFilter}
                             disabled={!editingFilter.field || editingFilter.value === null || editingFilter.value === ''}
                             className="flex-1 h-12 rounded-2xl font-black text-xs uppercase tracking-widest bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-100 border-none"
                         >
-                            确认添加
+                            {editingFilter.id ? '确认修改' : '确认添加'}
                         </Button>
                     </div>
                 </div>
@@ -880,11 +802,249 @@ function CreateCITask({ onBack, onSubmit }: any) {
 }
 
 /**
+ * 影响因子条形图组件
+ */
+function CausalImpactChart({ data, title, description, yField }: { data: any[], title: React.ReactNode, description: string, yField: string }) {
+    if (!data || data.length === 0) return null;
+
+    return (
+        <section className="space-y-6">
+            <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                    <h3 className="text-lg font-black text-slate-800 tracking-tight flex items-center">
+                        {title}
+                    </h3>
+                    <p className="text-xs text-slate-400 font-medium">{description}</p>
+                </div>
+            </div>
+            <div className="h-[500px] w-full p-8 bg-white rounded-3xl border border-slate-100 shadow-inner relative" style={{ minHeight: '500px' }}>
+                <ResponsiveContainer width="100%" height="100%" minHeight={400}>
+                    <ComposedChart
+                        layout="vertical"
+                        data={data}
+                        margin={{ top: 20, right: 40, left: 100, bottom: 20 }}
+                    >
+                        <CartesianGrid strokeDasharray="3 3" horizontal={false} vertical={true} stroke="#f1f5f9" />
+                        <XAxis
+                            type="number"
+                            domain={['auto', 'auto']}
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fill: '#94a3b8', fontSize: 11 }}
+                        />
+                        <YAxis
+                            dataKey="name"
+                            type="category"
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fill: '#475569', fontSize: 12, fontWeight: 700 }}
+                            width={140}
+                        />
+                        <RechartsTooltip
+                            cursor={{ fill: '#f8fafc' }}
+                            content={({ active, payload }: any) => {
+                                if (active && payload && payload.length) {
+                                    const d = payload[0].payload;
+                                    return (
+                                        <div className="bg-slate-900 text-white p-4 rounded-2xl shadow-2xl border border-white/10 text-xs font-bold min-w-[180px]">
+                                            <p className="mb-2 text-slate-400 uppercase tracking-widest text-[9px]">{d.displayName}</p>
+                                            <div className="flex items-baseline justify-between">
+                                                <span className="text-2xl font-black">{d.value > 0 ? '+' : ''}{d.value.toFixed(2)}</span>
+                                                <span className={`px-2 py-0.5 rounded-lg text-[10px] ${d.value > 0 ? 'bg-rose-500/20 text-rose-400' : 'bg-blue-500/20 text-blue-400'}`}>
+                                                    {d.value > 0 ? 'Positive Impact' : 'Negative Impact'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    );
+                                }
+                                return null;
+                            }}
+                        />
+                        <Bar dataKey="value" barSize={32} radius={[4, 4, 4, 4]}>
+                            {data.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.value > 0 ? '#f43f5e' : '#3b82f6'} />
+                            ))}
+                        </Bar>
+                    </ComposedChart>
+                </ResponsiveContainer>
+            </div>
+        </section>
+    );
+}
+
+/**
+ * 因果关系热力图组件
+ */
+function CausalHeatmap({ data, title, description }: { data: any, title: React.ReactNode, description: string }) {
+    if (!data) return null;
+
+    return (
+        <section className="space-y-6">
+            <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                    <h3 className="text-lg font-black text-slate-800 tracking-tight flex items-center">
+                        {title}
+                    </h3>
+                    <p className="text-xs text-slate-400 font-medium">{description}</p>
+                </div>
+                <div className="flex items-center space-x-4 pr-2">
+                    <div className="flex items-center space-x-1.5">
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                    </div>
+                    <div className="flex items-center space-x-1.5">
+                        <div className="w-1.5 h-1.5 rounded-full bg-slate-200" />
+                    </div>
+                    <div className="flex items-center space-x-1.5">
+                        <div className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                    </div>
+                </div>
+            </div>
+
+            <div className="bg-slate-50/50 rounded-3xl border border-slate-100 p-8 overflow-x-auto">
+                <div className="min-w-[800px]">
+                    {/* X轴 Label (特征) */}
+                    <div className="flex mb-2 ml-36">
+                        {data.features.map((feat: string, idx: number) => (
+                            <div key={feat} className="flex-1 text-[10px] font-bold text-slate-400 text-center truncate px-1 transform -rotate-12 origin-bottom-left" style={{ height: '30px' }}>
+                                {feat}
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Heatmap Grid */}
+                    <div className="space-y-[2px]">
+                        {data.timeLabels.map((time: string, rowIdx: number) => (
+                            <div key={time} className="flex items-center space-x-[2px]">
+                                {/* Y轴 Label (时间) */}
+                                <div className="w-36 text-[10px] font-mono font-bold text-slate-400 truncate pr-3 text-right">
+                                    {time}
+                                </div>
+                                {/* 单元格 */}
+                                {data.values[rowIdx].map((val: string, colIdx: number) => {
+                                    const numericVal = parseFloat(val);
+                                    // 计算颜色：正值为红，负值为蓝
+                                    let bgColor = '#f1f5f9'; // neutral
+                                    let opacity = 0.1;
+                                    if (numericVal > 0) {
+                                        bgColor = '#f43f5e'; // rose-500
+                                        opacity = Math.min(Math.abs(numericVal) / 2, 1);
+                                    } else if (numericVal < 0) {
+                                        bgColor = '#3b82f6'; // blue-500
+                                        opacity = Math.min(Math.abs(numericVal) / 2, 1);
+                                    }
+
+                                    return (
+                                        <Tooltip key={`${rowIdx}-${colIdx}`} title={`${time} | ${data.features[colIdx]} : ${val}`}>
+                                            <div
+                                                className="flex-1 h-3 rounded-[1px] cursor-pointer hover:ring-2 hover:ring-white transition-all"
+                                                style={{
+                                                    backgroundColor: bgColor,
+                                                    opacity: opacity
+                                                }}
+                                            />
+                                        </Tooltip>
+                                    );
+                                })}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </section>
+    );
+}
+
+/**
+ * 原始样本数据表格组件
+ */
+function SampleDataTable({ data, columns, className }: { data: any[], columns?: string[], className?: string }) {
+    if (!data || data.length === 0) return <div className="text-center py-10 text-slate-400">暂无数据</div>;
+
+    // 动态获取列名 (排除一些不需要展示的 meta key)
+    const displayColumns = columns || Object.keys(data[0]).filter(k => !['id', 'isPositive'].includes(k));
+
+    return (
+        <div className={`border border-slate-200 rounded-xl bg-white shadow-sm overflow-hidden animate-in fade-in zoom-in-95 duration-300 ${className}`}>
+            <div className={`overflow-auto ${className ? 'h-full' : 'max-h-[500px]'}`}>
+                <Table>
+                    <TableHeader className="bg-slate-50 sticky top-0 z-10 shadow-sm">
+                        <TableRow>
+                            <TableHead className="w-20 text-center font-bold text-slate-700 bg-slate-50">序号</TableHead>
+                            <TableHead className="w-40 font-bold text-slate-700 bg-slate-50">时间</TableHead>
+                            {displayColumns.filter(c => c !== 'time').map(col => (
+                                <TableHead key={col} className="font-bold text-slate-700 bg-slate-50 min-w-[120px]">
+                                    {col}
+                                </TableHead>
+                            ))}
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {data.map((row, idx) => (
+                            <TableRow key={idx} className="hover:bg-slate-50/50">
+                                <TableCell className="text-center font-mono text-slate-500 text-xs">{idx + 1}</TableCell>
+                                <TableCell className="font-mono text-slate-600 text-xs">{row.time}</TableCell>
+                                {displayColumns.filter(c => c !== 'time').map(col => (
+                                    <TableCell key={col} className="font-mono text-slate-600 text-xs">
+                                        {typeof row[col] === 'number' ? row[col].toFixed(2) : row[col]}
+                                    </TableCell>
+                                ))}
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </div>
+            <div className="bg-slate-50 border-t border-slate-200 p-2 text-center text-xs text-slate-400">
+                共 {data.length} 条数据
+            </div>
+        </div>
+    );
+}
+
+/**
  * 任务详情视图
  */
 function CITaskDetail({ task, onBack }: { task: CausalInsightTask; onBack: () => void }) {
-    const [activeTab, setActiveTab] = useState<'visual' | 'config' | 'samples'>('visual');
+    const [filteredViewMode, setFilteredViewMode] = useState<'chart' | 'table'>('chart');
+    const [fullViewMode, setFullViewMode] = useState<'chart' | 'table'>('chart');
+
+    // 全屏预览弹窗状态
+    const [isSampleModalOpen, setIsSampleModalOpen] = useState(false);
+
+    // Fetch schema to display friendly names
+    const schema = useMemo(() => {
+        if (task.sourceDecisionTaskId) {
+            return getDecisionTaskSchema(task.sourceDecisionTaskId);
+        }
+        return null;
+    }, [task.sourceDecisionTaskId]);
+
     const resultData = useMemo(() => getCausalResultData(task.id), [task.id]);
+
+    // 模拟全量样本数据 (100条)，包含所有特征
+    const fullSampleData = useMemo(() => {
+        // 从结果数据中获取特征列表
+        const features = resultData.barChart.map(i => i.feature);
+
+        return Array.from({ length: 100 }).map((_, i) => {
+            const row: any = {
+                id: `#${Math.floor(Math.random() * 10000)}`,
+                time: `2025-08-01 ${String(Math.floor(i / 4) % 24).padStart(2, '0')}:${String((i % 4) * 15).padStart(2, '0')}:00`,
+                [task.ySpec.field]: (Math.random() * 100).toFixed(2), // Target
+            };
+
+            // 为每个特征生成随机数据
+            features.forEach(feat => {
+                row[feat] = (Math.random() * 50 + 10).toFixed(2);
+            });
+
+            return row;
+        });
+    }, [resultData, task.ySpec.field]);
+
+    // 模拟筛选后的样本数据 (取全量的前30条作为示例)
+    const filteredSampleData = useMemo(() => {
+        return fullSampleData.slice(0, 30);
+    }, [fullSampleData]);
 
     if (!task) return <div className="p-20 text-center"><RefreshCcw className="w-8 h-8 animate-spin mx-auto text-blue-400" /></div>;
 
@@ -897,6 +1057,36 @@ function CITaskDetail({ task, onBack }: { task: CausalInsightTask; onBack: () =>
             absScore: Math.abs(item.score)
         })).sort((a, b) => b.absScore - a.absScore);
     }, [resultData.barChart]);
+
+    // 【新增】模拟Filtered Data (针对影响因子图)
+    const filteredImpactData = useMemo(() => {
+        return impactData.map(item => ({
+            ...item,
+            value: item.value * (0.8 + Math.random() * 0.4), // 模拟 + - 20%的波动
+        })).sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
+    }, [impactData]);
+
+    // 【新增】模拟Filtered Data (针对热力图)
+    const filteredHeatmapData = useMemo(() => {
+        const original = resultData.heatmap;
+        return {
+            ...original,
+            values: original.values.map(row =>
+                row.map(val => (parseFloat(val as string) * (0.9 + Math.random() * 0.2)).toFixed(2))
+            )
+        };
+    }, [resultData.heatmap]);
+
+    // 分离 X 和 Y 的过滤条件
+    const xFilters = useMemo(() => {
+        if (!task.filters?.and) return [];
+        return (task.filters.and as any[]).filter(f => f.field !== task.ySpec.field);
+    }, [task.filters, task.ySpec.field]);
+
+    const yFilters = useMemo(() => {
+        if (!task.filters?.and) return [];
+        return (task.filters.and as any[]).filter(f => f.field === task.ySpec.field);
+    }, [task.filters, task.ySpec.field]);
 
     return (
         <div className="space-y-6 animate-in fade-in duration-500">
@@ -913,9 +1103,7 @@ function CITaskDetail({ task, onBack }: { task: CausalInsightTask; onBack: () =>
                     )}
                 </div>
                 <div className="flex items-center space-x-3">
-                    <Button variant="outline" className="border-slate-200 text-slate-600 h-9 rounded-lg">
-                        <Copy className="w-4 h-4 mr-2" /> 复制配置
-                    </Button>
+
                     <Button className="bg-blue-600 hover:bg-blue-700 text-white h-9 rounded-lg shadow-lg shadow-blue-100 border-none">
                         <Download className="w-4 h-4 mr-2" /> 导出报告
                     </Button>
@@ -933,17 +1121,104 @@ function CITaskDetail({ task, onBack }: { task: CausalInsightTask; onBack: () =>
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-6">
-                            <div className="space-y-1">
-                                <Label className="text-[10px] text-slate-400 font-black uppercase tracking-wider">来源决策任务</Label>
+                            {/* 1. 来源决策任务 */}
+                            <div className="space-y-1.5">
+                                <Label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">来源决策任务</Label>
                                 <p className="text-sm font-bold text-slate-700 leading-tight">{task.sourceDecisionTaskName}</p>
                             </div>
-                            <div className="space-y-1">
-                                <Label className="text-[10px] text-slate-400 font-black uppercase tracking-wider">目标变量 (Y)</Label>
-                                <div className="flex items-center space-x-2">
-                                    <Badge variant="outline" className="bg-white border-blue-200 text-blue-600 font-bold">{task.ySpec.field}</Badge>
+
+                            {/* 2. 创建日期 */}
+                            <div className="space-y-1.5">
+                                <Label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">创建日期</Label>
+                                <p className="text-sm font-bold text-slate-700 leading-tight">{task.createdAt}</p>
+                            </div>
+
+                            <div className="w-full h-px bg-slate-100" />
+
+                            {/* 3. X (影响因子) */}
+                            <div className="space-y-1.5">
+                                <Label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">X (影响因子)</Label>
+                                <div className="bg-slate-50 border border-slate-100/80 rounded-xl p-3">
+                                    <div className="flex flex-wrap gap-1.5 max-h-[300px] overflow-y-auto pr-1">
+                                        {task.xSpec.fields.map((f: string) => (
+                                            <span key={f} className="px-2.5 py-1 bg-white border border-slate-200 text-slate-600 text-[11px] font-bold rounded-lg hover:border-blue-200 transition-all cursor-default shadow-sm">
+                                                {f}
+                                            </span>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
-                            <div className="space-y-3 pt-4 border-t border-slate-50">
+
+                            <div className="w-full h-px bg-slate-100" />
+
+                            {/* 4. X (样本条件过滤) */}
+                            <div className="space-y-1.5">
+                                <Label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">X (样本条件过滤)</Label>
+                                <div className="bg-slate-50 border border-slate-100/80 rounded-xl p-3">
+                                    <div className="space-y-2">
+                                        {xFilters.length > 0 ? (
+                                            xFilters.map((f: any, idx: number) => {
+                                                const fieldInfo = schema?.fields.find((field: any) => field.name === f.field);
+                                                const displayName = fieldInfo ? fieldInfo.displayName : f.field;
+                                                return (
+                                                    <div key={idx} className="bg-white p-2.5 rounded-lg border border-slate-200 text-xs flex flex-col gap-1 shadow-sm">
+                                                        <div className="flex justify-between items-center text-[10px] font-bold text-slate-500">
+                                                            <span>{displayName}</span>
+                                                            <span className="font-mono bg-slate-50 px-1 rounded border border-slate-100">{f.op}</span>
+                                                        </div>
+                                                        <div className="font-medium text-slate-700 break-all">
+                                                            {Array.isArray(f.value) ? f.value.join(' ~ ') : f.value}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })
+                                        ) : (
+                                            <div className="text-[10px] text-slate-400 italic text-center py-1">无过滤条件</div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="w-full h-px bg-slate-100" />
+
+                            {/* 5. Y (分析目标) */}
+                            <div className="space-y-1.5">
+                                <Label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">目标变量 (Y)</Label>
+                                <div className="bg-slate-50 border border-slate-100/80 rounded-xl p-3">
+                                    <div className="flex items-center space-x-2">
+                                        <span className="px-2.5 py-1 bg-white border border-blue-200 text-blue-600 text-[11px] font-bold rounded-lg shadow-sm">
+                                            {task.ySpec.field}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 6. Y (样本条件过滤) */}
+                            <div className="space-y-1.5">
+                                <Label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Y (样本条件过滤)</Label>
+                                <div className="bg-slate-50 border border-slate-100/80 rounded-xl p-3">
+                                    <div className="space-y-2">
+                                        {yFilters.length > 0 ? (
+                                            yFilters.map((f: any, idx: number) => (
+                                                <div key={idx} className="bg-blue-50/30 p-2.5 rounded-lg border border-blue-100 text-xs flex flex-col gap-1 shadow-sm">
+                                                    <div className="flex justify-between items-center text-[10px] font-bold text-blue-500">
+                                                        <span>{f.field}</span>
+                                                        <span className="font-mono bg-white px-1 rounded border border-blue-100">{f.op}</span>
+                                                    </div>
+                                                    <div className="font-medium text-slate-700 break-all">
+                                                        {Array.isArray(f.value) ? f.value.join(' ~ ') : f.value}
+                                                    </div>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <div className="text-[10px] text-slate-400 italic text-center py-1">无过滤条件</div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 统计信息 */}
+                            <div className="space-y-3 pt-4 border-t border-slate-50 mt-4">
                                 <div className="flex justify-between items-center bg-slate-50 transition-all p-3 rounded-xl border border-slate-100/50">
                                     <span className="text-xs font-bold text-slate-500">命中样本</span>
                                     <span className="text-sm font-black text-slate-800">{task.sampleHit.toLocaleString()}</span>
@@ -953,272 +1228,169 @@ function CITaskDetail({ task, onBack }: { task: CausalInsightTask; onBack: () =>
                                     <span className="text-sm font-black text-blue-600 tracking-tighter">{((task.sampleHit / task.sampleTotal) * 100).toFixed(1)}%</span>
                                 </div>
                             </div>
-                            <div className="pt-2 text-center">
-                                <span className="text-[10px] text-slate-300 font-medium">创建日期: {task.createdAt}</span>
-                            </div>
                         </CardContent>
-                    </Card>
-
-                    <Card className="border-none shadow-xl shadow-slate-200/50 rounded-2xl bg-white p-5">
-                        <div className="space-y-4">
-                            <div className="flex items-center space-x-2 text-slate-800">
-                                <List className="w-4 h-4 text-blue-500" />
-                                <span className="text-sm font-bold">已选特征集 (X)</span>
-                            </div>
-                            <div className="flex flex-wrap gap-1.5 max-h-[300px] overflow-y-auto pr-1">
-                                {task.xSpec.fields.map((f: string) => (
-                                    <span key={f} className="px-2.5 py-1 bg-slate-50 border border-slate-100 text-slate-600 text-[11px] font-bold rounded-lg hover:bg-white hover:border-blue-200 transition-all cursor-default">
-                                        {f}
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
                     </Card>
                 </div>
 
                 {/* 右侧主内容区 */}
                 <div className="space-y-6 w-full overflow-hidden" style={{ gridColumn: 'span 3 / span 3' }}>
-                    <div className="flex bg-white p-1 rounded-2xl shadow-sm border border-slate-100 w-fit">
-                        {[
-                            { id: 'visual', label: '视图产物', icon: LayoutGrid },
-                            { id: 'config', label: '配置回显', icon: Settings2 },
-                            { id: 'samples', label: '命中样本列表', icon: List }
-                        ].map(t => (
-                            <button
-                                key={t.id}
-                                onClick={() => setActiveTab(t.id as any)}
-                                className={`flex items-center space-x-2 px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === t.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
-                                    }`}
-                            >
-                                <t.icon className="w-4 h-4" />
-                                <span>{t.label}</span>
-                            </button>
-                        ))}
-                    </div>
 
                     <Card className="border-none shadow-xl shadow-slate-200/50 rounded-3xl overflow-hidden bg-white min-h-[600px] w-full">
                         <CardContent className="p-8">
-                            {activeTab === 'visual' && resultData && (
-                                <div className="space-y-10 animate-in fade-in slide-in-from-right-4 duration-500">
-                                    {/* 全量样本因果关系分布 (热力图) */}
-                                    <section className="space-y-6">
-                                        <div className="flex items-center justify-between">
-                                            <div className="space-y-1">
-                                                <h3 className="text-lg font-black text-slate-800 tracking-tight flex items-center">
-                                                    <Flame className="w-5 h-5 mr-2 text-orange-500 fill-orange-500/20" /> 全样本因果关系分布
-                                                </h3>
-                                                <p className="text-xs text-slate-400 font-medium">展示当前样本下所有特征 X 之间的相互依赖与因果指向强度</p>
-                                            </div>
-                                            <div className="flex items-center space-x-4 pr-2">
-                                                <div className="flex items-center space-x-1.5">
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Negative</span>
-                                                </div>
-                                                <div className="flex items-center space-x-1.5">
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-slate-200" />
-                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Neutral</span>
-                                                </div>
-                                                <div className="flex items-center space-x-1.5">
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Positive</span>
-                                                </div>
-                                            </div>
+                            <div className="space-y-10 animate-in fade-in slide-in-from-right-4 duration-500">
+
+                                {/* 【新增】筛选条件分析结果区域 */}
+                                <div className="space-y-8">
+                                    <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                                        <div className="flex items-center space-x-2">
+                                            <Filter className="w-5 h-5 text-blue-600" />
+                                            <h2 className="text-xl font-black text-slate-800">当前筛选条件下的分析结果</h2>
                                         </div>
 
-                                        <div className="bg-slate-50/50 rounded-3xl border border-slate-100 p-8 overflow-x-auto">
-                                            <div className="min-w-[800px]">
-                                                {/* X轴 Label (特征) */}
-                                                <div className="flex mb-2 ml-36">
-                                                    {resultData.heatmap.features.map((feat, idx) => (
-                                                        <div key={feat} className="flex-1 text-[10px] font-bold text-slate-400 text-center truncate px-1 transform -rotate-12 origin-bottom-left" style={{ height: '30px' }}>
-                                                            {feat}
-                                                        </div>
-                                                    ))}
-                                                </div>
-
-                                                {/* Heatmap Grid */}
-                                                <div className="space-y-[2px]">
-                                                    {resultData.heatmap.timeLabels.map((time, rowIdx) => (
-                                                        <div key={time} className="flex items-center space-x-[2px]">
-                                                            {/* Y轴 Label (时间) */}
-                                                            <div className="w-36 text-[10px] font-mono font-bold text-slate-400 truncate pr-3 text-right">
-                                                                {time}
-                                                            </div>
-                                                            {/* 单元格 */}
-                                                            {resultData.heatmap.values[rowIdx].map((val, colIdx) => {
-                                                                const numericVal = parseFloat(val as string);
-                                                                // 计算颜色：正值为红，负值为蓝
-                                                                let bgColor = '#f1f5f9'; // neutral
-                                                                let opacity = 0.1;
-                                                                if (numericVal > 0) {
-                                                                    bgColor = '#f43f5e'; // rose-500
-                                                                    opacity = Math.min(Math.abs(numericVal) / 2, 1);
-                                                                } else if (numericVal < 0) {
-                                                                    bgColor = '#3b82f6'; // blue-500
-                                                                    opacity = Math.min(Math.abs(numericVal) / 2, 1);
-                                                                }
-
-                                                                return (
-                                                                    <Tooltip key={`${rowIdx}-${colIdx}`} title={`${time} | ${resultData.heatmap.features[colIdx]} : ${val}`}>
-                                                                        <div
-                                                                            className="flex-1 h-3 rounded-[1px] cursor-pointer hover:ring-2 hover:ring-white transition-all"
-                                                                            style={{
-                                                                                backgroundColor: bgColor,
-                                                                                opacity: opacity
-                                                                            }}
-                                                                        />
-                                                                    </Tooltip>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </section>
-
-                                    {/* 影响因子条形图 (双向) */}
-                                    <section className="space-y-6">
-                                        <div className="flex items-center justify-between">
-                                            <div className="space-y-1">
-                                                <h3 className="text-lg font-black text-slate-800 tracking-tight flex items-center">
-                                                    <BarChart3 className="w-5 h-5 mr-2 text-blue-500" /> 各影响因子影响分数对比
-                                                </h3>
-                                                <p className="text-xs text-slate-400 font-medium">针对命中样本计算出不同特征对目标变量 {task.ySpec.field} 的平均影响分数（Red: Positive, Blue: Negative）</p>
-                                            </div>
-                                        </div>
-                                        <div className="h-[500px] w-full p-8 bg-white rounded-3xl border border-slate-100 shadow-inner relative" style={{ minHeight: '500px' }}>
-                                            {impactData.length > 0 ? (
-                                                <ResponsiveContainer width="100%" height="100%" minHeight={400}>
-                                                    <ComposedChart
-                                                        layout="vertical"
-                                                        data={impactData}
-                                                        margin={{ top: 20, right: 40, left: 100, bottom: 20 }}
-                                                    >
-                                                        <CartesianGrid strokeDasharray="3 3" horizontal={false} vertical={true} stroke="#f1f5f9" />
-                                                        <XAxis
-                                                            type="number"
-                                                            domain={['auto', 'auto']}
-                                                            axisLine={false}
-                                                            tickLine={false}
-                                                            tick={{ fill: '#94a3b8', fontSize: 11 }}
-                                                        />
-                                                        <YAxis
-                                                            dataKey="name"
-                                                            type="category"
-                                                            axisLine={false}
-                                                            tickLine={false}
-                                                            tick={{ fill: '#475569', fontSize: 12, fontWeight: 700 }}
-                                                            width={140}
-                                                        />
-                                                        <RechartsTooltip
-                                                            cursor={{ fill: '#f8fafc' }}
-                                                            content={({ active, payload }: any) => {
-                                                                if (active && payload && payload.length) {
-                                                                    const data = payload[0].payload;
-                                                                    return (
-                                                                        <div className="bg-slate-900 text-white p-4 rounded-2xl shadow-2xl border border-white/10 text-xs font-bold min-w-[180px]">
-                                                                            <p className="mb-2 text-slate-400 uppercase tracking-widest text-[9px]">{data.displayName}</p>
-                                                                            <div className="flex items-baseline justify-between">
-                                                                                <span className="text-2xl font-black">{data.value > 0 ? '+' : ''}{data.value.toFixed(2)}</span>
-                                                                                <span className={`px-2 py-0.5 rounded-lg text-[10px] ${data.value > 0 ? 'bg-rose-500/20 text-rose-400' : 'bg-blue-500/20 text-blue-400'}`}>
-                                                                                    {data.value > 0 ? 'Positive Impact' : 'Negative Impact'}
-                                                                                </span>
-                                                                            </div>
-                                                                        </div>
-                                                                    );
-                                                                }
-                                                                return null;
-                                                            }}
-                                                        />
-                                                        <Bar dataKey="value" barSize={32} radius={6}>
-                                                            {impactData.map((entry: any, index: number) => (
-                                                                <Cell
-                                                                    key={`cell-${index}`}
-                                                                    fill={entry.value >= 0 ? '#f43f5e' : '#3b82f6'} // Positive: Rose, Negative: Blue
-                                                                    className="transition-all hover:brightness-110"
-                                                                />
-                                                            ))}
-                                                        </Bar>
-                                                    </ComposedChart>
-                                                </ResponsiveContainer>
-                                            ) : (
-                                                <div className="flex items-center justify-center h-full text-slate-400">暂无影响因子数据</div>
-                                            )}
-                                        </div>
-                                    </section>
-                                </div>
-                            )}
-
-                            {activeTab === 'config' && (
-                                <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500 pt-4">
-                                    <div className="grid grid-cols-2 gap-8">
-                                        <div className="space-y-3">
-                                            <Label className="text-sm font-black text-slate-800 uppercase tracking-widest pl-1">因果变量 (X)</Label>
-                                            <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 flex flex-wrap gap-2 min-h-[120px]">
-                                                {task.xSpec.fields.map((f: string) => (
-                                                    <Badge key={f} className="bg-white text-slate-700 border-slate-200 px-4 py-1.5 rounded-xl font-bold shadow-sm">{f}</Badge>
-                                                ))}
-                                            </div>
-                                        </div>
-                                        <div className="space-y-3">
-                                            <Label className="text-sm font-black text-slate-800 uppercase tracking-widest pl-1">过滤条件 (Filters)</Label>
-                                            <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 space-y-3 min-h-[120px]">
-                                                {task.filters && (Array.isArray(task.filters.and) ? task.filters.and : []).length > 0 ? (task.filters.and as any[]).map((f: any, idx: number) => (
-                                                    <div key={idx} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between group hover:border-blue-300 transition-colors">
-                                                        <div className="flex items-center space-x-3 text-sm font-bold text-slate-700">
-                                                            <span className="bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md text-[11px] font-black">{f.field}</span>
-                                                            <span className="text-slate-400 font-mono italic">{f.op}</span>
-                                                            <span className="text-slate-900 border-b-2 border-slate-100">{Array.isArray(f.value) ? f.value.join(' ~ ') : f.value}</span>
-                                                        </div>
-                                                        <CheckCircle className="w-4 h-4 text-green-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                                    </div>
-                                                )) : <div className="text-center py-6 text-slate-400 font-medium italic">未设置过滤条件（全量样本分析）</div>}
-                                            </div>
+                                        {/* 视图切换 Toggle */}
+                                        <div className="flex bg-slate-100/80 p-1 rounded-lg">
+                                            <button
+                                                onClick={() => setFilteredViewMode('chart')}
+                                                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${filteredViewMode === 'chart'
+                                                    ? 'bg-white text-blue-600 shadow-sm'
+                                                    : 'text-slate-500 hover:text-slate-700'
+                                                    }`}
+                                            >
+                                                <BarChart3 className="w-3.5 h-3.5" />
+                                                <span>可视化</span>
+                                            </button>
+                                            <button
+                                                onClick={() => setFilteredViewMode('table')}
+                                                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${filteredViewMode === 'table'
+                                                    ? 'bg-white text-blue-600 shadow-sm'
+                                                    : 'text-slate-500 hover:text-slate-700'
+                                                    }`}
+                                            >
+                                                <TableIcon className="w-3.5 h-3.5" />
+                                                <span>原始数据</span>
+                                            </button>
                                         </div>
                                     </div>
-                                </div>
-                            )}
 
-                            {activeTab === 'samples' && (
-                                <div className="animate-in fade-in slide-in-from-right-4 duration-500">
-                                    <div className="flex justify-between items-center mb-6 px-1">
-                                        <h3 className="text-lg font-black text-slate-800 tracking-tight">命中样本数据抽样</h3>
-                                        <Button variant="ghost" className="text-blue-600 font-bold hover:bg-blue-50 px-4 rounded-xl">查看全部样本数据</Button>
-                                    </div>
-                                    <div className="border border-slate-100 rounded-3xl overflow-hidden bg-slate-50 shadow-inner">
-                                        <Table>
-                                            <TableHeader className="bg-white border-b">
-                                                <TableRow className="hover:bg-transparent">
-                                                    <TableHead className="font-black text-slate-400 uppercase tracking-wider h-12 w-20 pl-6">ID</TableHead>
-                                                    <TableHead className="font-black text-slate-400 uppercase tracking-wider h-12">Time</TableHead>
-                                                    <TableHead className="font-black text-slate-400 uppercase tracking-wider h-12">{task.ySpec.field} (GT)</TableHead>
-                                                    <TableHead className="font-black text-slate-400 uppercase tracking-wider h-12">Influence Score</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {Array.from({ length: 12 }).map((_, i) => (
-                                                    <TableRow key={i} className={`hover:bg-white group transition-colors border-slate-100 ${i % 2 === 0 ? 'bg-transparent' : 'bg-white/40'}`}>
-                                                        <TableCell className="font-mono text-xs text-slate-400 pl-6">#{Math.floor(Math.random() * 10000)}</TableCell>
-                                                        <TableCell className="text-sm font-bold text-slate-600">2025-08-01 0{Math.floor(Math.random() * 9)}:00:00</TableCell>
-                                                        <TableCell className="text-sm font-black text-slate-800">{(Math.random() * 100).toFixed(2)}</TableCell>
-                                                        <TableCell>
-                                                            <div className="flex items-center space-x-3">
-                                                                <Progress value={Math.random() * 100} className="h-1.5 w-24 bg-slate-200" />
-                                                                <span className={`text-[11px] font-black ${i % 3 === 0 ? 'text-green-500' : 'text-orange-500'}`}>+{(Math.random() * 5).toFixed(2)}%</span>
-                                                            </div>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                    </div>
+                                    {filteredViewMode === 'chart' ? (
+                                        <>
+                                            {/* 1. 筛选条件-影响因子条形图 */}
+                                            <CausalImpactChart
+                                                data={filteredImpactData}
+                                                title={<><BarChart3 className="w-5 h-5 mr-2 text-blue-500" /> 各影响因子影响分数对比 (筛选后)</>}
+                                                description={`针对当前筛选条件下的样本，计算出的不同特征对目标变量 ${task.ySpec.field} 的平均影响分数`}
+                                                yField={task.ySpec.field}
+                                            />
+
+                                            {/* 2. 筛选条件-因果关系热力图 */}
+                                            <CausalHeatmap
+                                                data={filteredHeatmapData}
+                                                title={<><Flame className="w-5 h-5 mr-2 text-orange-500 fill-orange-500/20" /> 因果关系分布 (筛选后)</>}
+                                                description="展示当前筛选条件下特征 X 之间的相互依赖与因果指向强度"
+                                            />
+                                        </>
+                                    ) : (
+                                        <SampleDataTable data={filteredSampleData} />
+                                    )}
                                 </div>
-                            )}
+
+                                {/* 分隔线 */}
+                                <div className="h-px bg-slate-100 my-8" />
+
+                                {/* 全量样本分析结果区域 */}
+                                {/* 全量样本分析结果区域 */}
+                                <div className="space-y-8">
+                                    <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                                        <div className="flex items-center space-x-2">
+                                            <Database className="w-5 h-5 text-purple-600" />
+                                            <h2 className="text-xl font-black text-slate-800">全样本分析结果</h2>
+                                        </div>
+
+                                        {/* 视图切换 Toggle */}
+                                        <div className="flex bg-slate-100/80 p-1 rounded-lg">
+                                            <button
+                                                onClick={() => setFullViewMode('chart')}
+                                                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${fullViewMode === 'chart'
+                                                    ? 'bg-white text-purple-600 shadow-sm'
+                                                    : 'text-slate-500 hover:text-slate-700'
+                                                    }`}
+                                            >
+                                                <BarChart3 className="w-3.5 h-3.5" />
+                                                <span>可视化</span>
+                                            </button>
+                                            <button
+                                                onClick={() => setFullViewMode('table')}
+                                                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${fullViewMode === 'table'
+                                                    ? 'bg-white text-purple-600 shadow-sm'
+                                                    : 'text-slate-500 hover:text-slate-700'
+                                                    }`}
+                                            >
+                                                <TableIcon className="w-3.5 h-3.5" />
+                                                <span>原始数据</span>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {fullViewMode === 'chart' ? (
+                                        <>
+                                            {/* 3. 全样-影响因子条形图 */}
+                                            <CausalImpactChart
+                                                data={impactData}
+                                                title={<><BarChart3 className="w-5 h-5 mr-2 text-blue-500" /> 各影响因子影响分数对比 (全样本)</>}
+                                                description={`针对所有样本计算出不同特征对目标变量 ${task.ySpec.field} 的平均影响分数`}
+                                                yField={task.ySpec.field}
+                                            />
+
+                                            {/* 4. 全样-因果关系热力图 */}
+                                            <CausalHeatmap
+                                                data={resultData.heatmap}
+                                                title={<><Flame className="w-5 h-5 mr-2 text-orange-500 fill-orange-500/20" /> 因果关系分布 (全样本)</>}
+                                                description="展示所有样本下特征 X 之间的相互依赖与因果指向强度"
+                                            />
+                                        </>
+                                    ) : (
+                                        <SampleDataTable data={fullSampleData} />
+                                    )}
+                                </div>
+
+
+                            </div>
+
                         </CardContent>
                     </Card>
                 </div>
             </div>
-        </div>
+
+            {/* 全屏样本数据预览弹窗 */}
+            <Dialog open={isSampleModalOpen} onOpenChange={setIsSampleModalOpen}>
+                <DialogContent className="max-w-[95vw] w-full h-[90vh] flex flex-col p-0 gap-0 overflow-hidden rounded-2xl outline-none border-0">
+                    <div className="px-6 py-4 border-b bg-white flex items-center justify-between shrink-0">
+                        <div className="flex items-center space-x-4">
+                            <div className="flex items-center space-x-2">
+                                <List className="h-5 w-5 text-blue-600" />
+                                <DialogTitle className="text-lg font-bold text-slate-800">全部命中样本数据</DialogTitle>
+                            </div>
+                            <div className="h-4 w-px bg-slate-200" />
+                            <div className="flex items-center space-x-4 text-xs font-medium text-slate-500">
+                                <span className="bg-slate-100 px-2 py-1 rounded">共 {fullSampleData.length} 条数据</span>
+                                <span className="bg-slate-100 px-2 py-1 rounded">按时间降序排列</span>
+                            </div>
+                        </div>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full"
+                            onClick={() => setIsSampleModalOpen(false)}
+                        >
+                            <X className="h-5 w-5" />
+                        </Button>
+                    </div>
+
+                    <div className="flex-1 overflow-hidden bg-slate-50/50 p-6">
+                        <SampleDataTable data={fullSampleData} className="h-full" />
+                    </div>
+                </DialogContent>
+            </Dialog>
+        </div >
     );
 }
