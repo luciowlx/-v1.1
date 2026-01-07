@@ -27,9 +27,11 @@ import {
   ArrowDown,
   User,
   GitCompare,
+  Eye,
   Circle,
   Pencil,
 } from 'lucide-react';
+const Card = ShadcnCard;
 import { toast } from 'sonner';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -37,7 +39,7 @@ import { Textarea } from './ui/textarea';
 import { Label } from './ui/label';
 import { Checkbox } from './ui/checkbox';
 import { Badge } from './ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Card as ShadcnCard, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Progress } from './ui/progress';
 import {
   Dialog,
@@ -74,7 +76,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
+import { Table as ShadcnTable, TableBody as ShadcnTableBody, TableCell as ShadcnTableCell, TableHead as ShadcnTableHead, TableHeader as ShadcnTableHeader, TableRow as ShadcnTableRow } from './ui/table';
+import { Table, Badge as AntBadge, Tag, Tooltip, Space, Popconfirm, Button as AntButton, Card as AntCard } from 'antd';
 import TaskCompare from './TaskCompare';
 import type { TaskCompareItem } from './TaskCompare';
 import { getAvailableActions, getCommonActionKeys } from '../utils/taskActions';
@@ -1136,142 +1139,172 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
     warnings: ['模型对温度的影响权重略低']
   };
 
+
+  // 根据任务状态获取可用的操作按钮
+  const getTaskActions = (task: Task) => {
+    const actions: { key: string; label: string; icon: any; danger?: boolean }[] = [];
+    switch (task.status) {
+      case 'pending':
+        actions.push({ key: 'cancel_queue', label: '取消排队', icon: XCircle, danger: true });
+        break;
+      case 'running':
+        actions.push({ key: 'stop', label: '停止', icon: Square, danger: true });
+        actions.push({ key: 'view', label: '详情', icon: Eye });
+        break;
+      case 'completed':
+        actions.push({ key: 'view', label: '详情', icon: Eye });
+        actions.push({ key: 'export', label: '导出', icon: Download });
+        actions.push({ key: 'archive', label: '归档', icon: Archive });
+        actions.push({ key: 'copy', label: '复制', icon: Copy });
+        break;
+      case 'failed':
+        actions.push({ key: 'rerun', label: '重新运行', icon: RotateCcw });
+        actions.push({ key: 'edit', label: '编辑', icon: Pencil });
+        actions.push({ key: 'view', label: '详情', icon: Eye });
+        actions.push({ key: 'delete', label: '删除', icon: Trash2, danger: true });
+        break;
+      case 'not_started':
+        actions.push({ key: 'rerun', label: '重新运行', icon: RotateCcw });
+        actions.push({ key: 'edit', label: '编辑', icon: Pencil });
+        actions.push({ key: 'delete', label: '删除', icon: Trash2, danger: true });
+        break;
+      case 'archived':
+        actions.push({ key: 'view', label: '详情', icon: Eye });
+        break;
+      default:
+        actions.push({ key: 'view', label: '详情', icon: Eye });
+        break;
+    }
+    return actions;
+  };
+
+  const columns: any[] = [
+    {
+      title: '任务名称',
+      dataIndex: 'taskName',
+      key: 'taskName',
+      width: 250,
+      fixed: 'left',
+      render: (text: string, record: Task) => (
+        <div className="flex flex-col">
+          <span className="font-semibold text-slate-900 hover:text-blue-600 cursor-pointer transition-colors" onClick={() => setSelectedTaskForDetails(record)}>
+            {text}
+          </span>
+          <div className="flex items-center gap-2 mt-1">
+            <code className="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-500 font-mono">{record.id}</code>
+            {record.description && <span className="text-xs text-gray-400 truncate max-w-[120px]" title={record.description}>{record.description}</span>}
+          </div>
+        </div>
+      )
+    },
+    {
+      title: '任务类型',
+      dataIndex: 'taskType',
+      key: 'taskType',
+      width: 130,
+      render: (type: TaskType) => (
+        <Badge variant="outline" className="bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200">{getTaskTypeLabel(type)}</Badge>
+      )
+    },
+    {
+      title: '所属项目',
+      dataIndex: 'projectId',
+      key: 'project',
+      width: 140,
+      render: (pid: string, record: Task) => (
+        <span className="text-sm text-slate-600">{record.projectName || (pid ? getProjectName(pid) : '未选择项目')}</span>
+      )
+    },
+    {
+      title: '数据集 & 模型',
+      key: 'data_model',
+      width: 220,
+      render: (_: any, record: Task) => (
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-1.5 text-xs text-slate-600">
+            <Database className="w-3 h-3 text-slate-400" />
+            <span className="truncate max-w-[140px]" title={record.datasets && record.datasets.length > 0 ? record.datasets.map(d => d.name).join(', ') : record.datasetName}>
+              {record.datasets && record.datasets.length > 0 ? `${record.datasets[0].name}${record.datasets.length > 1 ? ` +${record.datasets.length - 1}` : ''}` : record.datasetName}
+            </span>
+            <Badge variant="secondary" className="scale-90 origin-left m-0 h-4 px-1">{record.datasets && record.datasets.length > 0 ? record.datasets[0].version : record.datasetVersion}</Badge>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs text-slate-600">
+            <Cpu className="w-3 h-3 text-slate-400" />
+            <span className="truncate">{record.modelName}</span>
+          </div>
+        </div>
+      )
+    },
+    {
+      title: '状态',
+      key: 'status',
+      width: 160,
+      render: (_: any, record: Task) => {
+        const statusConfig = getStatusConfig(record.status);
+        const StatusIcon = statusConfig.icon;
+        return (
+          <div className="flex flex-col gap-1.5 w-full">
+            <div className="flex items-center gap-1.5">
+              <StatusIcon className={`w-3.5 h-3.5 ${statusConfig.color.replace('bg-', 'text-').replace('100', '600')}`} />
+              <span className="text-sm font-medium text-slate-700">{statusConfig.label}</span>
+            </div>
+            {['running', 'pending', 'completed'].includes(record.status) && (
+              <div className="flex items-center gap-2 w-full">
+                <Progress value={record.status === 'completed' ? 100 : record.status === 'pending' ? 0 : (record.progress ?? 0)} className="h-1 flex-1 bg-slate-100" />
+                <span className="text-[10px] text-slate-400">{record.status === 'completed' ? '100%' : `${record.progress ?? 0}%`}</span>
+              </div>
+            )}
+          </div>
+        );
+      }
+    },
+    {
+      title: '优先级',
+      dataIndex: 'priority',
+      key: 'priority',
+      width: 100,
+      render: (p: TaskPriority) => {
+        const config = getPriorityConfig(p);
+        return <Badge className={`${config.color} border-none`}>{config.label}</Badge>
+      }
+    },
+    {
+      title: '创建时间',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      width: 150,
+      render: (t: string) => <div className="text-xs text-slate-500 flex flex-col">
+        <span>{new Date(t).toLocaleDateString()}</span>
+        <span className="text-slate-400 mt-0.5">{new Date(t).toLocaleTimeString()}</span>
+      </div>
+    },
+    {
+      title: '操作',
+      key: 'action',
+      fixed: 'right',
+      width: 180,
+      render: (_: any, record: Task) => (
+        <div className="flex items-center gap-1">
+          {getTaskActions(record).map(action => (
+            <Tooltip key={action.key} title={action.label}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`h-7 w-7 ${action.danger ? 'text-red-500 hover:text-red-600 hover:bg-red-50' : ''}`}
+                onClick={() => handleTaskAction(action.key, record.id)}
+              >
+                <action.icon className="w-4 h-4" />
+              </Button>
+            </Tooltip>
+          ))}
+        </div>
+      )
+    }
+  ];
+
   return (
     <div className="p-6 space-y-6">
       {/* 操作栏 */}
-      <div className="flex justify-between items-center gap-4 flex-wrap md:flex-nowrap">
-        {/* 左侧：顶栏快速筛选（搜索 / 任务类型 / 日期范围） */}
-        <div className="flex items-center gap-3 flex-wrap md:flex-nowrap">
-          {/* 搜索 */}
-          <Input
-            placeholder="搜索任务名称、ID等"
-            value={filters.searchQuery}
-            onChange={(e) => handleFilterChange('searchQuery', e.target.value)}
-            className="w-[240px] md:w-[280px]"
-          />
-
-          {/* 任务类型（移至顶栏） */}
-          <Select value={filters.taskType} onValueChange={(value: string) => handleFilterChange('taskType', value)}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="任务类型" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">全部类型</SelectItem>
-              {Array.from(ALLOWED_TASK_TYPES).map((tt) => (
-                <SelectItem key={tt} value={tt}>{getTaskTypeLabel(tt as TaskType)}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {/* 日期范围 */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className="w-[260px] md:w-[320px] justify-between">
-                <span className="truncate text-left">
-                  {filters.dateRange.start && filters.dateRange.end
-                    ? `${filters.dateRange.start} - ${filters.dateRange.end}`
-                    : '开始日期 - 结束日期'}
-                </span>
-                <CalendarIcon className="h-4 w-4 text-gray-500" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[640px] p-4">
-              <div className="space-y-3">
-                {/* 顶部输入回显区域 */}
-                <div className="flex items-center gap-2">
-                  <Input
-                    readOnly
-                    placeholder="开始日期"
-                    value={filters.dateRange.start || ''}
-                    className="w-48"
-                  />
-                  <span className="text-gray-500">-</span>
-                  <Input
-                    readOnly
-                    placeholder="结束日期"
-                    value={filters.dateRange.end || ''}
-                    className="w-48"
-                  />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleFilterChange('dateRange', { start: '', end: '' })}
-                  >
-                    {t('common.clear')}
-                  </Button>
-                </div>
-
-                {/* 双月日历选择 */}
-                <DateRangeCalendar
-                  mode="range"
-                  numberOfMonths={2}
-                  initialFocus
-                  defaultMonth={filters.dateRange.start ? new Date(filters.dateRange.start) : new Date()}
-                  selected={{
-                    from: filters.dateRange.start ? new Date(filters.dateRange.start) : undefined,
-                    to: filters.dateRange.end ? new Date(filters.dateRange.end) : undefined,
-                  }}
-                  onSelect={(range: any) => {
-                    const start = range?.from ? new Date(range.from) : undefined;
-                    const end = range?.to ? new Date(range.to) : undefined;
-                    const fmt = (d: Date | undefined) => (d ? d.toISOString().slice(0, 10) : '');
-                    handleFilterChange('dateRange', { start: fmt(start), end: fmt(end) });
-                  }}
-                />
-              </div>
-            </PopoverContent>
-          </Popover>
-        </div>
-
-        {/* 右侧：查询 / 重置 / 视图切换 / 创建任务 */}
-        <div className="flex items-center space-x-3">
-          <Button
-            variant="default"
-            size="sm"
-            onClick={handleApplyQuery}
-            className="flex items-center space-x-2"
-          >
-            <span>查询</span>
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={resetFilters}
-            className="flex items-center space-x-2"
-          >
-            <span>重置</span>
-          </Button>
-
-          <div className="flex items-center border rounded-lg">
-            <Button
-              variant={viewMode === 'table' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('table')}
-              className="rounded-r-none"
-            >
-              <List className="h-4 w-4" />
-            </Button>
-            <Button
-              variant={viewMode === 'grid' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('grid')}
-              className="rounded-l-none"
-            >
-              <Grid className="h-4 w-4" />
-            </Button>
-          </div>
-
-          <Button
-            className="flex items-center space-x-2"
-            onClick={onOpenCreateTaskPage}
-          >
-            <Plus className="h-4 w-4" />
-            <span>创建任务</span>
-          </Button>
-
-        </div>
-      </div>
-
       <div className="space-y-6">
         {/* 第1步已移除 */}
 
@@ -1428,716 +1461,193 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
       </div>
 
       {/* 任务列表 */}
-      <Card>
-        <CardHeader>
-          <div className="flex justify-between items-center">
-            <CardTitle>任务列表</CardTitle>
-            <div className="text-sm text-gray-600">
-              显示 {filteredTasks.length} / {tasks.length} 个任务
+      <AntCard className="border-none shadow-sm overflow-hidden text-sm" bodyStyle={{ padding: 0 }}>
+        {/* Integrated Toolbar */}
+        <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-white gap-4 flex-wrap">
+          <div className="flex items-center gap-3 flex-wrap md:flex-nowrap">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
+              <Input
+                placeholder="搜索任务..."
+                value={filters.searchQuery}
+                onChange={(e) => handleFilterChange('searchQuery', e.target.value)}
+                className="pl-9 w-[240px] bg-slate-50 border-slate-200 focus-visible:ring-blue-500"
+              />
             </div>
+            <Select value={filters.taskType} onValueChange={(v) => handleFilterChange('taskType', v)}>
+              <SelectTrigger className="w-[140px] bg-slate-50 border-slate-200"><SelectValue placeholder="任务类型" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">全部类型</SelectItem>
+                {Array.from(ALLOWED_TASK_TYPES).map(tt => <SelectItem key={tt} value={tt}>{getTaskTypeLabel(tt as TaskType)}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-[220px] justify-start text-left font-normal bg-slate-50 border-slate-200">
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {filters.dateRange.start ? `${filters.dateRange.start} - ${filters.dateRange.end || '...'}` : <span>选期间</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <DateRangeCalendar
+                  mode="range"
+                  selected={{ from: filters.dateRange.start ? new Date(filters.dateRange.start) : undefined, to: filters.dateRange.end ? new Date(filters.dateRange.end) : undefined }}
+                  onSelect={(range: any) => handleFilterChange('dateRange', { start: range?.from?.toISOString().substring(0, 10) || '', end: range?.to?.toISOString().substring(0, 10) || '' })}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
           </div>
-        </CardHeader>
-        <CardContent>
-          {viewMode === 'table' ? (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">
-                      <Checkbox
-                        checked={selectedTaskIds.length === filteredTasks.length && filteredTasks.length > 0}
-                        onCheckedChange={handleSelectAll}
-                      />
-                    </TableHead>
-                    <TableHead
-                      className="cursor-pointer hover:bg-gray-50"
-                      onClick={() => handleSort('taskName')}
-                    >
-                      <div className="flex items-center space-x-1">
-                        <span>任务名称</span>
-                        {sortConfig.field === 'taskName' && (
-                          sortConfig.order === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
-                        )}
-                      </div>
-                    </TableHead>
-                    <TableHead>任务ID</TableHead>
-                    {/* 列头：任务类型（筛选已移至顶栏）*/}
-                    <TableHead>任务类型</TableHead>
 
-                    {/* 列头筛选：所属项目 */}
-                    <TableHead>
-                      <div className="flex items-center gap-1">
-                        <span>所属项目</span>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className={`p-1 h-6 w-6 ${(filters.projectId && filters.projectId !== 'all') ? 'text-blue-600' : 'text-gray-400'}`}
-                              aria-label="所属项目筛选"
-                            >
-                              <Filter className="h-3 w-3" />
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent align="start" className="w-44">
-                            <div className="space-y-2">
-                              <Label className="text-xs">所属项目</Label>
-                              <Select value={filters.projectId ?? 'all'} onValueChange={(value: string) => handleFilterChange('projectId', value)}>
-                                <SelectTrigger className="h-8">
-                                  <SelectValue placeholder="全部项目" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="all">全部项目</SelectItem>
-                                  {mockProjects.map(p => (
-                                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              <div className="flex justify-end">
-                                <Button variant="outline" size="sm" className="h-8" onClick={() => handleFilterChange('projectId', 'all')}>清空</Button>
-                              </div>
-                            </div>
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                    </TableHead>
-                    {/* 列头筛选：数据集（多选）*/}
-                    <TableHead>
-                      <div className="flex items-center gap-1">
-                        <span>数据集</span>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className={`p-1 h-6 w-6 ${filters.datasetNames && filters.datasetNames.length > 0 ? 'text-blue-600' : 'text-gray-400'}`}
-                              aria-label="数据集筛选"
-                              onClick={(e: React.MouseEvent<HTMLButtonElement>) => e.stopPropagation()}
-                            >
-                              <Filter className="h-3 w-3" />
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent align="start" className="w-[300px] p-0">
-                            <Command>
-                              <CommandInput
-                                placeholder="搜索数据集..."
-                                value={datasetFilterQuery}
-                                onValueChange={setDatasetFilterQuery}
-                              />
-                              <CommandList>
-                                <CommandEmpty>未找到数据集</CommandEmpty>
-                                <CommandGroup>
-                                  {datasetOptions
-                                    .filter((name) => !datasetFilterQuery || name.toLowerCase().includes(datasetFilterQuery.toLowerCase()))
-                                    .map((name) => (
-                                      <CommandItem
-                                        key={name}
-                                        onSelect={() => {
-                                          const cur = filters.datasetNames || [];
-                                          const next = cur.includes(name) ? cur.filter(n => n !== name) : [...cur, name];
-                                          handleFilterChange('datasetNames', next);
-                                        }}
-                                      >
-                                        <Checkbox
-                                          checked={filters.datasetNames.includes(name)}
-                                          onCheckedChange={() => {
-                                            const cur = filters.datasetNames || [];
-                                            const next = cur.includes(name) ? cur.filter(n => n !== name) : [...cur, name];
-                                            handleFilterChange('datasetNames', next);
-                                          }}
-                                          className="mr-2"
-                                        />
-                                        <span>{name}</span>
-                                      </CommandItem>
-                                    ))}
-                                </CommandGroup>
-                              </CommandList>
-                            </Command>
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                    </TableHead>
-                    {/* 列头筛选：模型（多选，复用原筛选面板的 Command 列表）*/}
-                    <TableHead>
-                      <div className="flex items-center gap-1">
-                        <span>模型</span>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className={`p-1 h-6 w-6 ${filters.modelNames && filters.modelNames.length > 0 ? 'text-blue-600' : 'text-gray-400'}`}
-                              aria-label="模型筛选"
-                              onClick={(e: React.MouseEvent<HTMLButtonElement>) => e.stopPropagation()}
-                            >
-                              <Filter className="h-3 w-3" />
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent align="start" className="w-[300px] p-0" onOpenAutoFocus={(e: Event) => e.preventDefault()}>
-                            <Command>
-                              <CommandInput
-                                placeholder="搜索模型..."
-                                value={modelFilterQuery}
-                                onValueChange={setModelFilterQuery}
-                              />
-                              <CommandList>
-                                <CommandEmpty>未找到模型</CommandEmpty>
-                                <CommandGroup>
-                                  {modelOptions
-                                    .filter((name) => !modelFilterQuery || name.toLowerCase().includes(modelFilterQuery.toLowerCase()))
-                                    .map((name) => (
-                                      <CommandItem
-                                        key={name}
-                                        onSelect={() => {
-                                          const cur = filters.modelNames || [];
-                                          const next = cur.includes(name) ? cur.filter(n => n !== name) : [...cur, name];
-                                          handleFilterChange('modelNames', next);
-                                        }}
-                                      >
-                                        <Checkbox
-                                          checked={filters.modelNames.includes(name)}
-                                          onCheckedChange={() => {
-                                            const cur = filters.modelNames || [];
-                                            const next = cur.includes(name) ? cur.filter(n => n !== name) : [...cur, name];
-                                            handleFilterChange('modelNames', next);
-                                          }}
-                                          className="mr-2"
-                                        />
-                                        <span>{name}</span>
-                                      </CommandItem>
-                                    ))}
-                                </CommandGroup>
-                              </CommandList>
-                            </Command>
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                    </TableHead>
-                    {/* 列头筛选：优先级（保留点击排序）*/}
-                    <TableHead
-                      className="cursor-pointer hover:bg-gray-50"
-                      onClick={() => handleSort('priority')}
-                    >
-                      <div className="flex items-center gap-1">
-                        <span>优先级</span>
-                        {sortConfig.field === 'priority' && (
-                          sortConfig.order === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
-                        )}
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className={`p-1 h-6 w-6 ${filters.priority !== 'all' ? 'text-blue-600' : 'text-gray-400'}`}
-                              aria-label="优先级筛选"
-                              onClick={(e: React.MouseEvent<HTMLButtonElement>) => e.stopPropagation()}
-                            >
-                              <Filter className="h-3 w-3" />
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent align="start" className="w-40" onOpenAutoFocus={(e: Event) => e.preventDefault()}>
-                            <div className="space-y-2">
-                              <Label className="text-xs">优先级</Label>
-                              <Select value={filters.priority} onValueChange={(value: string) => handleFilterChange('priority', value)}>
-                                <SelectTrigger className="h-8">
-                                  <SelectValue placeholder="全部优先级" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="all">全部优先级</SelectItem>
-                                  <SelectItem value="low">低</SelectItem>
-                                  <SelectItem value="medium">中</SelectItem>
-                                  <SelectItem value="high">高</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <div className="flex justify-end">
-                                <Button variant="outline" size="sm" className="h-8" onClick={() => handleFilterChange('priority', 'all')}>清空</Button>
-                              </div>
-                            </div>
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                    </TableHead>
-                    {/* 列头筛选：状态（保留点击排序）*/}
-                    <TableHead
-                      className="cursor-pointer hover:bg-gray-50"
-                      onClick={() => handleSort('status')}
-                    >
-                      <div className="flex items-center gap-1">
-                        <span>状态</span>
-                        {sortConfig.field === 'status' && (
-                          sortConfig.order === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
-                        )}
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className={`p-1 h-6 w-6 ${filters.status !== 'all' ? 'text-blue-600' : 'text-gray-400'}`}
-                              aria-label="状态筛选"
-                              onClick={(e: React.MouseEvent<HTMLButtonElement>) => e.stopPropagation()}
-                            >
-                              <Filter className="h-3 w-3" />
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent align="start" className="w-44" onOpenAutoFocus={(e: Event) => e.preventDefault()}>
-                            <div className="space-y-2">
-                              <Label className="text-xs">状态</Label>
-                              <Select value={filters.status} onValueChange={(value: string) => handleFilterChange('status', value)}>
-                                <SelectTrigger className="h-8">
-                                  <SelectValue placeholder="全部状态" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="all">全部状态</SelectItem>
-                                  <SelectItem value="not_started">未开始</SelectItem>
-                                  <SelectItem value="pending">排队中</SelectItem>
-                                  <SelectItem value="running">运行中</SelectItem>
-                                  <SelectItem value="completed">已完成</SelectItem>
-                                  <SelectItem value="failed">失败</SelectItem>
-                                  <SelectItem value="cancelled">已取消</SelectItem>
-                                  <SelectItem value="archived">已归档</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <div className="flex justify-end">
-                                <Button variant="outline" size="sm" className="h-8" onClick={() => handleFilterChange('status', 'all')}>清空</Button>
-                              </div>
-                            </div>
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                    </TableHead>
-                    <TableHead
-                      className="cursor-pointer hover:bg-gray-50"
-                      onClick={() => handleSort('createdAt')}
-                    >
-                      <div className="flex items-center space-x-1">
-                        <span>创建时间</span>
-                        {sortConfig.field === 'createdAt' && (
-                          sortConfig.order === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
-                        )}
-                      </div>
-                    </TableHead>
-                    <TableHead
-                      className="cursor-pointer hover:bg-gray-50"
-                      onClick={() => handleSort('completedAt')}
-                    >
-                      <div className="flex items-center space-x-1">
-                        <span>完成时间</span>
-                        {sortConfig.field === 'completedAt' && (
-                          sortConfig.order === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
-                        )}
-                      </div>
-                    </TableHead>
-                    <TableHead>创建者</TableHead>
-                    <TableHead className="sticky right-0 bg-white z-30 border-l w-[220px]">操作</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredTasks.map((task) => {
-                    const statusConfig = getStatusConfig(task.status);
-                    const priorityConfig = getPriorityConfig(task.priority);
-                    const StatusIcon = statusConfig.icon;
-                    const isHighlighted = task.id === highlightTaskId;
-                    const isStatusAnim = task.id === statusAnimTaskId;
-
-                    return (
-                      <TableRow
-                        key={task.id}
-                        id={`task-row-${task.id}`}
-                        className={`hover:bg-gray-50 ${isHighlighted ? 'bg-amber-50 ring-2 ring-amber-200' : ''} ${isStatusAnim ? 'ring-2 ring-lime-300 bg-lime-50 animate-pulse' : ''}`}
-                      >
-                        <TableCell>
-                          <Checkbox
-                            checked={selectedTaskIds.includes(task.id)}
-                            onCheckedChange={(checked: boolean) => handleTaskSelection(task.id, checked)}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <div>
-                            <div className="font-medium">{task.taskName}</div>
-                            {task.description && (
-                              <div className="text-sm text-gray-500 truncate max-w-xs">
-                                {task.description}
-                              </div>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <code className="text-sm bg-gray-100 px-2 py-1 rounded">
-                            {task.id}
-                          </code>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">
-                            {getTaskTypeLabel(task.taskType)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {task.projectId || task.projectName ? (
-                            <Badge variant="secondary" className="bg-purple-50">
-                              {task.projectName ?? (task.projectId ? getProjectName(task.projectId) : '未选择项目')}
-                            </Badge>
-                          ) : (
-                            <span className="text-gray-500">未选择项目</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {task.datasets && task.datasets.length > 0 ? (
-                            <div>
-                              <div className="font-medium flex flex-wrap gap-2">
-                                {task.datasets.slice(0, 3).map((ds) => (
-                                  <Badge key={ds.id} variant="secondary">
-                                    {ds.name}
-                                  </Badge>
-                                ))}
-                                {task.datasets.length > 3 && (
-                                  <span className="text-xs text-gray-500">+{task.datasets.length - 3} 更多</span>
-                                )}
-                              </div>
-                              <div className="text-sm text-gray-500">
-                                {task.datasets.slice(0, 1).map((ds) => (
-                                  <span key={ds.id}>{ds.version}</span>
-                                ))}
-                                {task.datasets.length > 1 && (
-                                  <span className="ml-1">等 {task.datasets.length} 个数据集</span>
-                                )}
-                              </div>
-                            </div>
-                          ) : (
-                            <div>
-                              <div className="font-medium">{task.datasetName}</div>
-                              <div className="text-sm text-gray-500">{task.datasetVersion}</div>
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="bg-blue-50">
-                            {task.modelName}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={priorityConfig.color}>
-                            {priorityConfig.label}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <Badge className={statusConfig.color}>
-                              <StatusIcon className="h-3 w-3 mr-1" />
-                              {statusConfig.label}
-                            </Badge>
-                            {(['running', 'pending', 'completed'].includes(task.status)) && (
-                              <div className="w-20">
-                                <Progress value={task.status === 'completed' ? 100 : task.status === 'pending' ? 0 : (task.progress ?? 0)} className="h-2" />
-                                <div className="text-xs text-gray-500 mt-1">
-                                  {task.status === 'completed' ? '100%' : `${task.status === 'pending' ? 0 : (task.progress ?? 0)}%`}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="text-sm">
-                            {new Date(task.createdAt).toLocaleString('zh-CN')}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="text-sm">
-                            {task.completedAt
-                              ? new Date(task.completedAt).toLocaleString('zh-CN')
-                              : '-'
-                            }
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center space-x-1">
-                            <User className="h-4 w-4 text-gray-400" />
-                            <span className="text-sm">{task.createdBy}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="sticky right-0 bg-white z-20 border-l">
-                          {/* 常用操作直接展示 */}
-                          {(() => {
-                            const actions = getAvailableActions(task);
-                            const commonKeys = getCommonActionKeys(task);
-                            const commonActions = actions.filter(a => commonKeys.includes(a.key));
-                            const moreActions = actions.filter(a => !commonKeys.includes(a.key));
-                            return (
-                              <div className="flex items-center gap-2 justify-end w-[220px]">
-                                {commonActions.map((a) => {
-                                  const ActionIcon = a.icon;
-                                  const key = `${task.id}:${a.key}`;
-                                  const isLoading = loadingAction === key;
-                                  const variant = (a.key === 'stop' || a.key === 'delete' || a.key === 'cancel_queue')
-                                    ? 'destructive'
-                                    : (a.key === 'start' || a.key === 'retry' || a.key === 'rerun')
-                                      ? 'default'
-                                      : 'outline';
-                                  return (
-                                    <Button
-                                      key={a.key}
-                                      variant={variant as any}
-                                      size="sm"
-                                      disabled={isLoading}
-                                      onClick={() => handleTaskAction(a.key, task.id)}
-                                      className={`px-2 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                    >
-                                      <ActionIcon className="h-4 w-4 mr-1" /> {a.label}
-                                    </Button>
-                                  );
-                                })}
-                                {/* 更多 */}
-                                {moreActions.length > 0 && (
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button variant="ghost" size="sm" className="px-2">
-                                        <MoreHorizontal className="h-4 w-4" />
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                      {moreActions.map((action) => {
-                                        const ActionIcon = action.icon;
-                                        const key = `${task.id}:${action.key}`;
-                                        const isLoading = loadingAction === key;
-                                        return (
-                                          <DropdownMenuItem
-                                            key={action.key}
-                                            disabled={isLoading}
-                                            onClick={() => handleTaskAction(action.key, task.id)}
-                                            className={isLoading ? 'opacity-50 pointer-events-none' : ''}
-                                          >
-                                            <ActionIcon className="h-4 w-4 mr-2" />
-                                            {action.label}
-                                          </DropdownMenuItem>
-                                        );
-                                      })}
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
-                                )}
-                              </div>
-                            );
-                          })()}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+          <div className="flex items-center gap-2">
+            <div className="flex bg-slate-100 p-1 rounded-lg">
+              <button onClick={() => setViewMode('table')} className={`p-1.5 rounded-md transition-all ${viewMode === 'table' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}><List className="w-4 h-4" /></button>
+              <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}><Grid className="w-4 h-4" /></button>
             </div>
-          ) : (
-            // 网格视图
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredTasks.map((task) => {
-                const statusConfig = getStatusConfig(task.status);
-                const priorityConfig = getPriorityConfig(task.priority);
-                const StatusIcon = statusConfig.icon;
-                const isHighlighted = task.id === highlightTaskId;
-                const isStatusAnim = task.id === statusAnimTaskId;
+            <Button onClick={() => setFilters({ ...filters, status: 'all', taskType: 'all', projectId: 'all', priority: 'all', dateRange: { start: '', end: '' }, searchQuery: '' })} variant="ghost" size="icon" className="text-slate-400 hover:text-slate-600"><RotateCcw className="w-4 h-4" /></Button>
+            <Button onClick={onOpenCreateTaskPage} className="bg-blue-600 hover:bg-blue-700 text-white shadow-md gap-2"><Plus className="w-4 h-4" /> 创建任务</Button>
+          </div>
+        </div>
 
-                return (
-                  <Card
-                    key={task.id}
-                    id={`task-grid-${task.id}`}
-                    className={`hover:shadow-md transition-shadow ${isHighlighted ? 'ring-2 ring-amber-200 bg-amber-50' : ''} ${isStatusAnim ? 'ring-2 ring-lime-300 bg-lime-50 animate-pulse' : ''}`}
-                  >
-                    <CardHeader className="pb-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2 mb-2">
-                            <Checkbox
-                              checked={selectedTaskIds.includes(task.id)}
-                              onCheckedChange={(checked: boolean) => handleTaskSelection(task.id, checked)}
-                            />
-                            <code className="text-xs bg-gray-100 px-2 py-1 rounded">
-                              {task.id}
-                            </code>
-                          </div>
-                          <CardTitle className="text-lg">{task.taskName}</CardTitle>
-                          {task.description && (
-                            <p className="text-sm text-gray-600 mt-1 line-clamp-2">
-                              {task.description}
-                            </p>
-                          )}
+        {viewMode === 'table' ? (
+          <Table
+            columns={columns}
+            dataSource={getFilteredAndSortedTasks()}
+            rowKey="id"
+            rowSelection={{ selectedRowKeys: selectedTaskIds, onChange: (keys) => setSelectedTaskIds(keys as string[]) }}
+            pagination={{ pageSize: 15, showTotal: (total) => `共 ${total} 条` }}
+            scroll={{ x: 1300 }}
+            size="middle"
+          />
+        ) : (
+          <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 bg-slate-50/50 min-h-[500px]">
+            {getFilteredAndSortedTasks().map(task => {
+              const statusConfig = getStatusConfig(task.status);
+              const StatusIcon = statusConfig.icon;
+              const priorityConfig = getPriorityConfig(task.priority);
+              return (
+                <ShadcnCard key={task.id} className="group hover:shadow-lg transition-all duration-300 border-slate-200">
+                  <CardHeader className="p-4 pb-2">
+                    <div className="flex justify-between items-start gap-3">
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <Checkbox checked={selectedTaskIds.includes(task.id)} onCheckedChange={(c) => handleTaskSelection(task.id, !!c)} />
+                          <code className="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded text-slate-500 font-mono">{task.id}</code>
                         </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            {getAvailableActions(task).map((action) => {
-                              const ActionIcon = action.icon;
-                              return (
-                                <DropdownMenuItem
-                                  key={action.key}
-                                  onClick={() => handleTaskAction(action.key, task.id)}
-                                >
-                                  <ActionIcon className="h-4 w-4 mr-2" />
-                                  {action.label}
-                                </DropdownMenuItem>
-                              );
-                            })}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        <h3 className="font-bold text-slate-800 group-hover:text-blue-600 transition-colors cursor-pointer line-clamp-1" onClick={() => setSelectedTaskForDetails(task)}>{task.taskName}</h3>
                       </div>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <Badge variant="outline">
-                          {getTaskTypeLabel(task.taskType)}
-                        </Badge>
-                        <Badge className={priorityConfig.color}>
-                          {priorityConfig.label}
-                        </Badge>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 -mt-1 -mr-2"><MoreHorizontal className="w-4 h-4 text-slate-400" /></Button></DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {getTaskActions(task).map(action => (
+                            <DropdownMenuItem
+                              key={action.key}
+                              onClick={() => handleTaskAction(action.key, task.id)}
+                              className={action.danger ? "text-red-600" : ""}
+                            >
+                              {action.label}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-4 pt-2 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">{getTaskTypeLabel(task.taskType)}</Badge>
+                      <Badge className={`${priorityConfig.color} border-none`}>{priorityConfig.label}</Badge>
+                    </div>
+                    <div className="flex items-center justify-between pt-3 border-t border-slate-50">
+                      <div className="flex items-center gap-1.5">
+                        <StatusIcon className={`w-3.5 h-3.5 ${statusConfig.color.replace('bg-', 'text-').replace('100', '600')}`} />
+                        <span className="text-xs font-medium text-slate-700">{statusConfig.label}</span>
                       </div>
-
-                      <div className="space-y-2">
-                        <div className="flex items-center space-x-2 text-sm">
-                          <Database className="h-4 w-4 text-gray-400" />
-                          {task.datasets && task.datasets.length > 0 ? (
-                            <span>
-                              {task.datasets[0].name} ({task.datasets[0].version})
-                              {task.datasets.length > 1 && ` 等 ${task.datasets.length} 个数据集`}
-                            </span>
-                          ) : (
-                            <span>{task.datasetName} ({task.datasetVersion})</span>
-                          )}
-                        </div>
-                        <div className="flex items-center space-x-2 text-sm">
-                          <Cpu className="h-4 w-4 text-gray-400" />
-                          <span>{task.modelName}</span>
-                        </div>
-                        <div className="flex items-center space-x-2 text-sm">
-                          <Target className="h-4 w-4 text-gray-400" />
-                          {task.projectId || task.projectName ? (
-                            <Badge variant="secondary" className="bg-purple-50">
-                              {task.projectName ?? (task.projectId ? getProjectName(task.projectId) : '未选择项目')}
-                            </Badge>
-                          ) : (
-                            <span className="text-gray-500">未选择项目</span>
-                          )}
-                        </div>
-                        <div className="flex items-center space-x-2 text-sm">
-                          <User className="h-4 w-4 text-gray-400" />
-                          <span>{task.createdBy}</span>
-                        </div>
-                        <div className="flex items-center text-sm text-gray-500 mt-1">
-                          <CalendarIcon className="h-3 w-3 mr-1 text-gray-400" />
-                          <span>{new Date(task.createdAt).toLocaleString('zh-CN')}</span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <Badge className={statusConfig.color}>
-                          <StatusIcon className="h-3 w-3 mr-1" />
-                          {statusConfig.label}
-                        </Badge>
-                        {(['running', 'pending', 'completed'].includes(task.status)) && (
-                          <div className="flex items-center space-x-2">
-                            <Progress value={task.status === 'completed' ? 100 : task.status === 'pending' ? 0 : (task.progress ?? 0)} className="w-16 h-2" />
-                            <span className="text-xs text-gray-500">{task.status === 'completed' ? '100%' : `${task.status === 'pending' ? 0 : (task.progress ?? 0)}%`}</span>
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          )}
-
-          {filteredTasks.length === 0 && (
-            <div className="text-center py-12">
-              <div className="text-gray-400 mb-4">
-                <Search className="h-12 w-12 mx-auto" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">没有找到匹配的任务</h3>
-              <p className="text-gray-600">尝试调整筛选条件或创建新任务</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* 任务详情对话框 */}
-      {
-        selectedTaskForDetails && (
-          <Dialog open={!!selectedTaskForDetails} onOpenChange={() => setSelectedTaskForDetails(null)}>
-            <DialogContent className="max-w-4xl">
-              <DialogHeader>
-                <DialogTitle>任务详情 - {selectedTaskForDetails.taskName}</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-6">
-                {/* 任务详情内容 */}
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <div>
-                      <Label className="text-sm font-medium text-gray-500">任务ID</Label>
-                      <p className="mt-1">{selectedTaskForDetails.id}</p>
+                      <span className="text-xs text-slate-400">{new Date(task.createdAt).toLocaleDateString()}</span>
                     </div>
-                    <div>
-                      <Label className="text-sm font-medium text-gray-500">任务类型</Label>
-                      <p className="mt-1">{getTaskTypeLabel(selectedTaskForDetails.taskType)}</p>
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-gray-500">数据集</Label>
-                      <p className="mt-1">{selectedTaskForDetails.datasetName} ({selectedTaskForDetails.datasetVersion})</p>
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-gray-500">模型</Label>
-                      <p className="mt-1">{selectedTaskForDetails.modelName}</p>
-                    </div>
+                  </CardContent>
+                </ShadcnCard>
+              )
+            })}
+          </div>
+        )}
+      </AntCard>
+
+      <Dialog open={!!selectedTaskForDetails} onOpenChange={() => setSelectedTaskForDetails(null)}>
+        <DialogContent className="max-w-4xl">
+          {selectedTaskForDetails && (<><DialogHeader>
+            <DialogTitle>任务详情 - {selectedTaskForDetails.taskName}</DialogTitle>
+          </DialogHeader>
+            <div className="space-y-6">
+              {/* 任务详情内容 */}
+              <div className="grid grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">任务ID</Label>
+                    <p className="mt-1">{selectedTaskForDetails.id}</p>
                   </div>
-                  <div className="space-y-4">
-                    <div>
-                      <Label className="text-sm font-medium text-gray-500">状态</Label>
-                      <div className="mt-1">
-                        <Badge className={getStatusConfig(selectedTaskForDetails.status).color}>
-                          {getStatusConfig(selectedTaskForDetails.status).label}
-                        </Badge>
-                      </div>
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-gray-500">优先级</Label>
-                      <div className="mt-1">
-                        <Badge className={getPriorityConfig(selectedTaskForDetails.priority).color}>
-                          {getPriorityConfig(selectedTaskForDetails.priority).label}
-                        </Badge>
-                      </div>
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-gray-500">创建时间</Label>
-                      <p className="mt-1">{new Date(selectedTaskForDetails.createdAt).toLocaleString('zh-CN')}</p>
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-gray-500">创建者</Label>
-                      <p className="mt-1">{selectedTaskForDetails.createdBy}</p>
-                    </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">任务类型</Label>
+                    <p className="mt-1">{getTaskTypeLabel(selectedTaskForDetails.taskType)}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">数据集</Label>
+                    <p className="mt-1">{selectedTaskForDetails.datasetName} ({selectedTaskForDetails.datasetVersion})</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">模型</Label>
+                    <p className="mt-1">{selectedTaskForDetails.modelName}</p>
                   </div>
                 </div>
-
-                {selectedTaskForDetails.description && (
+                <div className="space-y-4">
                   <div>
-                    <Label className="text-sm font-medium text-gray-500">任务描述</Label>
-                    <p className="mt-1 text-gray-900">{selectedTaskForDetails.description}</p>
-                  </div>
-                )}
-
-                {(['running', 'pending', 'completed'].includes(selectedTaskForDetails.status)) && (
-                  <div>
-                    <Label className="text-sm font-medium text-gray-500">执行进度</Label>
-                    <div className="mt-2">
-                      <Progress value={selectedTaskForDetails.status === 'completed' ? 100 : selectedTaskForDetails.status === 'pending' ? 0 : (selectedTaskForDetails.progress ?? 0)} className="h-3" />
-                      <p className="text-sm text-gray-600 mt-1">
-                        {selectedTaskForDetails.status === 'completed' ? '100% 完成' : `${selectedTaskForDetails.status === 'pending' ? 0 : (selectedTaskForDetails.progress ?? 0)}% 完成`}
-                      </p>
+                    <Label className="text-sm font-medium text-gray-500">状态</Label>
+                    <div className="mt-1">
+                      <Badge className={getStatusConfig(selectedTaskForDetails.status).color}>
+                        {getStatusConfig(selectedTaskForDetails.status).label}
+                      </Badge>
                     </div>
                   </div>
-                )}
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">优先级</Label>
+                    <div className="mt-1">
+                      <Badge className={getPriorityConfig(selectedTaskForDetails.priority).color}>
+                        {getPriorityConfig(selectedTaskForDetails.priority).label}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">创建时间</Label>
+                    <p className="mt-1">{new Date(selectedTaskForDetails.createdAt).toLocaleString('zh-CN')}</p>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-gray-500">创建者</Label>
+                    <p className="mt-1">{selectedTaskForDetails.createdBy}</p>
+                  </div>
+                </div>
               </div>
-            </DialogContent>
-          </Dialog>
-        )
-      }
+
+              {selectedTaskForDetails.description && (
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">任务描述</Label>
+                  <p className="mt-1 text-gray-900">{selectedTaskForDetails.description}</p>
+                </div>
+              )}
+
+              {(['running', 'pending', 'completed'].includes(selectedTaskForDetails.status)) && (
+                <div>
+                  <Label className="text-sm font-medium text-gray-500">执行进度</Label>
+                  <div className="mt-2">
+                    <Progress value={selectedTaskForDetails.status === 'completed' ? 100 : selectedTaskForDetails.status === 'pending' ? 0 : (selectedTaskForDetails.progress ?? 0)} className="h-3" />
+                    <p className="text-sm text-gray-600 mt-1">
+                      {selectedTaskForDetails.status === 'completed' ? '100% 完成' : `${selectedTaskForDetails.status === 'pending' ? 0 : (selectedTaskForDetails.progress ?? 0)}% 完成`}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div></>)}
+        </DialogContent>
+      </Dialog>
+
 
       {/* 确认操作对话框 */}
       <Dialog open={confirmDialog.isOpen} onOpenChange={handleCancelConfirm}>

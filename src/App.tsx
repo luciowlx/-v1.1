@@ -32,7 +32,7 @@ import { Badge } from "./components/ui/badge";
 import { Card, CardContent } from "./components/ui/card";
 import { X, Search, Grid3X3, List, ChevronDown, Calendar, Users, Database, TrendingUp, Clock, CheckCircle, Settings, UserPlus, Mail, Trash2, Eye, Archive, Copy, ToggleLeft, ToggleRight, Filter, ArrowUpDown, Plus, AlertTriangle, Link as LinkIcon, Code, Terminal } from "lucide-react";
 import { Toaster } from "./components/ui/sonner";
-import { message, Modal } from "antd";
+import { message, Modal, Table, Tag, Tooltip } from "antd";
 import { Checkbox } from "./components/ui/checkbox";
 import FloatingAssistantEntry from "./components/FloatingAssistantEntry";
 import TeamMemberSelector from "./components/TeamMemberSelector";
@@ -336,6 +336,122 @@ export default function App() {
     const diff = aDate.getTime() - bDate.getTime();
     return projectSortOrder === "asc" ? diff : -diff;
   });
+
+  const projectColumns: any[] = [
+    {
+      title: '项目ID',
+      dataIndex: 'id',
+      key: 'id',
+      width: 100,
+      fixed: 'left',
+    },
+    {
+      title: '项目名称',
+      dataIndex: 'title',
+      key: 'title',
+      width: 200,
+      render: (text: string, record: any) => (
+        <div className="flex flex-col">
+          <span className="font-medium text-gray-900">{text}</span>
+          <span className="text-xs text-gray-500 truncate max-w-[180px]" title={record.description}>{record.description}</span>
+        </div>
+      ),
+    },
+    {
+      title: '项目模式',
+      dataIndex: 'mode',
+      key: 'mode',
+      width: 120,
+    },
+    {
+      title: '状态',
+      dataIndex: 'status',
+      key: 'status',
+      width: 100,
+      render: (status: string) => {
+        let color = 'default';
+        if (status === '进行中') color = 'processing';
+        else if (status === '已归档') color = 'default';
+        else if (status === '已延期') color = 'warning';
+        return <Tag color={color}>{status}</Tag>;
+      }
+    },
+    {
+      title: '数据集',
+      dataIndex: ['stats', 'datasets'],
+      key: 'stats_datasets',
+      width: 100,
+    },
+    {
+      title: '模型',
+      dataIndex: ['stats', 'models'],
+      key: 'stats_models',
+      width: 100,
+    },
+    {
+      title: '任务',
+      dataIndex: ['stats', 'tasks'],
+      key: 'stats_tasks',
+      width: 100,
+    },
+    {
+      title: '负责人',
+      dataIndex: 'owner',
+      key: 'owner',
+      width: 120,
+      render: (text: string) => (
+        <div className="flex items-center gap-1">
+          <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center text-xs text-blue-600">
+            {text.charAt(0)}
+          </div>
+          <span>{text}</span>
+        </div>
+      )
+    },
+    {
+      title: '项目周期',
+      dataIndex: 'projectCycle',
+      key: 'projectCycle',
+      width: 200,
+      render: (text: string) => <div className="text-xs text-gray-500">{text}</div>
+    },
+    {
+      title: '创建时间',
+      dataIndex: 'createdTime',
+      key: 'createdTime',
+      width: 150,
+      sorter: (a: any, b: any) => a.createdTime.localeCompare(b.createdTime),
+      render: (text: string) => <div className="text-xs text-gray-500">{text}</div>
+    },
+    {
+      title: '更新时间',
+      dataIndex: 'updatedTime',
+      key: 'updatedTime',
+      width: 150,
+      sorter: (a: any, b: any) => a.updatedTime.localeCompare(b.updatedTime),
+      render: (text: string) => <div className="text-xs text-gray-500">{text}</div>
+    },
+    {
+      title: '操作',
+      key: 'action',
+      fixed: 'right',
+      width: 120,
+      render: (_: any, record: any) => (
+        <div className="flex items-center gap-2">
+          <Tooltip title="查看详情">
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:text-blue-600 hover:bg-blue-50" onClick={() => handleViewProjectDetails(record)}>
+              <Eye className="h-4 w-4" />
+            </Button>
+          </Tooltip>
+          <Tooltip title="管理项目">
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:text-blue-600 hover:bg-blue-50" onClick={() => handleManageProject(record)}>
+              <Settings className="h-4 w-4" />
+            </Button>
+          </Tooltip>
+        </div>
+      ),
+    },
+  ];
 
   /**
    * 项目管理统计口径计算
@@ -972,98 +1088,16 @@ export default function App() {
               </div>
             ) : (
               /* 列表视图 */
-              <div className="bg-white rounded-lg border overflow-x-auto">
-                <div className="grid border-b border-gray-200 text-sm font-medium text-gray-500 min-w-max" style={{ gridTemplateColumns: "80px 200px 100px 80px 150px 150px 150px 100px 120px 120px 120px 100px" }}>
-                  <div className="py-4 pl-6">项目ID</div>
-                  <div className="py-4">项目名称</div>
-                  <div className="py-4">项目模式</div>
-                  <div className="py-4">状态</div>
-                  <div className="py-4">数据集</div>
-                  <div className="py-4">模型</div>
-                  <div className="py-4">任务</div>
-                  <div className="flex items-center gap-1 py-4">
-                    <span>负责人</span>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0" aria-label="负责人筛选">
-                          <Filter className="h-3 w-3" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-44 p-2" align="start">
-                        <div className="space-y-2">
-                          <div className="text-xs text-gray-500">负责人筛选</div>
-                          <Select value={ownerFilter} onValueChange={(v: string) => setOwnerFilter(v)}>
-                            <SelectTrigger className="h-8">
-                              <SelectValue placeholder="选择负责人" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="all">全部负责人</SelectItem>
-                              <SelectItem value="张三">张三</SelectItem>
-                              <SelectItem value="李四">李四</SelectItem>
-                              <SelectItem value="王五">王五</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                  <div className="py-4">项目周期</div>
-                  <div className="flex items-center gap-1 py-4 cursor-pointer select-none" onClick={() => handleToggleProjectSort("createdTime")}>
-                    <span>创建时间</span>
-                    <ArrowUpDown className={`h-3 w-3 ${projectSortField === "createdTime" ? "text-blue-600" : "text-gray-400"}`} />
-                  </div>
-                  <div className="flex items-center gap-1 py-4 cursor-pointer select-none" onClick={() => handleToggleProjectSort("updatedTime")}>
-                    <span>更新时间</span>
-                    <ArrowUpDown className={`h-3 w-3 ${projectSortField === "updatedTime" ? "text-blue-600" : "text-gray-400"}`} />
-                  </div>
-                  <div className="flex items-center pl-4 py-4 pr-6 bg-white" style={{ position: 'sticky', right: 0, zIndex: 20, boxShadow: '-12px 0 15px -4px rgba(0,0,0,0.08)' }}>操作</div>
-                </div>
-
-                {/* 已移除：列表内的“创建新项目”占位行，改为顶栏右侧按钮触发 */}
-
-                {sortedProjects.map((project, index) => (
-                  <div key={index} className="group grid border-b border-gray-200 hover:bg-gray-50 transition-colors min-w-max" style={{ gridTemplateColumns: "80px 200px 100px 80px 150px 150px 150px 100px 120px 120px 120px 100px" }}>
-                    <div className="flex items-center text-sm text-gray-700 py-4 pl-6">{project.id}</div>
-                    <div className="py-4">
-                      <div className="font-medium text-gray-900 text-sm">{project.title}</div>
-                      <div className="text-xs text-gray-500">{project.description}</div>
-                    </div>
-                    <div className="flex items-center text-xs text-gray-700 py-4">{project.mode}</div>
-                    <div className="flex items-center py-4">
-                      <span className={`px-2 py-1 rounded-full text-xs ${project.status === "进行中" ? "bg-green-100 text-green-700" :
-                        project.status === "已归档" ? "bg-gray-100 text-gray-700" :
-                          "bg-gray-100 text-gray-700"
-                        }`}>
-                        {project.status}
-                      </span>
-                    </div>
-                    <div className="flex items-center text-xs text-gray-700 py-4">{project.stats.datasets}</div>
-                    <div className="flex items-center text-xs text-gray-700 py-4">{project.stats.models}</div>
-                    <div className="flex items-center text-xs text-gray-700 py-4">{project.stats.tasks}</div>
-                    <div className="flex items-center text-xs text-gray-700 py-4">{project.owner}</div>
-                    <div className="flex items-center text-xs text-gray-500 py-4">{project.projectCycle}</div>
-                    <div className="flex items-center text-xs text-gray-500 py-4">{project.createdTime}</div>
-                    <div className="flex items-center text-xs text-gray-500 py-4">{project.updatedTime}</div>
-                    <div className="flex items-center gap-1 pl-4 pr-6 py-4 bg-white group-hover:bg-gray-50 transition-colors" style={{ position: 'sticky', right: 0, zIndex: 20, boxShadow: '-12px 0 15px -4px rgba(0,0,0,0.08)' }}>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 w-6 p-0"
-                        onClick={() => handleViewProjectDetails(project)}
-                      >
-                        <Eye className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 w-6 p-0"
-                        onClick={() => handleManageProject(project)}
-                      >
-                        <Settings className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+              <div className="bg-white rounded-lg border overflow-hidden shadow-sm">
+                <Table
+                  columns={projectColumns}
+                  dataSource={sortedProjects}
+                  rowKey="id"
+                  pagination={{ pageSize: 10 }}
+                  scroll={{ x: 1500 }}
+                  className="rounded-b-lg"
+                  rowClassName="hover:bg-slate-50 cursor-default"
+                />
               </div>
             )
             }

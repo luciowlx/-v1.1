@@ -13,7 +13,7 @@ import dayjs from 'dayjs';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { Card as ShadcnCard, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Progress } from '../ui/progress';
 import {
@@ -22,14 +22,17 @@ import {
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '../ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
-import { message, Modal, Popconfirm, Tooltip, Empty, DatePicker, Slider, InputNumber, Checkbox, Space, Select as AntSelect } from 'antd';
+import { message, Modal, Popconfirm, Tooltip, Empty, DatePicker, Slider, InputNumber, Checkbox, Space, Select as AntSelect, Table, Badge as AntBadge, Tag, Card as AntCard } from 'antd';
 import { useLanguage } from "../../i18n/LanguageContext";
 import { mockCITasks, CausalInsightTask, getDecisionTaskSchema, getCausalResultData } from '../../mock/causal';
 import {
     ComposedChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
     ResponsiveContainer, Cell, Line, Scatter
 } from 'recharts';
+
+const Card = ShadcnCard;
+const AntdCard = AntCard;
+
 
 /**
  * 因果洞察主组件
@@ -179,16 +182,117 @@ function CITaskList({ tasks, onSearch, onCreate, onViewDetail, onEdit, onDelete,
         });
     }, [tasks, sourceFilter, statusFilter]);
 
-    const getStatusBadge = (status: string) => {
-        switch (status) {
-            case 'SUCCEEDED': return <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-green-200 font-medium">已完成</Badge>;
-            case 'RUNNING': return <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 border-blue-200 font-medium">运行中</Badge>;
-            case 'FAILED': return <Badge className="bg-red-100 text-red-700 hover:bg-red-100 border-red-200 font-medium">失败</Badge>;
-            case 'DRAFT': return <Badge className="bg-gray-100 text-gray-700 hover:bg-gray-100 border-gray-200 font-medium">草稿</Badge>;
-            case 'QUEUED': return <Badge className="bg-yellow-100 text-yellow-700 hover:bg-yellow-100 border-yellow-200 font-medium">排队中</Badge>;
-            default: return <Badge>{status}</Badge>;
+    const columns: any[] = [
+        {
+            title: '任务名称',
+            dataIndex: 'name',
+            key: 'name',
+            width: 260,
+            render: (text: string, record: any) => (
+                <div className="flex flex-col">
+                    <span className="font-semibold text-slate-900 hover:text-blue-600 cursor-pointer transition-colors" onClick={() => onViewDetail(record.id)}>
+                        {text}
+                    </span>
+                    <span className="text-xs text-slate-400 font-mono mt-0.5">{record.id}</span>
+                </div>
+            )
+        },
+        {
+            title: '来源任务',
+            dataIndex: 'sourceDecisionTaskName',
+            key: 'source',
+            width: 180,
+            render: (text: string) => <span className="text-slate-600 text-sm">{text}</span>
+        },
+        {
+            title: 'Y 字段',
+            dataIndex: ['ySpec', 'field'],
+            key: 'yField',
+            width: 120,
+            render: (text: string) => (
+                <Tag>{text}</Tag>
+            )
+        },
+        {
+            title: '样本命中',
+            key: 'sample',
+            width: 200,
+            render: (_: any, record: any) => (
+                <div className="flex flex-col w-full max-w-[180px]">
+                    <div className="flex justify-between items-center mb-1">
+                        <span className="text-sm font-bold text-slate-700">{record.sampleHit.toLocaleString()}</span>
+                        <span className="text-[10px] text-slate-400">/ {record.sampleTotal.toLocaleString()}</span>
+                    </div>
+                    <Progress value={(record.sampleHit / record.sampleTotal) * 100} className="h-1.5 bg-slate-100" />
+                </div>
+            )
+        },
+        {
+            title: '状态',
+            dataIndex: 'status',
+            key: 'status',
+            width: 120,
+            filters: statusOptions.filter(o => o.value !== 'all').map(o => ({ text: o.label, value: o.value })),
+            onFilter: (value: any, record: any) => record.status === value,
+            render: (status: string) => {
+                let color = 'default';
+                let label = status;
+                if (status === 'RUNNING') { color = 'processing'; label = '运行中'; }
+                else if (status === 'SUCCEEDED') { color = 'success'; label = '已完成'; }
+                else if (status === 'FAILED') { color = 'error'; label = '失败'; }
+                else if (status === 'DRAFT') { color = 'default'; label = '草稿'; }
+                else if (status === 'QUEUED') { color = 'warning'; label = '排队中'; }
+                return <AntBadge status={color as any} text={label} />;
+            }
+        },
+        {
+            title: '创建人',
+            dataIndex: 'createdBy',
+            key: 'creator',
+            width: 120,
+            render: (text: string) => <span className="text-slate-600 text-sm font-medium">{text}</span>
+        },
+        {
+            title: '创建时间',
+            dataIndex: 'createdAt',
+            key: 'createdAt',
+            width: 160,
+            sorter: (a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+            render: (text: string) => <span className="text-slate-500 text-sm">{text}</span>
+        },
+        {
+            title: '操作',
+            key: 'action',
+            fixed: 'right',
+            width: 180,
+            render: (_: any, task: any) => (
+                <Space size="small">
+                    {['DRAFT', 'FAILED'].includes(task.status) && (
+                        <Tooltip title="编辑">
+                            <Button variant="ghost" size="icon" onClick={() => onEdit(task.id)} className="h-8 w-8 text-slate-500 hover:text-blue-600 hover:bg-blue-50">
+                                <Pencil className="w-4 h-4" />
+                            </Button>
+                        </Tooltip>
+                    )}
+                    <Tooltip title="查看详情">
+                        <Button variant="ghost" size="icon" onClick={() => onViewDetail(task.id)} className="h-8 w-8 text-slate-500 hover:text-blue-600 hover:bg-blue-50">
+                            <Eye className="w-4 h-4" />
+                        </Button>
+                    </Tooltip>
+                    <Tooltip title="复制配置">
+                        <Button variant="ghost" size="icon" onClick={() => onCopy(task.id)} className="h-8 w-8 text-slate-500 hover:text-blue-600 hover:bg-blue-50">
+                            <Copy className="w-4 h-4" />
+                        </Button>
+                    </Tooltip>
+                    <Popconfirm title="确定要删除该任务吗？" onConfirm={() => onDelete(task.id)} okText="确认" cancelText="取消">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-red-600 hover:bg-red-50">
+                            <Trash2 className="w-4 h-4" />
+                        </Button>
+                    </Popconfirm>
+                </Space>
+            )
         }
-    };
+    ];
 
     return (
         <div className="space-y-4">
@@ -202,128 +306,46 @@ function CITaskList({ tasks, onSearch, onCreate, onViewDetail, onEdit, onDelete,
                 </Button>
             </div>
 
-            <Card className="border-none shadow-sm overflow-hidden">
-                <CardHeader className="bg-white border-b py-4">
-                    <div className="grid grid-cols-3 gap-4">
-                        {/* 搜索框 */}
+            <ShadcnCard className="border-none shadow-sm overflow-hidden">
+                <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-white">
+                    <div className="flex items-center gap-4 flex-1">
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                             <Input
                                 placeholder="搜索任务名称或ID..."
-                                className="pl-10 h-10 border-slate-200 focus:ring-blue-500 w-full"
+                                className="pl-10 h-10 border-slate-200 focus:ring-blue-500 w-64"
                                 onChange={(e) => onSearch(e.target.value)}
                             />
                         </div>
-                        {/* 来源任务过滤 */}
                         <AntSelect
                             placeholder="任务来源"
-                            className="w-full"
-                            style={{ height: '40px', width: '100%' }}
+                            style={{ width: 160 }}
                             value={sourceFilter}
-                            onChange={(val) => setSourceFilter(val)}
+                            onChange={setSourceFilter}
                             options={[
                                 { value: 'all', label: '全部来源' },
                                 ...sourceOptions.map((s: string) => ({ value: s, label: s }))
                             ]}
-                            allowClear
-                            onClear={() => setSourceFilter('all')}
                         />
-                        {/* 状态过滤 */}
                         <AntSelect
                             placeholder="任务状态"
-                            className="w-full"
-                            style={{ height: '40px', width: '100%' }}
+                            style={{ width: 140 }}
                             value={statusFilter}
-                            onChange={(val) => setStatusFilter(val)}
+                            onChange={setStatusFilter}
                             options={statusOptions}
-                            allowClear
-                            onClear={() => setStatusFilter('all')}
                         />
                     </div>
-                </CardHeader>
-                <CardContent className="p-0">
-                    <Table>
-                        <TableHeader className="bg-slate-50">
-                            <TableRow className="hover:bg-transparent border-none">
-                                <TableHead className="w-[300px] font-semibold text-slate-700 h-12">任务名称</TableHead>
-                                <TableHead className="font-semibold text-slate-700 h-12">来源任务</TableHead>
-                                <TableHead className="font-semibold text-slate-700 h-12">Y 字段</TableHead>
-                                <TableHead className="font-semibold text-slate-700 h-12">样本命中</TableHead>
-                                <TableHead className="font-semibold text-slate-700 h-12">状态</TableHead>
-                                <TableHead className="font-semibold text-slate-700 h-12">创建人</TableHead>
-                                <TableHead className="font-semibold text-slate-700 h-12">创建时间</TableHead>
-                                <TableHead className="font-semibold text-slate-700 text-right h-12 pr-6">操作</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {filteredTasks.length > 0 ? filteredTasks.map((task: any) => (
-                                <TableRow key={task.id} className="hover:bg-slate-50/50 transition-colors group h-16 border-slate-100">
-                                    <TableCell>
-                                        <div className="flex flex-col">
-                                            <span className="font-semibold text-slate-900 group-hover:text-blue-600 cursor-pointer" onClick={() => onViewDetail(task.id)}>
-                                                {task.name}
-                                            </span>
-                                            <span className="text-xs text-slate-400 font-mono mt-0.5">{task.id}</span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="text-slate-600 text-sm">{task.sourceDecisionTaskName}</TableCell>
-                                    <TableCell>
-                                        <Badge variant="outline" className="font-normal border-slate-200 bg-slate-50 text-slate-600 px-2 py-0">
-                                            {task.ySpec.field}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex flex-col w-32">
-                                            <div className="flex justify-between items-center mb-1">
-                                                <span className="text-sm font-bold text-slate-700">{task.sampleHit.toLocaleString()}</span>
-                                                <span className="text-[10px] text-slate-400">/ {task.sampleTotal.toLocaleString()}</span>
-                                            </div>
-                                            <Progress value={(task.sampleHit / task.sampleTotal) * 100} className="h-1.5 bg-slate-100" />
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>{getStatusBadge(task.status)}</TableCell>
-                                    <TableCell className="text-slate-600 text-sm font-medium">{task.createdBy}</TableCell>
-                                    <TableCell className="text-slate-500 text-sm">{task.createdAt}</TableCell>
-                                    <TableCell className="text-right pr-6">
-                                        <div className="flex justify-end space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            {/* 草稿状态显示编辑按钮 */}
-                                            {/* 草稿和失败状态显示编辑按钮 */}
-                                            {['DRAFT', 'FAILED'].includes(task.status) && (
-                                                <Tooltip title="编辑">
-                                                    <Button variant="ghost" size="icon" onClick={() => onEdit(task.id)} className="h-8 w-8 text-slate-500 hover:text-blue-600 hover:bg-blue-50">
-                                                        <Pencil className="w-4 h-4" />
-                                                    </Button>
-                                                </Tooltip>
-                                            )}
-                                            <Tooltip title="查看详情">
-                                                <Button variant="ghost" size="icon" onClick={() => onViewDetail(task.id)} className="h-8 w-8 text-slate-500 hover:text-blue-600 hover:bg-blue-50">
-                                                    <Eye className="w-4 h-4" />
-                                                </Button>
-                                            </Tooltip>
-                                            <Tooltip title="复制配置">
-                                                <Button variant="ghost" size="icon" onClick={() => onCopy(task.id)} className="h-8 w-8 text-slate-500 hover:text-blue-600 hover:bg-blue-50">
-                                                    <Copy className="w-4 h-4" />
-                                                </Button>
-                                            </Tooltip>
-                                            <Popconfirm title="确定要删除该任务吗？" onConfirm={() => onDelete(task.id)} okText="确认" cancelText="取消">
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-red-600 hover:bg-red-50">
-                                                    <Trash2 className="w-4 h-4" />
-                                                </Button>
-                                            </Popconfirm>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            )) : (
-                                <TableRow>
-                                    <TableCell colSpan={8} className="h-64 text-center">
-                                        <Empty description="暂无因果洞察任务" />
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
+                </div>
+                <Table
+                    columns={columns}
+                    dataSource={filteredTasks}
+                    rowKey="id"
+                    pagination={{ pageSize: 10 }}
+                    scroll={{ x: 1300 }}
+                    className="rounded-b-lg"
+                    rowClassName="hover:bg-slate-50 cursor-default"
+                />
+            </ShadcnCard>
         </div>
     );
 }
@@ -654,77 +676,56 @@ function CreateCITask({ onBack, onSubmit, existingTasks = [], editingTask = null
                         </CardHeader>
                         <CardContent className="p-6 space-y-4">
                             <div className="border border-slate-50 rounded-2xl overflow-hidden shadow-sm">
-                                <Table>
-                                    <TableHeader className="bg-slate-50 border-b-none">
-                                        <TableRow className="hover:bg-transparent border-slate-100">
-                                            <TableHead className="font-black text-slate-400 uppercase tracking-wider h-12 py-0 text-[11px] pl-6 w-[35%]">字段</TableHead>
-                                            <TableHead className="font-black text-slate-400 uppercase tracking-wider h-12 py-0 text-[11px] w-[25%]">操作符</TableHead>
-                                            <TableHead className="font-black text-slate-400 uppercase tracking-wider h-12 py-0 text-[11px] w-[30%]">值</TableHead>
-                                            <TableHead className="font-black text-slate-400 uppercase tracking-wider h-12 py-0 text-[11px] text-right pr-6 w-[10%]">操作</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {formData.filters.length > 0 ? (
-                                            formData.filters.map((f: any, idx: number) => {
-                                                const fieldInfo = schema?.fields.find((field: any) => field.name === f.field);
-                                                return (
-                                                    <TableRow key={f.id} className="hover:bg-slate-50/50 border-slate-50 transition-colors group">
-                                                        <TableCell className="font-bold text-slate-700 h-14 pl-6">
-                                                            {fieldInfo ? fieldInfo.displayName : f.field}
-                                                        </TableCell>
-                                                        <TableCell className="font-mono text-[11px] font-black text-slate-400">{f.op}</TableCell>
-                                                        <TableCell className="text-sm font-medium text-slate-600">
-                                                            {Array.isArray(f.value) ? f.value.join(' ~ ') : f.value}
-                                                        </TableCell>
-                                                        <TableCell className="text-right pr-6">
-                                                            <div className="flex justify-end space-x-1">
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    onClick={() => openEditModal(f)}
-                                                                    className="h-8 w-8 text-slate-300 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
-                                                                >
-                                                                    <Pencil className="w-4 h-4" />
-                                                                </Button>
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    onClick={() => removeFilter(f.id)}
-                                                                    className="h-8 w-8 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                                                >
-                                                                    <Trash2 className="w-4 h-4" />
-                                                                </Button>
-                                                            </div>
-                                                        </TableCell>
-                                                    </TableRow>
-                                                );
-                                            })
-                                        ) : (
-                                            <TableRow>
-                                                <TableCell colSpan={4} className="h-64 text-center">
-                                                    <div className="flex flex-col items-center justify-center space-y-3 opacity-20">
-                                                        <div className="p-6 bg-slate-100 rounded-full">
-                                                            <Filter className="w-12 h-12 text-slate-400" />
-                                                        </div>
-                                                        <p className="text-sm font-bold">暂无过滤条件</p>
-                                                    </div>
-                                                </TableCell>
-                                            </TableRow>
-                                        )}
-                                        <TableRow className="hover:bg-transparent border-none">
-                                            <TableCell colSpan={4} className="p-0">
-                                                <Button
-                                                    onClick={() => setIsFilterModalOpen(true)}
-                                                    variant="ghost"
-                                                    className="w-full h-14 text-blue-500 font-black text-xs uppercase tracking-[0.2em] border-t border-slate-50 hover:bg-blue-50/30 rounded-none flex items-center justify-center space-x-2"
-                                                >
-                                                    <Plus className="w-4 h-4" />
-                                                    <span>添加过滤条件</span>
-                                                </Button>
-                                            </TableCell>
-                                        </TableRow>
-                                    </TableBody>
-                                </Table>
+                                <Table
+                                    columns={[
+                                        {
+                                            title: '字段',
+                                            dataIndex: 'field',
+                                            key: 'field',
+                                            width: '35%',
+                                            render: (t: any, r: any) => <span className="font-bold text-slate-700 pl-2">{schema?.fields.find((f: any) => f.name === r.field)?.displayName || r.field}</span>
+                                        },
+                                        {
+                                            title: '操作符',
+                                            dataIndex: 'op',
+                                            key: 'op',
+                                            width: '25%',
+                                            render: (t: string) => <span className="font-mono text-[11px] font-black text-slate-400">{t}</span>
+                                        },
+                                        {
+                                            title: '值',
+                                            dataIndex: 'value',
+                                            key: 'value',
+                                            width: '30%',
+                                            render: (v: any) => <span className="text-sm font-medium text-slate-600">{Array.isArray(v) ? v.join(' ~ ') : v}</span>
+                                        },
+                                        {
+                                            title: '操作',
+                                            key: 'action',
+                                            width: '10%',
+                                            align: 'right',
+                                            render: (_: any, r: any) => (
+                                                <div className="flex justify-end space-x-1 pr-2">
+                                                    <Button variant="ghost" size="icon" onClick={() => openEditModal(r)} className="h-8 w-8 text-slate-300 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"><Pencil className="w-4 h-4" /></Button>
+                                                    <Button variant="ghost" size="icon" onClick={() => removeFilter(r.id)} className="h-8 w-8 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></Button>
+                                                </div>
+                                            )
+                                        }
+                                    ]}
+                                    dataSource={formData.filters}
+                                    rowKey="id"
+                                    pagination={false}
+                                    size="middle"
+                                    locale={{ emptyText: <Empty description="暂无过滤条件" image={Empty.PRESENTED_IMAGE_SIMPLE} /> }}
+                                />
+                                <Button
+                                    onClick={() => setIsFilterModalOpen(true)}
+                                    variant="ghost"
+                                    className="w-full h-14 text-blue-500 font-black text-xs uppercase tracking-[0.2em] border-t border-slate-50 hover:bg-blue-50/30 rounded-none flex items-center justify-center space-x-2"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    <span>添加过滤条件</span>
+                                </Button>
                             </div>
 
                             {/* 估算统计与提交操作区域 */}
@@ -1126,36 +1127,23 @@ function SampleDataTable({ data, columns, className }: { data: any[], columns?: 
     // 动态获取列名 (排除一些不需要展示的 meta key)
     const displayColumns = columns || Object.keys(data[0]).filter(k => !['id', 'isPositive'].includes(k));
 
+    const tableColumns: any[] = [
+        { title: '序号', key: 'index', render: (_: any, __: any, index: number) => index + 1, width: 80, align: 'center' },
+        ...(displayColumns.includes('time') ? [{ title: '时间', dataIndex: 'time', key: 'time', width: 160 }] : []),
+        ...displayColumns.filter(c => c !== 'time').map(col => ({ title: col, dataIndex: col, key: col, width: 120 }))
+    ];
+
     return (
         <div className={`border border-slate-200 rounded-xl bg-white shadow-sm overflow-hidden animate-in fade-in zoom-in-95 duration-300 ${className}`}>
-            <div className={`overflow-auto ${className ? 'h-full' : 'max-h-[500px]'}`}>
-                <Table>
-                    <TableHeader className="bg-slate-50 sticky top-0 z-10 shadow-sm">
-                        <TableRow>
-                            <TableHead className="w-20 text-center font-bold text-slate-700 bg-slate-50">序号</TableHead>
-                            <TableHead className="w-40 font-bold text-slate-700 bg-slate-50">时间</TableHead>
-                            {displayColumns.filter(c => c !== 'time').map(col => (
-                                <TableHead key={col} className="font-bold text-slate-700 bg-slate-50 min-w-[120px]">
-                                    {col}
-                                </TableHead>
-                            ))}
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {data.map((row, idx) => (
-                            <TableRow key={idx} className="hover:bg-slate-50/50">
-                                <TableCell className="text-center font-mono text-slate-500 text-xs">{idx + 1}</TableCell>
-                                <TableCell className="font-mono text-slate-600 text-xs">{row.time}</TableCell>
-                                {displayColumns.filter(c => c !== 'time').map(col => (
-                                    <TableCell key={col} className="font-mono text-slate-600 text-xs">
-                                        {typeof row[col] === 'number' ? row[col].toFixed(2) : row[col]}
-                                    </TableCell>
-                                ))}
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </div>
+            <Table
+                columns={tableColumns}
+                dataSource={data}
+                rowKey={(r, i) => i?.toString() || Math.random().toString()}
+                pagination={false}
+                scroll={{ y: 500, x: 'max-content' }}
+                size="small"
+                className="[&_.ant-table-thead_th]:bg-slate-50 [&_.ant-table-thead_th]:font-bold [&_.ant-table-thead_th]:text-slate-700"
+            />
             <div className="bg-slate-50 border-t border-slate-200 p-2 text-center text-xs text-slate-400">
                 共 {data.length} 条数据
             </div>
