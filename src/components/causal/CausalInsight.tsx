@@ -4,8 +4,12 @@ import {
     AlertCircle, AlertTriangle, ChevronRight, ChevronLeft, ArrowRight, Database, BarChart3,
     Flame, Download, Copy, Trash2, RefreshCcw, Target, FileText, LayoutGrid,
     Settings2, Eye, MoreVertical, History, X, Play, Calendar, List, Pencil,
-    Table as TableIcon
+    Table as TableIcon, Loader2
 } from 'lucide-react';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
+import JSZip from 'jszip';
+import dayjs from 'dayjs';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
@@ -315,6 +319,35 @@ function CreateCITask({ onBack, onSubmit }: any) {
             ...formData,
             filters: formData.filters.filter(f => f.id !== id)
         });
+    };
+
+    const handleSubmit = (status: 'DRAFT' | 'QUEUED') => {
+        const newTask: CausalInsightTask = {
+            id: `CI-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+            name: formData.name || '新建因果洞察任务',
+            description: 'Created via Wizard',
+            projectId: 'proj_default',
+            sourceDecisionTaskId: formData.sourceTaskId,
+            sourceDecisionTaskName: schema?.taskId || 'Source Task',
+            datasetSnapshotId: 'snap_default',
+            xSpec: {
+                mode: 'explicit',
+                fields: formData.xFields
+            },
+            ySpec: {
+                field: formData.yField,
+                filterType: currentYSchema?.filterType || 'Numeric'
+            },
+            filters: { and: formData.filters },
+            status: status,
+            progress: 0,
+            sampleTotal: estimateResult.total,
+            sampleHit: estimateResult.hit,
+            createdAt: new Date().toLocaleString(),
+            createdBy: 'Current User',
+            updatedAt: new Date().toLocaleString()
+        };
+        onSubmit(newTask);
     };
 
     return (
@@ -1009,6 +1042,121 @@ function CITaskDetail({ task, onBack }: { task: CausalInsightTask; onBack: () =>
 
     // 全屏预览弹窗状态
     const [isSampleModalOpen, setIsSampleModalOpen] = useState(false);
+    // 导出状态
+    const [isExporting, setIsExporting] = useState(false);
+
+    // 导出报告逻辑
+    const handleExportReport = async () => {
+        try {
+            setIsExporting(true);
+
+            // 1. 强制切换到图表视图以进行截图
+            setFilteredViewMode('chart');
+            setFullViewMode('chart');
+
+            // 等待渲染完成
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // 2. 初始化 ZIP 和 PDF
+            const zip = new JSZip();
+            const doc = new jsPDF('p', 'mm', 'a4');
+            const pageWidth = doc.internal.pageSize.getWidth();
+
+            // 添加标题
+            doc.setFontSize(16);
+            doc.text(`Causal Insight Report: ${task.name}`, 10, 15);
+            doc.setFontSize(10);
+            doc.text(`Generated at: ${dayjs().format('YYYY-MM-DD HH:mm:ss')}`, 10, 22);
+            doc.line(10, 25, pageWidth - 10, 25);
+
+            let currentY = 30;
+
+            // 3. 截图函数
+            const addSectionToPDF = async (elementId: string, title: string) => {
+                const element = document.getElementById(elementId);
+                if (element) {
+                    const canvas = await html2canvas(element, {
+                        scale: 2,
+                        logging: false,
+                        useCORS: true,
+                        backgroundColor: '#ffffff'
+                    });
+                    const imgData = canvas.toDataURL('image/png');
+                    const imgWidth = pageWidth - 20;
+                    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+                    // 检查是否需要新页
+                    if (currentY + imgHeight > 280) {
+                        doc.addPage();
+                        currentY = 10;
+                    }
+
+                    doc.setFontSize(12);
+                    doc.text(title, 10, currentY);
+                    doc.addImage(imgData, 'PNG', 10, currentY + 5, imgWidth, imgHeight);
+                    currentY += imgHeight + 15;
+                }
+            };
+
+            // 4. 截取图表
+            await addSectionToPDF('filtered-analysis-section', '1. Analysis Results (Filtered Scope)');
+            await addSectionToPDF('full-analysis-section', '2. Analysis Results (Full Sample)');
+
+            // 添加 PDF 到 ZIP
+            const pdfBlob = doc.output('blob');
+            zip.file(`${task.name}_Report.pdf`, pdfBlob);
+
+            // 5. 生成 CSV 数据
+            const generateCSV = (data: any[], filename: string) => {
+                if (!data || data.length === 0) return;
+
+                // 获取表头
+                const headers = Object.keys(data[0]);
+                const csvContent = [
+                    headers.join(','),
+                    ...data.map(row => headers.map(header => JSON.stringify(row[header])).join(','))
+                ].join('\n');
+
+                zip.file(filename, csvContent);
+            };
+
+            generateCSV(filteredSampleData, 'Filtered_Sample_Data.csv');
+            generateCSV(fullSampleData, 'Full_Sample_Data.csv');
+
+            // 6. 导出 ZIP - 使用 file-saver 确保文件名正确
+            const content = await zip.generateAsync({ type: 'blob' });
+
+            // 处理文件名：去除特殊字符，保留中文、数字、字母、下划线
+            const safeName = (task.name || 'report').replace(/[^\u4e00-\u9fa5a-zA-Z0-9_-]/g, '_');
+            const timestamp = dayjs().format('YYYYMMDD_HHmm');
+            const filename = `${safeName}_${timestamp}.zip`;
+
+            console.log('正在下载文件:', filename);
+
+            // 使用更可靠的下载方式
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(content);
+            link.download = filename;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+
+            // 模拟用户点击
+            link.click();
+
+            // 清理
+            setTimeout(() => {
+                URL.revokeObjectURL(link.href);
+                document.body.removeChild(link);
+            }, 1000);
+
+            message.success('报告导出成功！');
+        } catch (error) {
+            console.error('Export failed:', error);
+            message.error('导出报告失败，请重试');
+        } finally {
+            setIsExporting(false);
+        }
+    };
 
     // Fetch schema to display friendly names
     const schema = useMemo(() => {
@@ -1104,8 +1252,20 @@ function CITaskDetail({ task, onBack }: { task: CausalInsightTask; onBack: () =>
                 </div>
                 <div className="flex items-center space-x-3">
 
-                    <Button className="bg-blue-600 hover:bg-blue-700 text-white h-9 rounded-lg shadow-lg shadow-blue-100 border-none">
-                        <Download className="w-4 h-4 mr-2" /> 导出报告
+                    <Button
+                        onClick={handleExportReport}
+                        disabled={isExporting}
+                        className="bg-blue-600 hover:bg-blue-700 text-white h-9 rounded-lg shadow-lg shadow-blue-100 border-none transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+                    >
+                        {isExporting ? (
+                            <>
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" /> 正在导出...
+                            </>
+                        ) : (
+                            <>
+                                <Download className="w-4 h-4 mr-2" /> 导出报告
+                            </>
+                        )}
                     </Button>
                 </div>
             </div>
@@ -1240,7 +1400,7 @@ function CITaskDetail({ task, onBack }: { task: CausalInsightTask; onBack: () =>
                             <div className="space-y-10 animate-in fade-in slide-in-from-right-4 duration-500">
 
                                 {/* 【新增】筛选条件分析结果区域 */}
-                                <div className="space-y-8">
+                                <div className="space-y-8" id="filtered-analysis-section">
                                     <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                                         <div className="flex items-center space-x-2">
                                             <Filter className="w-5 h-5 text-blue-600" />
@@ -1299,7 +1459,7 @@ function CITaskDetail({ task, onBack }: { task: CausalInsightTask; onBack: () =>
 
                                 {/* 全量样本分析结果区域 */}
                                 {/* 全量样本分析结果区域 */}
-                                <div className="space-y-8">
+                                <div className="space-y-8" id="full-analysis-section">
                                     <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                                         <div className="flex items-center space-x-2">
                                             <Database className="w-5 h-5 text-purple-600" />
