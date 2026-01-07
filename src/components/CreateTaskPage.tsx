@@ -591,7 +591,7 @@ export const CreateTaskPage: React.FC<CreateTaskPageProps> = ({
     };
 
     return (
-        <div className="fixed inset-0 bg-white z-[60] flex flex-col h-screen overflow-hidden">
+        <div className="fixed inset-0 bg-white z-[1000] flex flex-col h-screen overflow-hidden">
             {/* Header */}
             <div className="h-16 bg-slate-800 text-white flex items-center justify-between px-6 shadow-lg shrink-0">
                 <div className="flex items-center space-x-3">
