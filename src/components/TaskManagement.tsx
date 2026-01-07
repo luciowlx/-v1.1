@@ -33,6 +33,7 @@ import {
 import { toast } from 'sonner';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import { Textarea } from './ui/textarea';
 import { Label } from './ui/label';
 import { Checkbox } from './ui/checkbox';
 import { Badge } from './ui/badge';
@@ -157,6 +158,14 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, action: '', taskId: '', taskName: '' });
   const [isCompareDemoOpen, setIsCompareDemoOpen] = useState(false);
   const [compareDemoType, setCompareDemoType] = useState<TaskType>(TASK_TYPES.classification);
+
+  // 复制任务对话框状态
+  const [copyDialog, setCopyDialog] = useState<{
+    isOpen: boolean;
+    sourceTask: Task | null;
+    newName: string;
+    newDescription: string;
+  }>({ isOpen: false, sourceTask: null, newName: '', newDescription: '' });
 
 
   // 筛选与排序
@@ -709,6 +718,18 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
     }
 
 
+    // 处理复制任务操作
+    if (action.trim() === 'copy') {
+      setCopyDialog({
+        isOpen: true,
+        sourceTask: task,
+        newName: `${task.taskName}_副本`,
+        newDescription: task.description || ''
+      });
+      return;
+    }
+
+
     // 对于需要确认的操作，显示确认对话框
     if (['start', 'stop', 'archive', 'retry', 'rerun', 'cancel_queue', 'delete'].includes(action.trim())) {
       setConfirmDialog({
@@ -847,6 +868,28 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
       taskId: '',
       taskName: ''
     });
+  };
+
+  /**
+   * 确认复制任务：创建一个新任务副本
+   * 使用用户输入的名称和描述，状态设为 '未开始'
+   */
+  const handleConfirmCopy = () => {
+    if (!copyDialog.sourceTask) return;
+    const source = copyDialog.sourceTask;
+    const newTask: Task = {
+      ...source,
+      id: `TASK-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`,
+      taskName: copyDialog.newName || `${source.taskName}_副本`,
+      description: copyDialog.newDescription,
+      status: 'not_started' as const,
+      progress: 0,
+      createdAt: new Date().toISOString().slice(0, 16).replace('T', ' '),
+      completedAt: undefined,
+    };
+    setTasks(prev => [newTask, ...prev]);
+    setCopyDialog({ isOpen: false, sourceTask: null, newName: '', newDescription: '' });
+    toast.success(`任务 "${copyDialog.newName}" 已创建`);
   };
 
   // 批量操作函数
@@ -2209,6 +2252,66 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
                       confirmDialog.action === 'cancel_queue' ? '取消排队' :
                         confirmDialog.action === 'archive' ? '归档任务' :
                           confirmDialog.action === 'delete' ? '删除任务' : '确认'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* 复制任务对话框 */}
+      <Dialog open={copyDialog.isOpen} onOpenChange={(open) => !open && setCopyDialog({ isOpen: false, sourceTask: null, newName: '', newDescription: '' })}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Copy className="h-5 w-5 text-blue-600" />
+              复制任务
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <p className="text-sm text-gray-600 mb-1">原任务名称</p>
+              <p className="font-medium text-gray-900">{copyDialog.sourceTask?.taskName}</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">新任务名称</Label>
+              <Input
+                value={copyDialog.newName}
+                onChange={(e) => setCopyDialog({ ...copyDialog, newName: e.target.value })}
+                placeholder="请输入新任务名称"
+                className="h-10"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">任务描述</Label>
+              <Textarea
+                value={copyDialog.newDescription}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setCopyDialog({ ...copyDialog, newDescription: e.target.value })}
+                placeholder="请输入任务描述（可选）"
+                className="min-h-[80px] resize-none"
+              />
+            </div>
+
+            <p className="text-sm text-gray-500">
+              复制后的新任务状态将设为"未开始"，您可以在任务列表中查看并启动。
+            </p>
+          </div>
+
+          <div className="flex justify-end gap-3 mt-6">
+            <Button
+              variant="outline"
+              onClick={() => setCopyDialog({ isOpen: false, sourceTask: null, newName: '', newDescription: '' })}
+            >
+              取消
+            </Button>
+            <Button
+              variant="default"
+              onClick={handleConfirmCopy}
+              disabled={!copyDialog.newName.trim()}
+              className="!bg-blue-600 hover:!bg-blue-700 !text-white"
+            >
+              确认复制
             </Button>
           </div>
         </DialogContent>

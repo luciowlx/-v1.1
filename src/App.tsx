@@ -525,6 +525,10 @@ export default function App() {
     copyDatasets: true,
     copyMembers: true,
   });
+  // 新增：复制项目名称（可编辑）
+  const [duplicateProjectName, setDuplicateProjectName] = useState('');
+  // 新增：复制项目描述（可编辑）
+  const [duplicateProjectDescription, setDuplicateProjectDescription] = useState('');
 
   const toggleDuplicateOption = (key: keyof typeof duplicateOptions, value: boolean) => {
     setDuplicateOptions((prev) => ({ ...prev, [key]: value }));
@@ -539,16 +543,18 @@ export default function App() {
   };
 
   const handleDuplicateProject = () => {
+    // 初始化复制项目名称
+    setDuplicateProjectName(`${selectedProject?.title} - 副本`);
+    setDuplicateProjectDescription(selectedProject?.description || '');
     // 显示复制确认弹窗
     setIsDuplicateConfirmOpen(true);
   };
 
   const handleConfirmDuplicate = () => {
     // 处理复制项目逻辑
-    const duplicatedProjectName = `${selectedProject?.title} - 副本`;
     const { copyTasks, copyDatasets, copyMembers } = duplicateOptions;
     const onlyBasicInfo = !copyTasks && !copyDatasets && !copyMembers;
-    console.log("复制项目:", duplicatedProjectName, {
+    console.log("复制项目:", duplicateProjectName, duplicateProjectDescription, {
       copyTasks,
       copyDatasets,
       copyMembers,
@@ -967,15 +973,15 @@ export default function App() {
             ) : (
               /* 列表视图 */
               <div className="bg-white rounded-lg border overflow-x-auto">
-                <div className="grid gap-2 px-6 py-4 border-b border-gray-200 text-sm font-medium text-gray-500 min-w-max" style={{ gridTemplateColumns: "80px 200px 100px 80px 150px 150px 150px 100px 120px 120px 120px 100px" }}>
-                  <div>项目ID</div>
-                  <div>项目名称</div>
-                  <div>项目模式</div>
-                  <div>状态</div>
-                  <div>数据集</div>
-                  <div>模型</div>
-                  <div>任务</div>
-                  <div className="flex items-center gap-1">
+                <div className="grid border-b border-gray-200 text-sm font-medium text-gray-500 min-w-max" style={{ gridTemplateColumns: "80px 200px 100px 80px 150px 150px 150px 100px 120px 120px 120px 100px" }}>
+                  <div className="py-4 pl-6">项目ID</div>
+                  <div className="py-4">项目名称</div>
+                  <div className="py-4">项目模式</div>
+                  <div className="py-4">状态</div>
+                  <div className="py-4">数据集</div>
+                  <div className="py-4">模型</div>
+                  <div className="py-4">任务</div>
+                  <div className="flex items-center gap-1 py-4">
                     <span>负责人</span>
                     <Popover>
                       <PopoverTrigger asChild>
@@ -1001,29 +1007,29 @@ export default function App() {
                       </PopoverContent>
                     </Popover>
                   </div>
-                  <div>项目周期</div>
-                  <div className="flex items-center gap-1 cursor-pointer select-none" onClick={() => handleToggleProjectSort("createdTime")}>
+                  <div className="py-4">项目周期</div>
+                  <div className="flex items-center gap-1 py-4 cursor-pointer select-none" onClick={() => handleToggleProjectSort("createdTime")}>
                     <span>创建时间</span>
                     <ArrowUpDown className={`h-3 w-3 ${projectSortField === "createdTime" ? "text-blue-600" : "text-gray-400"}`} />
                   </div>
-                  <div className="flex items-center gap-1 cursor-pointer select-none" onClick={() => handleToggleProjectSort("updatedTime")}>
+                  <div className="flex items-center gap-1 py-4 cursor-pointer select-none" onClick={() => handleToggleProjectSort("updatedTime")}>
                     <span>更新时间</span>
                     <ArrowUpDown className={`h-3 w-3 ${projectSortField === "updatedTime" ? "text-blue-600" : "text-gray-400"}`} />
                   </div>
-                  <div>操作</div>
+                  <div className="flex items-center pl-4 py-4 pr-6 bg-white" style={{ position: 'sticky', right: 0, zIndex: 20, boxShadow: '-12px 0 15px -4px rgba(0,0,0,0.08)' }}>操作</div>
                 </div>
 
                 {/* 已移除：列表内的“创建新项目”占位行，改为顶栏右侧按钮触发 */}
 
                 {sortedProjects.map((project, index) => (
-                  <div key={index} className="grid gap-2 px-6 py-4 border-b border-gray-200 hover:bg-gray-50 transition-colors min-w-max" style={{ gridTemplateColumns: "80px 200px 100px 80px 150px 150px 150px 100px 120px 120px 120px 100px" }}>
-                    <div className="flex items-center text-sm text-gray-700">{project.id}</div>
-                    <div>
+                  <div key={index} className="group grid border-b border-gray-200 hover:bg-gray-50 transition-colors min-w-max" style={{ gridTemplateColumns: "80px 200px 100px 80px 150px 150px 150px 100px 120px 120px 120px 100px" }}>
+                    <div className="flex items-center text-sm text-gray-700 py-4 pl-6">{project.id}</div>
+                    <div className="py-4">
                       <div className="font-medium text-gray-900 text-sm">{project.title}</div>
                       <div className="text-xs text-gray-500">{project.description}</div>
                     </div>
-                    <div className="flex items-center text-xs text-gray-700">{project.mode}</div>
-                    <div className="flex items-center">
+                    <div className="flex items-center text-xs text-gray-700 py-4">{project.mode}</div>
+                    <div className="flex items-center py-4">
                       <span className={`px-2 py-1 rounded-full text-xs ${project.status === "进行中" ? "bg-green-100 text-green-700" :
                         project.status === "已归档" ? "bg-gray-100 text-gray-700" :
                           "bg-gray-100 text-gray-700"
@@ -1031,14 +1037,14 @@ export default function App() {
                         {project.status}
                       </span>
                     </div>
-                    <div className="flex items-center text-xs text-gray-700">{project.stats.datasets}</div>
-                    <div className="flex items-center text-xs text-gray-700">{project.stats.models}</div>
-                    <div className="flex items-center text-xs text-gray-700">{project.stats.tasks}</div>
-                    <div className="flex items-center text-xs text-gray-700">{project.owner}</div>
-                    <div className="flex items-center text-xs text-gray-500">{project.projectCycle}</div>
-                    <div className="flex items-center text-xs text-gray-500">{project.createdTime}</div>
-                    <div className="flex items-center text-xs text-gray-500">{project.updatedTime}</div>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center text-xs text-gray-700 py-4">{project.stats.datasets}</div>
+                    <div className="flex items-center text-xs text-gray-700 py-4">{project.stats.models}</div>
+                    <div className="flex items-center text-xs text-gray-700 py-4">{project.stats.tasks}</div>
+                    <div className="flex items-center text-xs text-gray-700 py-4">{project.owner}</div>
+                    <div className="flex items-center text-xs text-gray-500 py-4">{project.projectCycle}</div>
+                    <div className="flex items-center text-xs text-gray-500 py-4">{project.createdTime}</div>
+                    <div className="flex items-center text-xs text-gray-500 py-4">{project.updatedTime}</div>
+                    <div className="flex items-center gap-1 pl-4 pr-6 py-4 bg-white group-hover:bg-gray-50 transition-colors" style={{ position: 'sticky', right: 0, zIndex: 20, boxShadow: '-12px 0 15px -4px rgba(0,0,0,0.08)' }}>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -1479,10 +1485,25 @@ export default function App() {
 
                 <div className="space-y-4">
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                    <div className="text-sm text-blue-800">
-                      <strong>新项目名称：</strong>{selectedProject?.title} - 副本
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-sm font-medium text-blue-800">新项目名称：</span>
+                      <Input
+                        value={duplicateProjectName}
+                        onChange={(e) => setDuplicateProjectName(e.target.value)}
+                        className="flex-1 h-8 bg-white border-blue-300 text-blue-900"
+                        placeholder="请输入新项目名称"
+                      />
                     </div>
-                    <div className="text-xs text-blue-600 mt-1">
+                    <div className="flex items-start gap-2 mb-2">
+                      <span className="text-sm font-medium text-blue-800 shrink-0 mt-2">新项目描述：</span>
+                      <Textarea
+                        value={duplicateProjectDescription}
+                        onChange={(e) => setDuplicateProjectDescription(e.target.value)}
+                        className="flex-1 min-h-[60px] bg-white border-blue-300 text-blue-900 resize-none text-xs"
+                        placeholder="请输入新项目描述"
+                      />
+                    </div>
+                    <div className="text-xs text-blue-600">
                       可选择复制任务、数据集与项目成员；若取消所有选项，则仅复制项目基础信息（名称与描述）。
                     </div>
                   </div>

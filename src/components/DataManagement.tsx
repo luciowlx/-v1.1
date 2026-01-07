@@ -20,6 +20,7 @@ import type { DateRange } from "react-day-picker";
 import { GrayLabels } from "./data/GrayLabels";
 import { DatasetGrid } from "./data/DatasetGrid";
 import { DatasetTable } from "./data/DatasetTable";
+import { NestedDatasetTable } from "./data/NestedDatasetTable";
 import { DataHeaderFilters } from "./data/DataHeaderFilters";
 import { DataToolbar } from "./data/DataToolbar";
 import { ColumnSettingsDialog } from "./data/ColumnSettingsDialog";
@@ -170,6 +171,10 @@ export function DataManagement({
   const [editingDataset, setEditingDataset] = useState<Dataset | null>(null);
   const [isCopyDialogOpen, setIsCopyDialogOpen] = useState(false);
   const [copyingDataset, setCopyingDataset] = useState<Dataset | null>(null);
+  // 新增：复制版本信息（版本级别复制时有值，数据集级别复制时为 null）
+  const [copyVersion, setCopyVersion] = useState<string | null>(null);
+  // 新增：复制模式（version: 基于版本，dataset: 基于完整数据集）
+  const [copyMode, setCopyMode] = useState<'version' | 'dataset'>('dataset');
 
   const [isDataDetailDialogOpen, setIsDataDetailDialogOpen] = useState(false);
   const [selectedDatasetForDetail, setSelectedDatasetForDetail] = useState<Dataset | null>(null);
@@ -646,6 +651,7 @@ export function DataManagement({
     setEditingDataset(null);
   };
 
+  // 复制数据集（整体复制）
   const handleCopy = (id: number) => {
     const dataset = datasets.find(d => d.id === id);
     if (dataset) {
@@ -653,6 +659,22 @@ export function DataManagement({
         ...dataset,
         title: `${dataset.title}-副本`
       });
+      setCopyVersion(null); // 整体复制时无版本信息
+      setCopyMode('dataset'); // 默认选中完整数据集
+      setIsCopyDialogOpen(true);
+    }
+  };
+
+  // 复制数据集（版本级别复制）
+  const handleCopyVersion = (datasetId: number, version: string) => {
+    const dataset = datasets.find(d => d.id === datasetId);
+    if (dataset) {
+      setCopyingDataset({
+        ...dataset,
+        title: `${dataset.title}-副本`
+      });
+      setCopyVersion(version); // 设置版本信息
+      setCopyMode('version'); // 默认选中版本
       setIsCopyDialogOpen(true);
     }
   };
@@ -982,46 +1004,17 @@ export function DataManagement({
               t={t}
             />
           ) : (
-            <DatasetTable
+            <NestedDatasetTable
               data={filteredAndSortedDatasets as any}
-              selectAll={selectAll}
-              onSelectAll={handleSelectAll}
               selectedIds={selectedDatasets}
               onToggleSelect={(id) => handleSelectDataset(Number(id))}
-              sortBy={sortBy}
-              sortOrder={sortOrder}
-              onSortChange={(column, order) => {
-                const col = String(column);
-                const ord = String(order);
-                if (isSortField(col)) {
-                  setSortBy(col);
-                }
-                if (isSortOrder(ord)) {
-                  setSortOrder(ord);
-                }
-              }}
-              columnSettings={columnSettings}
-              t={t}
-              formatYYYYMMDD={formatYYYYMMDD}
-              isTagsColFilterOpen={isTagsColFilterOpen}
-              onTagsFilterOpenChange={setIsTagsColFilterOpen}
-              availableTags={availableTags}
-              columnFilterTags={columnFilterTags}
-              onToggleTagFilter={(tag, checked) => setColumnFilterTags(prev => checked ? [...prev, tag] : prev.filter(tg => tg !== tag))}
-              onResetTagFilter={() => setColumnFilterTags([])}
-              isFormatColFilterOpen={isFormatColFilterOpen}
-              onFormatFilterOpenChange={setIsFormatColFilterOpen}
-              availableFormats={availableFormats}
-              columnFilterFormat={columnFilterFormat}
-              onToggleFormatFilter={(fmt, checked) => setColumnFilterFormat(prev => checked ? [...prev, fmt] : prev.filter(f => f !== fmt))}
-              onResetFormatFilter={() => setColumnFilterFormat([])}
               onViewDataDetail={(id) => handleViewDataDetail(Number(id))}
               onQuickPreprocess={(id) => handleQuickPreprocess(Number(id))}
               onDownload={(id) => handleDownload(Number(id))}
               onEdit={(id) => handleEdit(Number(id))}
               onCopy={(id) => handleCopy(Number(id))}
+              onCopyVersion={(datasetId, version) => handleCopyVersion(Number(datasetId), version)}
               onDelete={(id) => handleSingleDelete(Number(id))}
-              onCancelUpload={(id) => handleCancelUpload(Number(id))}
             />
           )}
 
@@ -1357,10 +1350,28 @@ export function DataManagement({
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
+              {/* 复制方式选择 */}
               <div>
-                <Label htmlFor="copy-title">{t('data.form.name')}</Label>
+                <Label className="mb-2 block text-sm font-medium text-gray-700">复制方式</Label>
+                <RadioGroup value={copyMode} onValueChange={(v: 'version' | 'dataset') => setCopyMode(v)}>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="version" id="copy-mode-version" disabled={!copyVersion} />
+                    <Label htmlFor="copy-mode-version" className={`font-normal cursor-pointer ${!copyVersion ? 'text-gray-400' : ''}`}>
+                      基于当前版本（{copyVersion || '-'}），复制生成新数据集
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="dataset" id="copy-mode-dataset" />
+                    <Label htmlFor="copy-mode-dataset" className="font-normal cursor-pointer">基于完整数据集，复制生成新数据集</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              <div>
+                <Label htmlFor="copy-title">数据集名称</Label>
                 <Input
                   id="copy-title"
+                  className="mt-1.5"
                   value={copyingDataset.title}
                   onChange={(e) => setCopyingDataset({
                     ...copyingDataset,
@@ -1370,9 +1381,10 @@ export function DataManagement({
               </div>
 
               <div>
-                <Label htmlFor="copy-description">{t('data.form.description')}</Label>
+                <Label htmlFor="copy-description">描述</Label>
                 <Textarea
                   id="copy-description"
+                  className="mt-1.5"
                   value={copyingDataset.description}
                   onChange={(e) => setCopyingDataset({
                     ...copyingDataset,

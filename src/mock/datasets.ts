@@ -110,17 +110,32 @@ const initialDatasets: MockDataset[] = [
     columns: "61",
     completeness: 95,
     source: "DCS控制系统",
-    version: "v2.1",
-    versionCount: 1,
-    fileCount: 1,
+    version: "v1.2",
+    versionCount: 3,
+    fileCount: 6,
     updateTime: "2025-01-04 14:20",
     status: 'success',
     color: "border-l-purple-500",
     versions: [
       {
-        version: "v2.1",
+        version: "v1.2",
         files: [
-          { name: "反应塔时序参数.csv", size: "2.1MB", rows: 4129, columns: 61, fields: ["datatime", "Tower_Pressure", "Top_Temp", "Middle_Temp", "Bottom_Temp", "Feed_Flow", "Reflux_Ratio", "Steam_Flow", "Product_Purity", "Catalyst_Level", "Cooling_Water_In", "Cooling_Water_Out", "Exchanger_DP", "Pump_Frequency", "Valve_Opening", "Ambient_Temp", "Heater_Current", "Heater_Voltage", "O2_Concentration", "CO_Concentration", "Viscosity_Index", "Density_Sensor", "Flow_Meter_1", "Flow_Meter_2", "Level_Indicator"] }
+          { name: "反应塔时序参数.csv", size: "2.1MB", rows: 4129, columns: 61, fields: ["datatime", "Tower_Pressure", "Top_Temp", "Middle_Temp", "Bottom_Temp", "Feed_Flow"] },
+          { name: "催化剂活性记录.csv", size: "1.5MB", rows: 2850, columns: 25, fields: ["datatime", "Catalyst_Level", "Activity_Index", "Degradation_Rate"] }
+        ]
+      },
+      {
+        version: "v1.1",
+        files: [
+          { name: "反应塔时序参数_v1.1.csv", size: "1.8MB", rows: 3500, columns: 55, fields: ["datatime", "Tower_Pressure", "Top_Temp", "Middle_Temp"] },
+          { name: "工艺参数记录.csv", size: "0.9MB", rows: 1800, columns: 30, fields: ["datatime", "Feed_Flow", "Reflux_Ratio", "Steam_Flow"] },
+          { name: "温度监测数据.csv", size: "0.5MB", rows: 1200, columns: 15, fields: ["datatime", "Zone1_Temp", "Zone2_Temp", "Zone3_Temp"] }
+        ]
+      },
+      {
+        version: "v1.0",
+        files: [
+          { name: "初始工艺数据.csv", size: "1.2MB", rows: 2000, columns: 40, fields: ["datatime", "Pressure", "Temperature", "Flow_Rate"] }
         ]
       }
     ]

@@ -76,6 +76,8 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({ datasetId, datasetName,
 
   const [copyTitle, setCopyTitle] = useState('');
   const [copyDescription, setCopyDescription] = useState('');
+  // 新增：复制模式状态
+  const [copyMode, setCopyMode] = useState<'template' | 'regular'>('template');
 
   // 版本关系边（用于横向树：父 -> 子）
   const edges: { parent: string; child: string; type?: 'branch' | 'merge' }[] = [
@@ -355,6 +357,7 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({ datasetId, datasetName,
     setCopyingVersion(version);
     setCopyTitle(`${datasetName}-副本`);
     setCopyDescription(version.description || '');
+    setCopyMode('template'); // 默认选中
     setIsCopyDialogOpen(true);
   };
 
@@ -370,6 +373,7 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({ datasetId, datasetName,
         { name: "副本", color: "bg-blue-100 text-blue-800" },
         { name: copyingVersion.source, color: "bg-gray-100 text-gray-800" }
       ],
+      projectId: 'proj_copy_default',
       tags: copyingVersion.tags?.map(t => ({ name: t, color: "bg-gray-100 text-gray-800" })) || [],
       formats: ["CSV"],
       size: copyingVersion.size,
@@ -754,6 +758,21 @@ const VersionHistory: React.FC<VersionHistoryProps> = ({ datasetId, datasetName,
               <div className="text-sm text-gray-500 mt-1">创建数据集的副本</div>
             </DialogHeader>
             <div className="space-y-4 pt-2">
+              {/* 新增：复制模式选择 */}
+              <div>
+                <Label className="mb-2 block text-sm font-medium text-gray-700">复制方式</Label>
+                <RadioGroup value={copyMode} onValueChange={(v: 'template' | 'regular') => setCopyMode(v)}>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="template" id="mode-template" />
+                    <Label htmlFor="mode-template" className="font-normal cursor-pointer">基于当前版本（{copyingVersion?.versionNumber}），复制生成新数据集</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="regular" id="mode-regular" />
+                    <Label htmlFor="mode-regular" className="font-normal cursor-pointer">基于完整数据集，复制生成新数据集</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
               <div>
                 <Label htmlFor="copy-title">数据集名称</Label>
                 <Input

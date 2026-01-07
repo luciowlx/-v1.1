@@ -54,6 +54,7 @@ export default function CausalInsight() {
     );
 
     const handleCreateTask = () => {
+        setEditingTask(null); // 新建模式
         setView('create');
     };
 
@@ -62,9 +63,22 @@ export default function CausalInsight() {
         setView('detail');
     };
 
+    // 新增：编辑任务状态
+    const [editingTask, setEditingTask] = useState<CausalInsightTask | null>(null);
+
+    // 编辑草稿任务
+    const handleEditTask = (taskId: string) => {
+        const task = tasks.find(t => t.id === taskId);
+        if (task) {
+            setEditingTask(task);
+            setView('create');
+        }
+    };
+
     const handleBackToList = () => {
         setView('list');
         setSelectedTaskId(null);
+        setEditingTask(null);
     };
 
     const handleDeleteTask = (taskId: string) => {
@@ -97,6 +111,7 @@ export default function CausalInsight() {
                     onSearch={setSearchQuery}
                     onCreate={handleCreateTask}
                     onViewDetail={handleViewDetail}
+                    onEdit={handleEditTask}
                     onDelete={handleDeleteTask}
                     onCopy={handleCopyTask}
                 />
@@ -104,10 +119,20 @@ export default function CausalInsight() {
             {view === 'create' && (
                 <CreateCITask
                     onBack={handleBackToList}
+                    existingTasks={tasks}
+                    editingTask={editingTask}
                     onSubmit={(newTask: CausalInsightTask) => {
-                        setTasks([newTask, ...tasks]);
+                        if (editingTask) {
+                            // 编辑模式：更新现有任务
+                            setTasks(prev => prev.map(t => t.id === newTask.id ? newTask : t));
+                            message.success('任务已更新');
+                        } else {
+                            // 新建模式：添加新任务
+                            setTasks([newTask, ...tasks]);
+                            message.success('任务已提交运行');
+                        }
                         setView('list');
-                        message.success('任务已提交运行');
+                        setEditingTask(null);
                     }}
                 />
             )}
@@ -124,7 +149,36 @@ export default function CausalInsight() {
 /**
  * 任务列表视图
  */
-function CITaskList({ tasks, onSearch, onCreate, onViewDetail, onDelete, onCopy }: any) {
+function CITaskList({ tasks, onSearch, onCreate, onViewDetail, onEdit, onDelete, onCopy }: any) {
+    // 筛选状态
+    const [sourceFilter, setSourceFilter] = useState<string>('all');
+    const [statusFilter, setStatusFilter] = useState<string>('all');
+
+    // 获取来源任务列表（去重）
+    const sourceOptions = useMemo(() => {
+        const sources = [...new Set(tasks.map((t: any) => t.sourceDecisionTaskName))] as string[];
+        return sources.filter(Boolean);
+    }, [tasks]);
+
+    // 状态选项
+    const statusOptions = [
+        { value: 'all', label: '全部状态' },
+        { value: 'DRAFT', label: '草稿' },
+        { value: 'QUEUED', label: '排队中' },
+        { value: 'RUNNING', label: '运行中' },
+        { value: 'SUCCEEDED', label: '已完成' },
+        { value: 'FAILED', label: '失败' },
+    ];
+
+    // 过滤后的任务列表
+    const filteredTasks = useMemo(() => {
+        return tasks.filter((t: any) => {
+            const matchSource = sourceFilter === 'all' || t.sourceDecisionTaskName === sourceFilter;
+            const matchStatus = statusFilter === 'all' || t.status === statusFilter;
+            return matchSource && matchStatus;
+        });
+    }, [tasks, sourceFilter, statusFilter]);
+
     const getStatusBadge = (status: string) => {
         switch (status) {
             case 'SUCCEEDED': return <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-green-200 font-medium">已完成</Badge>;
@@ -150,18 +204,41 @@ function CITaskList({ tasks, onSearch, onCreate, onViewDetail, onDelete, onCopy 
 
             <Card className="border-none shadow-sm overflow-hidden">
                 <CardHeader className="bg-white border-b py-4">
-                    <div className="flex items-center space-x-4">
-                        <div className="relative flex-1 max-w-sm">
+                    <div className="grid grid-cols-3 gap-4">
+                        {/* 搜索框 */}
+                        <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                             <Input
                                 placeholder="搜索任务名称或ID..."
-                                className="pl-10 h-10 border-slate-200 focus:ring-blue-500"
+                                className="pl-10 h-10 border-slate-200 focus:ring-blue-500 w-full"
                                 onChange={(e) => onSearch(e.target.value)}
                             />
                         </div>
-                        <Button variant="outline" className="h-10 border-slate-200 text-slate-600">
-                            <Filter className="w-4 h-4 mr-2" /> 筛选
-                        </Button>
+                        {/* 来源任务过滤 */}
+                        <AntSelect
+                            placeholder="任务来源"
+                            className="w-full"
+                            style={{ height: '40px', width: '100%' }}
+                            value={sourceFilter}
+                            onChange={(val) => setSourceFilter(val)}
+                            options={[
+                                { value: 'all', label: '全部来源' },
+                                ...sourceOptions.map((s: string) => ({ value: s, label: s }))
+                            ]}
+                            allowClear
+                            onClear={() => setSourceFilter('all')}
+                        />
+                        {/* 状态过滤 */}
+                        <AntSelect
+                            placeholder="任务状态"
+                            className="w-full"
+                            style={{ height: '40px', width: '100%' }}
+                            value={statusFilter}
+                            onChange={(val) => setStatusFilter(val)}
+                            options={statusOptions}
+                            allowClear
+                            onClear={() => setStatusFilter('all')}
+                        />
                     </div>
                 </CardHeader>
                 <CardContent className="p-0">
@@ -174,11 +251,12 @@ function CITaskList({ tasks, onSearch, onCreate, onViewDetail, onDelete, onCopy 
                                 <TableHead className="font-semibold text-slate-700 h-12">样本命中</TableHead>
                                 <TableHead className="font-semibold text-slate-700 h-12">状态</TableHead>
                                 <TableHead className="font-semibold text-slate-700 h-12">创建人</TableHead>
+                                <TableHead className="font-semibold text-slate-700 h-12">创建时间</TableHead>
                                 <TableHead className="font-semibold text-slate-700 text-right h-12 pr-6">操作</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {tasks.length > 0 ? tasks.map((task: any) => (
+                            {filteredTasks.length > 0 ? filteredTasks.map((task: any) => (
                                 <TableRow key={task.id} className="hover:bg-slate-50/50 transition-colors group h-16 border-slate-100">
                                     <TableCell>
                                         <div className="flex flex-col">
@@ -205,8 +283,18 @@ function CITaskList({ tasks, onSearch, onCreate, onViewDetail, onDelete, onCopy 
                                     </TableCell>
                                     <TableCell>{getStatusBadge(task.status)}</TableCell>
                                     <TableCell className="text-slate-600 text-sm font-medium">{task.createdBy}</TableCell>
+                                    <TableCell className="text-slate-500 text-sm">{task.createdAt}</TableCell>
                                     <TableCell className="text-right pr-6">
                                         <div className="flex justify-end space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            {/* 草稿状态显示编辑按钮 */}
+                                            {/* 草稿和失败状态显示编辑按钮 */}
+                                            {['DRAFT', 'FAILED'].includes(task.status) && (
+                                                <Tooltip title="编辑">
+                                                    <Button variant="ghost" size="icon" onClick={() => onEdit(task.id)} className="h-8 w-8 text-slate-500 hover:text-blue-600 hover:bg-blue-50">
+                                                        <Pencil className="w-4 h-4" />
+                                                    </Button>
+                                                </Tooltip>
+                                            )}
                                             <Tooltip title="查看详情">
                                                 <Button variant="ghost" size="icon" onClick={() => onViewDetail(task.id)} className="h-8 w-8 text-slate-500 hover:text-blue-600 hover:bg-blue-50">
                                                     <Eye className="w-4 h-4" />
@@ -227,7 +315,7 @@ function CITaskList({ tasks, onSearch, onCreate, onViewDetail, onDelete, onCopy 
                                 </TableRow>
                             )) : (
                                 <TableRow>
-                                    <TableCell colSpan={7} className="h-64 text-center">
+                                    <TableCell colSpan={8} className="h-64 text-center">
                                         <Empty description="暂无因果洞察任务" />
                                     </TableCell>
                                 </TableRow>
@@ -243,14 +331,38 @@ function CITaskList({ tasks, onSearch, onCreate, onViewDetail, onDelete, onCopy 
 /**
  * 创建 CI 任务向导（4 步）
  */
-function CreateCITask({ onBack, onSubmit }: any) {
+function CreateCITask({ onBack, onSubmit, existingTasks = [], editingTask = null }: {
+    onBack: () => void;
+    onSubmit: (task: CausalInsightTask) => void;
+    existingTasks?: CausalInsightTask[];
+    editingTask?: CausalInsightTask | null;
+}) {
+    /**
+     * 生成唯一任务名称（检测冲突并添加序号）
+     * @param baseName 基础名称，如 "因果洞察_销售数据预测"
+     * @returns 唯一名称，如 "因果洞察_销售数据预测" 或 "因果洞察_销售数据预测 (2)"
+     */
+    const generateUniqueName = (baseName: string): string => {
+        const existingNames = existingTasks.map(t => t.name);
+        if (!existingNames.includes(baseName)) {
+            return baseName;
+        }
+        // 查找已有的同名任务数量
+        let counter = 2;
+        while (existingNames.includes(`${baseName} (${counter})`)) {
+            counter++;
+        }
+        return `${baseName} (${counter})`;
+    };
+
+    // 编辑模式时，使用 editingTask 的数据初始化表单
     const [formData, setFormData] = useState({
-        name: `未命名洞察任务-${new Date().getTime().toString().slice(-4)}`,
-        sourceTaskId: '',
-        xFields: [] as string[],
-        yField: '',
+        name: editingTask?.name || '',
+        sourceTaskId: editingTask?.sourceDecisionTaskId || '',
+        xFields: editingTask?.xSpec?.fields || [] as string[],
+        yField: editingTask?.ySpec?.field || '',
         yRange: { min: 20, max: 80 } as any,
-        filters: [] as any[]
+        filters: editingTask?.filters?.and || [] as any[]
     });
 
     const [schema, setSchema] = useState<any>(null); // 恢复 schema 状态
@@ -300,7 +412,7 @@ function CreateCITask({ onBack, onSubmit }: any) {
                 // 编辑模式：更新
                 setFormData({
                     ...formData,
-                    filters: formData.filters.map(f => f.id === editingFilter.id ? editingFilter : f)
+                    filters: formData.filters.map((f: any) => f.id === editingFilter.id ? editingFilter : f)
                 });
             } else {
                 // 新增模式：添加
@@ -317,19 +429,20 @@ function CreateCITask({ onBack, onSubmit }: any) {
     const removeFilter = (id: number) => {
         setFormData({
             ...formData,
-            filters: formData.filters.filter(f => f.id !== id)
+            filters: formData.filters.filter((f: any) => f.id !== id)
         });
     };
 
     const handleSubmit = (status: 'DRAFT' | 'QUEUED') => {
         const newTask: CausalInsightTask = {
-            id: `CI-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+            // 编辑模式保留原 ID，新建模式生成新 ID
+            id: editingTask?.id || `CI-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
             name: formData.name || '新建因果洞察任务',
-            description: 'Created via Wizard',
-            projectId: 'proj_default',
+            description: editingTask?.description || 'Created via Wizard',
+            projectId: editingTask?.projectId || 'proj_default',
             sourceDecisionTaskId: formData.sourceTaskId,
-            sourceDecisionTaskName: schema?.taskId || 'Source Task',
-            datasetSnapshotId: 'snap_default',
+            sourceDecisionTaskName: schema?.taskId || editingTask?.sourceDecisionTaskName || 'Source Task',
+            datasetSnapshotId: editingTask?.datasetSnapshotId || 'snap_default',
             xSpec: {
                 mode: 'explicit',
                 fields: formData.xFields
@@ -340,11 +453,11 @@ function CreateCITask({ onBack, onSubmit }: any) {
             },
             filters: { and: formData.filters },
             status: status,
-            progress: 0,
+            progress: editingTask?.progress || 0,
             sampleTotal: estimateResult.total,
             sampleHit: estimateResult.hit,
-            createdAt: new Date().toLocaleString(),
-            createdBy: 'Current User',
+            createdAt: editingTask?.createdAt || new Date().toLocaleString(),
+            createdBy: editingTask?.createdBy || 'Current User',
             updatedAt: new Date().toLocaleString()
         };
         onSubmit(newTask);
@@ -359,7 +472,9 @@ function CreateCITask({ onBack, onSubmit }: any) {
                         <ChevronLeft className="w-5 h-5 mr-1 group-hover:-translate-x-0.5 transition-transform" /> 返回列表
                     </Button>
                     <div className="h-4 w-px bg-slate-200 mx-2" />
-                    <h2 className="text-2xl font-black text-slate-800 tracking-tight">创建因果洞察任务</h2>
+                    <h2 className="text-2xl font-black text-slate-800 tracking-tight">
+                        {editingTask ? '编辑因果洞察任务' : '创建因果洞察任务'}
+                    </h2>
                 </div>
             </div>
 
@@ -385,7 +500,13 @@ function CreateCITask({ onBack, onSubmit }: any) {
                                     style={{ width: '100%', height: '48px' }}
                                     placeholder="请选择已完成的决策推理任务"
                                     value={formData.sourceTaskId || undefined}
-                                    onChange={(val) => setFormData({ ...formData, sourceTaskId: val })}
+                                    onChange={(val, option: any) => {
+                                        // 自动填充任务名称：因果洞察_[任务名] (带冲突检测)
+                                        const taskLabel = option?.label?.split('|')[1]?.trim()?.split('(')[0]?.trim() || '';
+                                        const baseName = taskLabel ? `因果洞察_${taskLabel}` : '';
+                                        const autoName = baseName ? generateUniqueName(baseName) : formData.name;
+                                        setFormData({ ...formData, sourceTaskId: val, name: autoName });
+                                    }}
                                     options={[
                                         { label: '任务 A | 销售数据预测 (8760 样本)', value: 'TASK-001' },
                                         { label: '任务 B | 客户流失预测 (5200 样本)', value: 'TASK-004' },
@@ -394,7 +515,16 @@ function CreateCITask({ onBack, onSubmit }: any) {
                                 />
                             </div>
 
-
+                            {/* 任务名称 */}
+                            <div className="space-y-3">
+                                <Label className="text-sm font-bold text-slate-700 ml-1">任务名称</Label>
+                                <Input
+                                    placeholder="请输入任务名称"
+                                    className="h-12 border-slate-200"
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                />
+                            </div>
 
                             {/* Y 分析目标 */}
                             <div className="space-y-6 pt-2 border-t border-slate-50">
@@ -535,7 +665,7 @@ function CreateCITask({ onBack, onSubmit }: any) {
                                     </TableHeader>
                                     <TableBody>
                                         {formData.filters.length > 0 ? (
-                                            formData.filters.map((f, idx) => {
+                                            formData.filters.map((f: any, idx: number) => {
                                                 const fieldInfo = schema?.fields.find((field: any) => field.name === f.field);
                                                 return (
                                                     <TableRow key={f.id} className="hover:bg-slate-50/50 border-slate-50 transition-colors group">
@@ -1249,6 +1379,15 @@ function CITaskDetail({ task, onBack }: { task: CausalInsightTask; onBack: () =>
                     {task.status === 'SUCCEEDED' && (
                         <Badge className="bg-green-500/10 text-green-600 border-green-500/20 px-2 py-0">已完成分析</Badge>
                     )}
+                    {task.status === 'FAILED' && (
+                        <Badge className="bg-red-500/10 text-red-600 border-red-500/20 px-2 py-0">分析失败</Badge>
+                    )}
+                    {task.status === 'RUNNING' && (
+                        <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20 px-2 py-0">分析中</Badge>
+                    )}
+                    {task.status === 'QUEUED' && (
+                        <Badge className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20 px-2 py-0">排队中</Badge>
+                    )}
                 </div>
                 <div className="flex items-center space-x-3">
 
@@ -1394,130 +1533,168 @@ function CITaskDetail({ task, onBack }: { task: CausalInsightTask; onBack: () =>
 
                 {/* 右侧主内容区 */}
                 <div className="space-y-6 w-full overflow-hidden" style={{ gridColumn: 'span 3 / span 3' }}>
+                    {task.status === 'FAILED' ? (
+                        <Card className="border-none shadow-xl shadow-red-200/50 rounded-3xl overflow-hidden bg-white min-h-[400px] w-full">
+                            <CardHeader className="border-b border-slate-100 pb-4">
+                                <CardTitle className="text-xl font-bold text-red-600 flex items-center">
+                                    <AlertTriangle className="w-6 h-6 mr-2" />
+                                    任务分析失败
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-8 space-y-6">
+                                <div className="space-y-2">
+                                    <Label className="text-sm font-bold text-slate-500">错误日志</Label>
+                                    <div className="bg-red-50 p-6 rounded-xl border border-red-100 text-sm text-red-800 font-mono whitespace-pre-wrap leading-relaxed shadow-inner">
+                                        {task.errorMessage || `Error: System Runtime Exception
+Task ID: ${task.id}
+Timestamp: ${new Date().toISOString()}
 
-                    <Card className="border-none shadow-xl shadow-slate-200/50 rounded-3xl overflow-hidden bg-white min-h-[600px] w-full">
-                        <CardContent className="p-8">
-                            <div className="space-y-10 animate-in fade-in slide-in-from-right-4 duration-500">
+Details:
+Analysis engine terminated unexpectedly.
+possible causes:
+- Connection timeout (Error Code: E-504)
+- Insufficient memory allocation during data processing
+- Invalid data format in column 'Sales_Volume'
 
-                                {/* 【新增】筛选条件分析结果区域 */}
-                                <div className="space-y-8" id="filtered-analysis-section">
-                                    <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                                        <div className="flex items-center space-x-2">
-                                            <Filter className="w-5 h-5 text-blue-600" />
-                                            <h2 className="text-xl font-black text-slate-800">当前筛选条件下的分析结果</h2>
-                                        </div>
-
-                                        {/* 视图切换 Toggle */}
-                                        <div className="flex bg-slate-100/80 p-1 rounded-lg">
-                                            <button
-                                                onClick={() => setFilteredViewMode('chart')}
-                                                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${filteredViewMode === 'chart'
-                                                    ? 'bg-white text-blue-600 shadow-sm'
-                                                    : 'text-slate-500 hover:text-slate-700'
-                                                    }`}
-                                            >
-                                                <BarChart3 className="w-3.5 h-3.5" />
-                                                <span>可视化</span>
-                                            </button>
-                                            <button
-                                                onClick={() => setFilteredViewMode('table')}
-                                                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${filteredViewMode === 'table'
-                                                    ? 'bg-white text-blue-600 shadow-sm'
-                                                    : 'text-slate-500 hover:text-slate-700'
-                                                    }`}
-                                            >
-                                                <TableIcon className="w-3.5 h-3.5" />
-                                                <span>原始数据</span>
-                                            </button>
-                                        </div>
+Please verify your dataset schema match the input requirements.`}
                                     </div>
-
-                                    {filteredViewMode === 'chart' ? (
-                                        <>
-                                            {/* 1. 筛选条件-影响因子条形图 */}
-                                            <CausalImpactChart
-                                                data={filteredImpactData}
-                                                title={<><BarChart3 className="w-5 h-5 mr-2 text-blue-500" /> 各影响因子影响分数对比 (筛选后)</>}
-                                                description={`针对当前筛选条件下的样本，计算出的不同特征对目标变量 ${task.ySpec.field} 的平均影响分数`}
-                                                yField={task.ySpec.field}
-                                            />
-
-                                            {/* 2. 筛选条件-因果关系热力图 */}
-                                            <CausalHeatmap
-                                                data={filteredHeatmapData}
-                                                title={<><Flame className="w-5 h-5 mr-2 text-orange-500 fill-orange-500/20" /> 因果关系分布 (筛选后)</>}
-                                                description="展示当前筛选条件下特征 X 之间的相互依赖与因果指向强度"
-                                            />
-                                        </>
-                                    ) : (
-                                        <SampleDataTable data={filteredSampleData} />
-                                    )}
                                 </div>
 
-                                {/* 分隔线 */}
-                                <div className="h-px bg-slate-100 my-8" />
+                                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                                    <h4 className="font-bold text-slate-700 mb-2 flex items-center">
+                                        <Activity className="w-4 h-4 mr-2 text-blue-500" />
+                                        建议操作
+                                    </h4>
+                                    <ul className="list-disc list-inside text-sm text-slate-600 space-y-1 ml-1">
+                                        <li>检查“来源决策任务”的数据快照是否存在异常值</li>
+                                        <li>尝试减少样本命中过滤条件的复杂性</li>
+                                        <li>点击右上角“导出报告”下载完整错误日志供技术支持排查</li>
+                                    </ul>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ) : (
+                        <Card className="border-none shadow-xl shadow-slate-200/50 rounded-3xl overflow-hidden bg-white min-h-[600px] w-full">
+                            <CardContent className="p-8">
+                                <div className="space-y-10 animate-in fade-in slide-in-from-right-4 duration-500">
 
-                                {/* 全量样本分析结果区域 */}
-                                {/* 全量样本分析结果区域 */}
-                                <div className="space-y-8" id="full-analysis-section">
-                                    <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                                        <div className="flex items-center space-x-2">
-                                            <Database className="w-5 h-5 text-purple-600" />
-                                            <h2 className="text-xl font-black text-slate-800">全样本分析结果</h2>
+                                    {/* 【新增】筛选条件分析结果区域 */}
+                                    <div className="space-y-8" id="filtered-analysis-section">
+                                        <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                                            <div className="flex items-center space-x-2">
+                                                <Filter className="w-5 h-5 text-blue-600" />
+                                                <h2 className="text-xl font-black text-slate-800">当前筛选条件下的分析结果</h2>
+                                            </div>
+
+                                            {/* 视图切换 Toggle */}
+                                            <div className="flex bg-slate-100/80 p-1 rounded-lg">
+                                                <button
+                                                    onClick={() => setFilteredViewMode('chart')}
+                                                    className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${filteredViewMode === 'chart'
+                                                        ? 'bg-white text-blue-600 shadow-sm'
+                                                        : 'text-slate-500 hover:text-slate-700'
+                                                        }`}
+                                                >
+                                                    <BarChart3 className="w-3.5 h-3.5" />
+                                                    <span>可视化</span>
+                                                </button>
+                                                <button
+                                                    onClick={() => setFilteredViewMode('table')}
+                                                    className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${filteredViewMode === 'table'
+                                                        ? 'bg-white text-blue-600 shadow-sm'
+                                                        : 'text-slate-500 hover:text-slate-700'
+                                                        }`}
+                                                >
+                                                    <TableIcon className="w-3.5 h-3.5" />
+                                                    <span>原始数据</span>
+                                                </button>
+                                            </div>
                                         </div>
 
-                                        {/* 视图切换 Toggle */}
-                                        <div className="flex bg-slate-100/80 p-1 rounded-lg">
-                                            <button
-                                                onClick={() => setFullViewMode('chart')}
-                                                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${fullViewMode === 'chart'
-                                                    ? 'bg-white text-purple-600 shadow-sm'
-                                                    : 'text-slate-500 hover:text-slate-700'
-                                                    }`}
-                                            >
-                                                <BarChart3 className="w-3.5 h-3.5" />
-                                                <span>可视化</span>
-                                            </button>
-                                            <button
-                                                onClick={() => setFullViewMode('table')}
-                                                className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${fullViewMode === 'table'
-                                                    ? 'bg-white text-purple-600 shadow-sm'
-                                                    : 'text-slate-500 hover:text-slate-700'
-                                                    }`}
-                                            >
-                                                <TableIcon className="w-3.5 h-3.5" />
-                                                <span>原始数据</span>
-                                            </button>
-                                        </div>
+                                        {filteredViewMode === 'chart' ? (
+                                            <>
+                                                {/* 1. 筛选条件-影响因子条形图 */}
+                                                <CausalImpactChart
+                                                    data={filteredImpactData}
+                                                    title={<><BarChart3 className="w-5 h-5 mr-2 text-blue-500" /> 各影响因子影响分数对比 (筛选后)</>}
+                                                    description={`针对当前筛选条件下的样本，计算出的不同特征对目标变量 ${task.ySpec.field} 的平均影响分数`}
+                                                    yField={task.ySpec.field}
+                                                />
+
+                                                {/* 2. 筛选条件-因果关系热力图 */}
+                                                <CausalHeatmap
+                                                    data={filteredHeatmapData}
+                                                    title={<><Flame className="w-5 h-5 mr-2 text-orange-500 fill-orange-500/20" /> 因果关系分布 (筛选后)</>}
+                                                    description="展示当前筛选条件下特征 X 之间的相互依赖与因果指向强度"
+                                                />
+                                            </>
+                                        ) : (
+                                            <SampleDataTable data={filteredSampleData} />
+                                        )}
                                     </div>
 
-                                    {fullViewMode === 'chart' ? (
-                                        <>
-                                            {/* 3. 全样-影响因子条形图 */}
-                                            <CausalImpactChart
-                                                data={impactData}
-                                                title={<><BarChart3 className="w-5 h-5 mr-2 text-blue-500" /> 各影响因子影响分数对比 (全样本)</>}
-                                                description={`针对所有样本计算出不同特征对目标变量 ${task.ySpec.field} 的平均影响分数`}
-                                                yField={task.ySpec.field}
-                                            />
+                                    {/* 分隔线 */}
+                                    <div className="h-px bg-slate-100 my-8" />
 
-                                            {/* 4. 全样-因果关系热力图 */}
-                                            <CausalHeatmap
-                                                data={resultData.heatmap}
-                                                title={<><Flame className="w-5 h-5 mr-2 text-orange-500 fill-orange-500/20" /> 因果关系分布 (全样本)</>}
-                                                description="展示所有样本下特征 X 之间的相互依赖与因果指向强度"
-                                            />
-                                        </>
-                                    ) : (
-                                        <SampleDataTable data={fullSampleData} />
-                                    )}
+                                    {/* 全量样本分析结果区域 */}
+                                    {/* 全量样本分析结果区域 */}
+                                    <div className="space-y-8" id="full-analysis-section">
+                                        <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                                            <div className="flex items-center space-x-2">
+                                                <Database className="w-5 h-5 text-purple-600" />
+                                                <h2 className="text-xl font-black text-slate-800">全样本分析结果</h2>
+                                            </div>
+
+                                            {/* 视图切换 Toggle */}
+                                            <div className="flex bg-slate-100/80 p-1 rounded-lg">
+                                                <button
+                                                    onClick={() => setFullViewMode('chart')}
+                                                    className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${fullViewMode === 'chart'
+                                                        ? 'bg-white text-purple-600 shadow-sm'
+                                                        : 'text-slate-500 hover:text-slate-700'
+                                                        }`}
+                                                >
+                                                    <BarChart3 className="w-3.5 h-3.5" />
+                                                    <span>可视化</span>
+                                                </button>
+                                                <button
+                                                    onClick={() => setFullViewMode('table')}
+                                                    className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${fullViewMode === 'table'
+                                                        ? 'bg-white text-purple-600 shadow-sm'
+                                                        : 'text-slate-500 hover:text-slate-700'
+                                                        }`}
+                                                >
+                                                    <TableIcon className="w-3.5 h-3.5" />
+                                                    <span>原始数据</span>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {fullViewMode === 'chart' ? (
+                                            <>
+                                                {/* 3. 全样-影响因子条形图 */}
+                                                <CausalImpactChart
+                                                    data={impactData}
+                                                    title={<><BarChart3 className="w-5 h-5 mr-2 text-blue-500" /> 各影响因子影响分数对比 (全样本)</>}
+                                                    description={`针对所有样本计算出不同特征对目标变量 ${task.ySpec.field} 的平均影响分数`}
+                                                    yField={task.ySpec.field}
+                                                />
+
+                                                {/* 4. 全样-因果关系热力图 */}
+                                                <CausalHeatmap
+                                                    data={resultData.heatmap}
+                                                    title={<><Flame className="w-5 h-5 mr-2 text-orange-500 fill-orange-500/20" /> 因果关系分布 (全样本)</>}
+                                                    description="展示所有样本下特征 X 之间的相互依赖与因果指向强度"
+                                                />
+                                            </>
+                                        ) : (
+                                            <SampleDataTable data={fullSampleData} />
+                                        )}
+                                    </div>
                                 </div>
-
-
-                            </div>
-
-                        </CardContent>
-                    </Card>
+                            </CardContent>
+                        </Card>
+                    )}
                 </div>
             </div>
 

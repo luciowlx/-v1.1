@@ -90,6 +90,63 @@ export const mockCITasks: CausalInsightTask[] = [
         createdAt: '2024-01-17 09:00:00',
         createdBy: '张三',
         updatedAt: '2024-01-17 09:10:00'
+    },
+    {
+        id: 'CI-003',
+        name: '华东区电力负荷异常归因',
+        description: '探索极端天气与工业用电对负荷异常波动的联合影响',
+        projectId: 'proj_005',
+        sourceDecisionTaskId: 'TASK-001',
+        sourceDecisionTaskName: '销售数据预测模型训练',
+        datasetSnapshotId: 'SNAP-003',
+        xSpec: {
+            mode: 'explicit',
+            fields: ['Temperature', 'Holiday_Factor', 'Region', 'Promotion_Intensity']
+        },
+        ySpec: {
+            field: 'Power_Generation',
+            filterType: 'Numeric'
+        },
+        filters: {
+            and: [
+                { field: 'Region', op: 'EQ', value: '华东' }
+            ]
+        },
+        status: 'FAILED',
+        progress: 80,
+        sampleTotal: 12000,
+        sampleHit: 3500,
+        createdAt: '2024-01-18 14:30:00',
+        createdBy: '李四',
+        updatedAt: '2024-01-18 14:35:00',
+        errorMessage: 'Error: Calculation Timeout\nDetail: The causal inference engine exceeded the maximum execution time limit (300s). This usually happens when the feature space is too large or the sample size is huge.\n\nSuggestion: Try reducing the number of X variables or applying stricter filters.'
+    },
+    {
+        id: 'CI-004',
+        name: '新品上市销量影响评估 (草稿)',
+        description: '待完善配置：需要确认竞品数据的完整性',
+        projectId: 'proj_006',
+        sourceDecisionTaskId: 'TASK-004',
+        sourceDecisionTaskName: '客户流失预测',
+        datasetSnapshotId: 'SNAP-004',
+        xSpec: {
+            mode: 'explicit',
+            fields: ['促销力度', '广告投入']
+        },
+        ySpec: {
+            field: '销售额',
+            filterType: 'Numeric'
+        },
+        filters: {
+            and: []
+        },
+        status: 'DRAFT',
+        progress: 0,
+        sampleTotal: 0,
+        sampleHit: 0,
+        createdAt: '2024-01-19 10:00:00',
+        createdBy: '王五',
+        updatedAt: '2024-01-19 10:00:00'
     }
 ];
 
