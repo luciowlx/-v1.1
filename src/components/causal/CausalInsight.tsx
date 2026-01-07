@@ -45,6 +45,11 @@ export default function CausalInsight() {
     const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
 
+    // 复制任务弹窗状态
+    const [copyModalVisible, setCopyModalVisible] = useState(false);
+    const [taskToCopy, setTaskToCopy] = useState<CausalInsightTask | null>(null);
+    const [copyNewName, setCopyNewName] = useState('');
+
     // 详情页任务数据
     const currentTask = useMemo(() =>
         tasks.find(t => t.id === selectedTaskId),
@@ -92,18 +97,28 @@ export default function CausalInsight() {
     const handleCopyTask = (taskId: string) => {
         const source = tasks.find(t => t.id === taskId);
         if (source) {
-            const newTask: CausalInsightTask = {
-                ...source,
-                id: `CI-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
-                name: `${source.name} - 副本`,
-                status: 'DRAFT',
-                progress: 0,
-                createdAt: new Date().toLocaleString(),
-                updatedAt: new Date().toLocaleString()
-            };
-            setTasks([newTask, ...tasks]);
-            message.success('任务副本已创建');
+            setTaskToCopy(source);
+            setCopyNewName(`${source.name} - 副本`);
+            setCopyModalVisible(true);
         }
+    };
+
+    const handleConfirmCopy = () => {
+        if (!taskToCopy) return;
+
+        const newTask: CausalInsightTask = {
+            ...taskToCopy,
+            id: `CI-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`,
+            name: copyNewName || `${taskToCopy.name} - 副本`,
+            status: 'DRAFT',
+            progress: 0,
+            createdAt: new Date().toLocaleString(),
+            updatedAt: new Date().toLocaleString()
+        };
+        setTasks([newTask, ...tasks]);
+        setCopyModalVisible(false);
+        setTaskToCopy(null);
+        message.success('任务副本已创建');
     };
 
     return (
@@ -145,6 +160,37 @@ export default function CausalInsight() {
                     onBack={handleBackToList}
                 />
             )}
+
+            {/* 复制任务重命名弹窗 */}
+            <Modal
+                title="复制配置"
+                open={copyModalVisible}
+                onOk={handleConfirmCopy}
+                onCancel={() => setCopyModalVisible(false)}
+                okText="确认复制"
+                cancelText="取消"
+                destroyOnClose
+            >
+                <div className="py-4 space-y-4">
+                    <div className="space-y-2">
+                        <Label className="text-sm font-medium text-slate-500">原任务名称</Label>
+                        <div className="px-3 py-2 bg-slate-50 rounded-md text-slate-600 border border-slate-100 italic">
+                            {taskToCopy?.name}
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <Label className="text-sm font-medium text-slate-700">新任务名称</Label>
+                        <Input
+                            value={copyNewName}
+                            onChange={(e) => setCopyNewName(e.target.value)}
+                            placeholder="请输入新任务名称"
+                        />
+                    </div>
+                    <p className="text-xs text-slate-400">
+                        提示：复制后的任务初始状态将设为“草稿”。
+                    </p>
+                </div>
+            </Modal>
         </div>
     );
 }

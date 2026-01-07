@@ -732,6 +732,16 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
       return;
     }
 
+    // 复制任务：需弹窗确认
+    if (action.trim() === 'copy') {
+      setCopyDialog({
+        isOpen: true,
+        sourceTask: task,
+        newName: `${task.taskName}_副本`,
+        newDescription: task.description || ''
+      });
+      return;
+    }
 
     // 对于需要确认的操作，显示确认对话框
     if (['start', 'stop', 'archive', 'retry', 'rerun', 'cancel_queue', 'delete'].includes(action.trim())) {
@@ -832,20 +842,12 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
       } else if (action === 'copy') {
         const source = tasks.find(t => t.id === taskId);
         if (source) {
-          const newId = `${source.id}-COPY-${Math.floor(Math.random() * 1000)}`;
-          const newTask: Task = {
-            ...source,
-            id: newId,
-            taskName: `${source.taskName}（副本）`,
-            status: 'pending',
-            progress: undefined,
-            createdAt: new Date().toISOString(),
-            completedAt: undefined,
-            hasQueuedBefore: false,
-          };
-          setTasks(prev => [newTask, ...prev]);
-          setHighlightTaskId(newId);
-          toast.success('已创建任务副本');
+          setCopyDialog({
+            isOpen: true,
+            sourceTask: source,
+            newName: `${source.taskName}_副本`,
+            newDescription: source.description || ''
+          });
         }
       } else if (action === 'export') {
         const task = tasks.find(t => t.id === taskId);

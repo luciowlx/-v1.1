@@ -888,6 +888,9 @@ export default function App() {
                 setActiveTab("模型管理");
                 setShowModelTuning(true);
               }}
+              onNavigateToCausalInsight={() => {
+                setActiveTab("因果洞察");
+              }}
               // 新增：从系统总览打开统一活动中心
               onOpenActivityCenter={handleOpenActivityCenter}
               // 新增：最近项目-查看全部 跳转到项目管理总览

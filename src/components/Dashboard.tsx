@@ -46,6 +46,10 @@ interface DashboardProps {
   onNavigateToProjectManagement?: () => void;
   onNavigateToDataManagement?: () => void;
   onNavigateToTaskManagement?: () => void;
+  /**
+   * 跳转到因果洞察页面（替代原模型管理跳转）
+   */
+  onNavigateToCausalInsight?: () => void;
   onNavigateToModelManagement?: () => void;
   // 新增：打开统一活动中心（通知中心的“活动”Tab）
   onOpenActivityCenter?: () => void;
@@ -65,6 +69,7 @@ export function Dashboard({
   onNavigateToDataManagement,
   onNavigateToTaskManagement,
   onNavigateToModelManagement,
+  onNavigateToCausalInsight,
   onOpenActivityCenter,
   onNavigateToProjectOverview
 }: DashboardProps = {}) {
@@ -101,18 +106,18 @@ export function Dashboard({
       onClick: onNavigateToDataManagement
     },
     {
-      label: "创建任务",
-      description: "创建新的训练任务",
+      label: "推理决策",
+      description: "创建新的决策推理任务",
       icon: FileText,
       color: "bg-purple-50 text-purple-600",
       onClick: onNavigateToTaskManagement
     },
     {
-      label: "模型微调",
-      description: "优化和调整模型参数",
-      icon: Zap,
+      label: "因果洞察",
+      description: "探索数据因果关系",
+      icon: Lightbulb,
       color: "bg-orange-50 text-orange-600",
-      onClick: onNavigateToModelManagement
+      onClick: onNavigateToCausalInsight
     }
   ];
 
