@@ -54,18 +54,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
 }) => {
     // 模拟统计数据
     const stats = [
-        { label: '项目总数', value: '12', icon: Folder, color: 'bg-blue-100 text-blue-600', trend: '+2 本月' },
-        { label: '数据集', value: '48', icon: Database, color: 'bg-green-100 text-green-600', trend: '+8 本周' },
-        { label: '运行任务', value: '5', icon: Activity, color: 'bg-orange-100 text-orange-600', trend: '3 排队中' },
-        { label: '已训练模型', value: '23', icon: Cpu, color: 'bg-purple-100 text-purple-600', trend: '+5 本月' },
+        { label: '项目总数', value: '12', icon: Folder, color: 'bg-blue-100 text-blue-600', trend: '+2 本周' },
+        { label: '数据资产', value: '48', icon: Database, color: 'bg-green-100 text-green-600', trend: '+8 本周' },
+        { label: '决策推理', value: '5', icon: Activity, color: 'bg-orange-100 text-orange-600', trend: '3 排队中' },
+        { label: '因果洞察', value: '23', icon: GitBranch, color: 'bg-purple-100 text-purple-600', trend: '+5 本周' },
     ];
 
     // 快捷操作入口
     const quickActions = [
         { label: '创建项目', icon: Plus, description: '新建机器学习项目', onClick: onNavigateToProjectManagement },
         { label: '上传数据', icon: Database, description: '上传或导入数据集', onClick: onNavigateToDataManagement },
-        { label: '创建任务', icon: Target, description: '创建新的决策推理任务', onClick: onNavigateToTaskManagement },
-        { label: '模型微调', icon: Zap, description: '微调预训练模型', onClick: onNavigateToModelManagement },
+        { label: '决策推理', icon: Target, description: '创建新的决策推理任务', onClick: onNavigateToTaskManagement },
+        { label: '因果洞察', icon: GitBranch, description: '探索数据因果关系', onClick: onNavigateToCausalInsight },
     ];
 
     // 最近项目
