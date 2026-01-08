@@ -591,7 +591,7 @@ export const CreateTaskPage: React.FC<CreateTaskPageProps> = ({
     };
 
     return (
-        <div className="fixed inset-0 bg-white z-[1000] flex flex-col h-screen overflow-hidden">
+        <div className="fixed inset-0 bg-white z-[9999] flex flex-col h-screen overflow-hidden">
             {/* Header */}
             <div className="h-16 bg-slate-800 text-white flex items-center justify-between px-6 shadow-lg shrink-0">
                 <div className="flex items-center space-x-3">
@@ -727,7 +727,7 @@ export const CreateTaskPage: React.FC<CreateTaskPageProps> = ({
                                                         </Select>
                                                     </div>
                                                     <div className="flex items-center">
-                                                        <Label className="w-40 text-gray-600 font-normal">{formData.resourceType === 'cpu' ? 'CPU核心数' : formData.resourceType === 'gpu' ? 'GPU核心数' : 'NPU核心数'}</Label>
+                                                        <Label className="w-40 text-gray-600 font-normal"><span className="text-red-500 mr-1">*</span>{formData.resourceType === 'cpu' ? 'CPU核心数' : formData.resourceType === 'gpu' ? 'GPU核心数' : 'NPU核心数'}</Label>
                                                         <Input
                                                             type="number"
                                                             className="w-full bg-gray-50/50 border-gray-200 h-10"
@@ -736,7 +736,7 @@ export const CreateTaskPage: React.FC<CreateTaskPageProps> = ({
                                                         />
                                                     </div>
                                                     <div className="flex items-center">
-                                                        <Label className="w-40 text-gray-600 font-normal">内存 (GB)</Label>
+                                                        <Label className="w-40 text-gray-600 font-normal"><span className="text-red-500 mr-1">*</span>内存 (GB)</Label>
                                                         <Input
                                                             type="number"
                                                             className="w-full bg-gray-50/50 border-gray-200 h-10"
@@ -745,7 +745,7 @@ export const CreateTaskPage: React.FC<CreateTaskPageProps> = ({
                                                         />
                                                     </div>
                                                     <div className="flex items-center">
-                                                        <Label className="w-40 text-gray-600 font-normal">最大运行时长</Label>
+                                                        <Label className="w-40 text-gray-600 font-normal"><span className="text-red-500 mr-1">*</span>最大运行时长</Label>
                                                         <Input
                                                             type="number"
                                                             className="w-full bg-gray-50/50 border-gray-200 h-10"
@@ -756,7 +756,7 @@ export const CreateTaskPage: React.FC<CreateTaskPageProps> = ({
                                                 </div>
                                             </div>
                                             <div className="space-y-4">
-                                                <Label className="font-medium text-gray-700">执行优先级</Label>
+                                                <Label className="font-medium text-gray-700"><span className="text-red-500 mr-1">*</span>执行优先级</Label>
                                                 <RadioGroup value={formData.priority} onValueChange={(v: any) => handleInputChange('priority', v)} className="flex flex-col space-y-3 mt-2">
                                                     {[
                                                         { id: 'high', label: '高优先级任务', desc: '插队执行，抢占低优先级任务' },
@@ -781,7 +781,7 @@ export const CreateTaskPage: React.FC<CreateTaskPageProps> = ({
                                     <CardHeader className="border-b bg-gray-50/50">
                                         <CardTitle className="text-lg flex items-center space-x-2">
                                             <BarChart3 className="h-5 w-5 text-orange-500" />
-                                            <span>模型选择</span>
+                                            <span><span className="text-red-500 mr-1">*</span>模型选择</span>
                                         </CardTitle>
                                     </CardHeader>
                                     <CardContent className="p-6">
@@ -1276,44 +1276,90 @@ export const CreateTaskPage: React.FC<CreateTaskPageProps> = ({
                                                                 {/* 提示文字 */}
                                                                 <p className="text-xs text-center text-gray-400 italic mt-2">拖动滑块调整切分比例</p>
                                                                 <p className="text-[10px] text-red-500/80 mt-1 italic font-medium">提示：训练集和测试集比例均不得低于 10%</p>
+
+                                                                {/* 洗牌选项 */}
+                                                                <div className="flex items-center space-x-3 mt-4 pt-4 border-t border-gray-100">
+                                                                    <Checkbox
+                                                                        checked={formData.taskType === TASK_TYPES.classification
+                                                                            ? formData.classificationConfig.shuffle
+                                                                            : formData.regressionConfig.shuffle}
+                                                                        onChange={(e) => {
+                                                                            const checked = e.target.checked;
+                                                                            if (formData.taskType === TASK_TYPES.classification) {
+                                                                                handleInputChange('classificationConfig', { ...formData.classificationConfig, shuffle: checked });
+                                                                            } else {
+                                                                                handleInputChange('regressionConfig', { ...formData.regressionConfig, shuffle: checked });
+                                                                            }
+                                                                        }}
+                                                                    />
+                                                                    <div className="flex flex-col">
+                                                                        <Label className="text-sm font-medium text-gray-700 cursor-pointer">洗牌 (Shuffle)</Label>
+                                                                        <span className="text-xs text-gray-400">在划分数据集前随机打乱样本顺序</span>
+                                                                    </div>
+                                                                </div>
                                                             </div>
                                                         )
                                                     ) : formData.selectedFilesMetadata.length > 1 ? (
-                                                        <div className="border rounded-xl overflow-hidden shadow-sm">
-                                                            <Table>
-                                                                <TableHeader className="bg-gray-50/80">
-                                                                    <TableRow>
-                                                                        <TableHead className="w-1/2">文件名</TableHead>
-                                                                        <TableHead className="w-32">用途分配</TableHead>
-                                                                        <TableHead className="text-right">所属数据集</TableHead>
-                                                                    </TableRow>
-                                                                </TableHeader>
-                                                                <TableBody>
-                                                                    {formData.selectedFilesMetadata.map(f => (
-                                                                        <TableRow key={f.name}>
-                                                                            <TableCell className="font-medium text-sm">{f.name}</TableCell>
-                                                                            <TableCell>
-                                                                                <Select
-                                                                                    value={formData.fileRoles[f.name]}
-                                                                                    onValueChange={(val: 'train' | 'test') => handleRoleChange(f.name, val)}
-                                                                                >
-                                                                                    <SelectTrigger className="h-8 text-xs w-28">
-                                                                                        <SelectValue />
-                                                                                    </SelectTrigger>
-                                                                                    <SelectContent>
-                                                                                        <SelectItem value="train">训练集</SelectItem>
-                                                                                        <SelectItem value="test">测试集</SelectItem>
-                                                                                    </SelectContent>
-                                                                                </Select>
-                                                                            </TableCell>
-                                                                            <TableCell className="text-xs text-gray-500 text-right">
-                                                                                {f.datasetTitle}({f.version})
-                                                                            </TableCell>
+                                                        <>
+                                                            <div className="border rounded-xl overflow-hidden shadow-sm">
+                                                                <Table>
+                                                                    <TableHeader className="bg-gray-50/80">
+                                                                        <TableRow>
+                                                                            <TableHead className="w-1/2">文件名</TableHead>
+                                                                            <TableHead className="w-32">用途分配</TableHead>
+                                                                            <TableHead className="text-right">所属数据集</TableHead>
                                                                         </TableRow>
-                                                                    ))}
-                                                                </TableBody>
-                                                            </Table>
-                                                        </div>
+                                                                    </TableHeader>
+                                                                    <TableBody>
+                                                                        {formData.selectedFilesMetadata.map(f => (
+                                                                            <TableRow key={f.name}>
+                                                                                <TableCell className="font-medium text-sm">{f.name}</TableCell>
+                                                                                <TableCell>
+                                                                                    <Select
+                                                                                        value={formData.fileRoles[f.name]}
+                                                                                        onValueChange={(val: 'train' | 'test') => handleRoleChange(f.name, val)}
+                                                                                    >
+                                                                                        <SelectTrigger className="h-8 text-xs w-28">
+                                                                                            <SelectValue />
+                                                                                        </SelectTrigger>
+                                                                                        <SelectContent>
+                                                                                            <SelectItem value="train">训练集</SelectItem>
+                                                                                            <SelectItem value="test">测试集</SelectItem>
+                                                                                        </SelectContent>
+                                                                                    </Select>
+                                                                                </TableCell>
+                                                                                <TableCell className="text-xs text-gray-500 text-right">
+                                                                                    {f.datasetTitle}({f.version})
+                                                                                </TableCell>
+                                                                            </TableRow>
+                                                                        ))}
+                                                                    </TableBody>
+                                                                </Table>
+                                                            </div>
+
+                                                            {/* 洗牌选项（多文件场景，仅分类/回归任务） */}
+                                                            {(formData.taskType === TASK_TYPES.classification || formData.taskType === TASK_TYPES.regression) && (
+                                                                <div className="flex items-center space-x-3 mt-4 pt-4 border-t border-gray-100">
+                                                                    <Checkbox
+                                                                        checked={formData.taskType === TASK_TYPES.classification
+                                                                            ? formData.classificationConfig.shuffle
+                                                                            : formData.regressionConfig.shuffle}
+                                                                        onChange={(e) => {
+                                                                            const checked = e.target.checked;
+                                                                            if (formData.taskType === TASK_TYPES.classification) {
+                                                                                handleInputChange('classificationConfig', { ...formData.classificationConfig, shuffle: checked });
+                                                                            } else {
+                                                                                handleInputChange('regressionConfig', { ...formData.regressionConfig, shuffle: checked });
+                                                                            }
+                                                                        }}
+                                                                    />
+                                                                    <div className="flex flex-col">
+                                                                        <Label className="text-sm font-medium text-gray-700 cursor-pointer">洗牌 (Shuffle)</Label>
+                                                                        <span className="text-xs text-gray-400">在划分数据集前随机打乱样本顺序</span>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </>
                                                     ) : (
                                                         <div className="py-12 border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-gray-400 bg-gray-50/30">
                                                             <Plus className="h-8 w-8 mb-2 opacity-20" />
@@ -1325,7 +1371,7 @@ export const CreateTaskPage: React.FC<CreateTaskPageProps> = ({
                                                 <div className="grid grid-cols-2 gap-6 pt-4 border-t mt-auto">
                                                     <div className="space-y-4">
                                                         <div className="flex items-center space-x-2">
-                                                            <Label className="font-bold text-gray-900">输入特征列 (Features)</Label>
+                                                            <Label className="font-bold text-gray-900"><span className="text-red-500 mr-1">*</span>输入特征列 (Features)</Label>
                                                             <Badge variant="outline" className="font-normal text-[10px] bg-gray-50">{availableFeatureFields.length} 字段</Badge>
                                                         </div>
                                                         <Popover>
@@ -1381,7 +1427,7 @@ export const CreateTaskPage: React.FC<CreateTaskPageProps> = ({
 
                                                     <div className="space-y-4">
                                                         <div className="flex items-center space-x-2">
-                                                            <Label className="font-bold text-gray-900">预测目标列 (Target)</Label>
+                                                            <Label className="font-bold text-gray-900"><span className="text-red-500 mr-1">*</span>预测目标列 (Target)</Label>
                                                             <Badge variant="outline" className="font-normal text-[10px] bg-orange-50 text-orange-600 border-orange-100">必选 1 个</Badge>
                                                         </div>
                                                         <Select
@@ -1479,7 +1525,7 @@ export const CreateTaskPage: React.FC<CreateTaskPageProps> = ({
                                                 </div>
                                                 <div className="space-y-2">
                                                     <Label className="text-sm font-medium text-gray-700 flex items-center">
-                                                        预测开始时间
+                                                        <span className="text-red-500 mr-1">*</span>预测开始时间
                                                         <TooltipProvider>
                                                             <Tooltip>
                                                                 <TooltipTrigger><Info className="h-3 w-3 ml-1 text-gray-400" /></TooltipTrigger>
@@ -1507,7 +1553,7 @@ export const CreateTaskPage: React.FC<CreateTaskPageProps> = ({
                                                 <BarChart3 className="h-5 w-5 text-indigo-500" />
                                                 <span>输出与报告配置</span>
                                             </div>
-                                            <div className="text-[10px] font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded">任务类型: {formData.taskType}</div>
+                                            <div className="text-[10px] font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded">任务类型: {getTaskTypeLabel(formData.taskType)}</div>
                                         </CardTitle>
                                     </CardHeader>
                                     <CardContent className="p-0">

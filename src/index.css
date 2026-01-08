@@ -3521,3 +3521,19 @@ html {
     max-width: 900px;
   }
 }
+
+/* 
+ * 彻底修复 Ant Design Table 固定列遮挡全屏页面的问题
+ */
+.ant-table-cell-fix-left,
+.ant-table-cell-fix-right {
+  z-index: 10 !important;
+  /* 降低固定列层级，默认通常是 1 或 2 */
+}
+
+/* 当全屏页面打开时，确保底层表格的 sticky 特性不干扰 */
+body:has(.fixed.inset-0.z-\[9999\]) .ant-table-cell-fix-left,
+body:has(.fixed.inset-0.z-\[9999\]) .ant-table-cell-fix-right {
+  position: static !important;
+  /* 在全屏页面打开时临时取消底层表格的固定定位 */
+}
