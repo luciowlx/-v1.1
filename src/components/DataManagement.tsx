@@ -15,7 +15,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { Calendar } from "./ui/calendar";
 import { useLanguage } from "../i18n/LanguageContext";
 import { buildDataDetailUrl } from "../utils/deeplink";
-import { mockDatasets as initialMockDatasets } from "../mock/datasets";
+import { mockDatasets as initialMockDatasets, mockProjects } from "../mock/datasets";
 import type { DateRange } from "react-day-picker";
 import { GrayLabels } from "./data/GrayLabels";
 import { DatasetGrid } from "./data/DatasetGrid";
@@ -112,6 +112,7 @@ interface Dataset {
   columns: string;
   completeness: number;
   source: string;
+  projectId?: string;
   version: string;
   // 数据版本数量（用于在列表中展示）
   versionCount?: number;
@@ -230,6 +231,7 @@ export function DataManagement({
     formats: [] as string[],
     tags: [] as string[]
   });
+  const [projectFilter, setProjectFilter] = useState('all');
 
   // 已移除高级筛选弹窗开关；保留 advancedFilters 作为顶部控件的即时筛选状态
 
@@ -538,6 +540,7 @@ export function DataManagement({
         (!advancedFilters.tagQuery || dataset.tags.some(t => t.name.toLowerCase().includes(advancedFilters.tagQuery.toLowerCase()))) &&
         (advancedFilters.formats.length === 0 || (dataset.formats || []).some(f => advancedFilters.formats.map(s => s.toLowerCase()).includes((f || '').toLowerCase()))) &&
         (advancedFilters.tags.length === 0 || dataset.tags.some(t => advancedFilters.tags.includes(t.name))) &&
+        (projectFilter === 'all' || dataset.projectId === projectFilter) &&
         matchesFormatColumn &&
         matchesDateRange;
 
@@ -796,6 +799,7 @@ export function DataManagement({
     setSearchTerm('');
     setSortBy('updateTime');
     setSortOrder('desc');
+    setProjectFilter('all');
     setAdvancedFilters({
       columnsRange: [0, 1000],
       rowsRange: [0, 1000000],
@@ -918,9 +922,12 @@ export function DataManagement({
             searchTerm={searchTerm}
             onSearchTermChange={(v) => setSearchTerm(v)}
             tagQuery={advancedFilters.tagQuery}
-            onTagQueryChange={(v) => setAdvancedFilters(prev => ({ ...prev, tagQuery: v }))}
+            onTagQueryChange={(v) => setAdvancedFilters({ ...advancedFilters, tagQuery: v })}
             dateRange={advancedFilters.dateRange}
-            onDateRangeChange={(range) => setAdvancedFilters(prev => ({ ...prev, dateRange: range }))}
+            onDateRangeChange={(range) => setAdvancedFilters({ ...advancedFilters, dateRange: range })}
+            projectFilter={projectFilter}
+            onProjectFilterChange={setProjectFilter}
+            projects={mockProjects}
             onApplyQuery={handleApplyQuery}
             onResetFilters={handleResetFilters}
             t={t}
@@ -1015,6 +1022,7 @@ export function DataManagement({
               onCopy={(id) => handleCopy(Number(id))}
               onCopyVersion={(datasetId, version) => handleCopyVersion(Number(datasetId), version)}
               onDelete={(id) => handleSingleDelete(Number(id))}
+              projects={mockProjects}
             />
           )}
 

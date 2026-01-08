@@ -55,6 +55,22 @@ export function getDatasetsByProjectId(projectId: string): MockDataset[] {
 }
 
 /**
+ * 关联项目列表 Mock
+ */
+export const mockProjects = [
+  { id: "PRJ001", title: "智能缺陷检测" },
+  { id: "proj_001", title: "钢铁缺陷预测" },
+  { id: "PRJ002", title: "能源预测" },
+  { id: "proj_002", title: "风电场运行监控" },
+  { id: "PRJ003", title: "工艺优化分析" },
+  { id: "proj_003", title: "化工炼化过程监测" },
+  { id: "PRJ004", title: "供应链优化分析" },
+  { id: "proj_004", title: "核心设备健康状态监控" },
+  { id: "proj_005", title: "电力负荷分析" },
+  { id: "proj_006", title: "新品上市分析" }
+];
+
+/**
  * 原型数据初始列表
  */
 const initialDatasets: MockDataset[] = [
@@ -87,7 +103,7 @@ const initialDatasets: MockDataset[] = [
       {
         version: "v1.0",
         files: [
-          { name: "冷轧生产参数_2024.csv", size: "3.2MB", rows: 4129, columns: 61, fields: ["datatime", "Rolling_Force", "Rolling_Speed", "Entry_Tension", "Exit_Tension", "Motor_Current", "Motor_Voltage", "Coolant_Pressure", "Coolant_Temp", "Strip_Thickness", "Strip_Width", "Work_Roll_Gap", "Leveller_Current", "Coiler_Tension", "Uncoiler_Tension", "Edge_Temp_L", "Edge_Temp_R", "Center_Temp", "Vibration_Level", "Lubrication_Flow", "Strip_Speed_Exit", "Load_Cell_LC1", "Load_Cell_LC2", "Drive_Torque", "Brake_Pressure"] }
+          { name: "冷轧生产参数_2024.csv", size: "3.2MB", rows: 4129, columns: 61, fields: ["datatime", "Rolling_Force", "Rolling_Speed", "Entry_Tension", "Exit_Tension", "Motor_Current", "Motor_Voltage", "Coolant_Pressure", "Coolant_Temp", "Strip_Thickness", "Strip_Width", "Work_Roll_Gap", "Leveller_Current", "Coiler_Tension", "Uncoiler_Tension", "Edge_Temp_L", "Edge_Temp_R", "Center_Temp", "Vibration_Level", "Lubrication_Flow", "Strip_Speed_Exit", "Load_Cell_LC1", "Load_Cell_LC2", "Drive_Torque", "Brake_Pressure", "Quality_Grade", "Defect_Type", "Product_Status"] }
         ]
       }
     ]
@@ -120,7 +136,7 @@ const initialDatasets: MockDataset[] = [
       {
         version: "v1.2",
         files: [
-          { name: "反应塔时序参数.csv", size: "2.1MB", rows: 4129, columns: 61, fields: ["datatime", "Tower_Pressure", "Top_Temp", "Middle_Temp", "Bottom_Temp", "Feed_Flow"] },
+          { name: "反应塔时序参数.csv", size: "2.1MB", rows: 4129, columns: 61, fields: ["datatime", "Tower_Pressure", "Top_Temp", "Middle_Temp", "Bottom_Temp", "Feed_Flow", "Alarm_Level", "Operation_Mode", "Risk_Level"] },
           { name: "催化剂活性记录.csv", size: "1.5MB", rows: 2850, columns: 25, fields: ["datatime", "Catalyst_Level", "Activity_Index", "Degradation_Rate"] }
         ]
       },
@@ -168,7 +184,7 @@ const initialDatasets: MockDataset[] = [
       {
         version: "v1.0",
         files: [
-          { name: "空压机健康监测.csv", size: "4.5MB", rows: 4129, columns: 61, fields: ["datatime", "Vibration_RMS", "Vibration_Peak", "Bearing_Temp_DE", "Bearing_Temp_NDE", "Winding_Temp_U", "Winding_Temp_V", "Winding_Temp_W", "Oil_Pressure", "Oil_Temp", "Inlet_Filter_DP", "Discharge_Temp", "Discharge_Pressure", "Motor_Speed", "Input_Current", "Input_Voltage", "Power_Factor", "Active_Power", "Reactive_Power", "Ambient_Humidity", "Cooler_Fan_Status", "Running_Hours", "Starts_Count", "Load_Cycle", "Unload_Cycle"] }
+          { name: "空压机健康监测.csv", size: "4.5MB", rows: 4129, columns: 61, fields: ["datatime", "Vibration_RMS", "Vibration_Peak", "Bearing_Temp_DE", "Bearing_Temp_NDE", "Winding_Temp_U", "Winding_Temp_V", "Winding_Temp_W", "Oil_Pressure", "Oil_Temp", "Inlet_Filter_DP", "Discharge_Temp", "Discharge_Pressure", "Motor_Speed", "Input_Current", "Input_Voltage", "Power_Factor", "Active_Power", "Reactive_Power", "Ambient_Humidity", "Cooler_Fan_Status", "Running_Hours", "Starts_Count", "Load_Cycle", "Unload_Cycle", "Equipment_Status", "Alarm_Level", "Shift"] }
         ]
       }
     ]
@@ -211,7 +227,7 @@ const initialDatasets: MockDataset[] = [
           size: "2.5MB",
           rows: 4129,
           columns: 61,
-          fields: ["datatime", "WROT_TemAxis1Ctrl", "WROT_TemAxis2Ctrl", "WROT_TemAxis3Ctrl", "WROT_PtCapTemBl1", "WROT_PtCapTemBl2", "WROT_PtCapTemBl3", "WROT_TemB1Mot", "WROT_TemB2Mot", "WROT_TemB3Mot", "WROT_TemHub", "WROT_TemHub2", "WROT_TemHub3", "WROT_Pitch1CapHighVol", "WROT_Pitch2CapHighVol", "WROT_Pitch3CapHighVol", "WROT_CurBlade1Motor", "WROT_CurBlade2Motor", "WROT_CurBlade3Motor", "WROT_Blade1Position", "WROT_Blade2Position", "WROT_Blade3Position", "WROT_TemBlade1Inver", "WROT_TemBlade2Inver", "WROT_TemBlade3Inver", "WTRM_TemGeaOil", "WTRM_TemGeaMSDE", "WTRM_TemGeaZSDE", "WTRM_GBoxOilPmpP", "WTRM_TemGBoxOilE", "WCNV_GridPPower", "WCNV_GridQPower", "WWPP_APProduction", "WGEN_TemGenDriEnd", "WGEN_TemGenNonDE", "WGEN_TemGenStaU", "WGEN_TemGenStaV", "WGEN_TemGenStaW", "WGEN_TemGenStaU2", "WGEN_TemGenStaV2", "WGEN_TemGenStaW3", "WGEN_GenCoolAirTem", "WNAC_WindSpeed", "WNAC_WindDirection", "WNAC_TemOut", "WNAC_TemNacelleCab", "WNAC_TemNacelleCabOut", "WVIB_VibrationLFil", "WVIB_VibrationVFil", "WYAW_YawPosition", "WYAW_Brake_Pressure", "WTOW_TemTowerCab", "WTRM_RotorSpd", "WTRM_PowerStoreTRBS", "WTRM_TemMainBearing", "WTRM_TemMainBearing2", "WGEN_GenActivePW", "WGEN_GenReactivePW", "WGEN_GenSpd", "WGEN_Torque", "WGEN_TorqueSetpoint"]
+          fields: ["datatime", "WROT_TemAxis1Ctrl", "WROT_TemAxis2Ctrl", "WROT_TemAxis3Ctrl", "WROT_PtCapTemBl1", "WROT_PtCapTemBl2", "WROT_PtCapTemBl3", "WROT_TemB1Mot", "WROT_TemB2Mot", "WROT_TemB3Mot", "WROT_TemHub", "WROT_TemHub2", "WROT_TemHub3", "WROT_Pitch1CapHighVol", "WROT_Pitch2CapHighVol", "WROT_Pitch3CapHighVol", "WROT_CurBlade1Motor", "WROT_CurBlade2Motor", "WROT_CurBlade3Motor", "WROT_Blade1Position", "WROT_Blade2Position", "WROT_Blade3Position", "WROT_TemBlade1Inver", "WROT_TemBlade2Inver", "WROT_TemBlade3Inver", "WTRM_TemGeaOil", "WTRM_TemGeaMSDE", "WTRM_TemGeaZSDE", "WTRM_GBoxOilPmpP", "WTRM_TemGBoxOilE", "WCNV_GridPPower", "WCNV_GridQPower", "WWPP_APProduction", "WGEN_TemGenDriEnd", "WGEN_TemGenNonDE", "WGEN_TemGenStaU", "WGEN_TemGenStaV", "WGEN_TemGenStaW", "WGEN_TemGenStaU2", "WGEN_TemGenStaV2", "WGEN_TemGenStaW3", "WGEN_GenCoolAirTem", "WNAC_WindSpeed", "WNAC_WindDirection", "WNAC_TemOut", "WNAC_TemNacelleCab", "WNAC_TemNacelleCabOut", "WVIB_VibrationLFil", "WVIB_VibrationVFil", "WYAW_YawPosition", "WYAW_Brake_Pressure", "WTOW_TemTowerCab", "WTRM_RotorSpd", "WTRM_PowerStoreTRBS", "WTRM_TemMainBearing", "WTRM_TemMainBearing2", "WGEN_GenActivePW", "WGEN_GenReactivePW", "WGEN_GenSpd", "WGEN_Torque", "WGEN_TorqueSetpoint", "Turbine_Status", "Fault_Level", "Operation_Mode"]
         }))
       }
     ]
@@ -232,6 +248,14 @@ export const mockDatasets: MockDataset[] = (() => {
       const parsed = JSON.parse(saved);
       // 如果已保存的数据中没有 projectId 或 versions，则重置为 initialDatasets
       if (parsed.length > 0 && (!parsed[0].projectId || !parsed[0].versions)) {
+        return [...initialDatasets];
+      }
+      // 检查是否包含分类列字段，如果缺失则重置（确保新增字段能被加载）
+      const firstDataset = parsed[0];
+      const firstFile = firstDataset?.versions?.[0]?.files?.[0];
+      if (firstFile && firstFile.fields && !firstFile.fields.includes('Quality_Grade')) {
+        // 缺少分类列字段，需要重置数据
+        localStorage.removeItem(STORAGE_KEY);
         return [...initialDatasets];
       }
       return parsed;

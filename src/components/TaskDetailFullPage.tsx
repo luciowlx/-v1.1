@@ -250,8 +250,8 @@ output:
       const covariateFilesParsed = Array.isArray(fc?.covariateFiles)
         ? fc.covariateFiles
         : (typeof fc?.covariateFiles === 'string'
-            ? String(fc?.covariateFiles).split(',').map((s: string) => s.trim()).filter(Boolean)
-            : (Array.isArray(fc?.covariates) ? fc.covariates : []));
+          ? String(fc?.covariateFiles).split(',').map((s: string) => s.trim()).filter(Boolean)
+          : (Array.isArray(fc?.covariates) ? fc.covariates : []));
 
       // 基于当前任务数据集，构造可选的数据文件列表（模拟）
       const baseName = (task.datasetName || 'dataset').replace(/\s+/g, '_');
@@ -306,12 +306,12 @@ output:
   }, [task]);
 
   const sections = [
+    { id: 'results', label: '任务结果', icon: BarChart3 },
+    { id: 'causal', label: '因果解释', icon: Zap },
     { id: 'meta', label: '概览信息', icon: FileText },
     { id: 'dataset', label: '数据集信息', icon: Database },
     { id: 'model', label: '模型信息', icon: Brain },
     { id: 'params', label: '参数配置', icon: Settings },
-    { id: 'results', label: '任务结果', icon: BarChart3 },
-    { id: 'causal', label: '因果解释', icon: Zap },
     { id: 'logs', label: '执行日志', icon: FileText },
     { id: 'artifacts', label: '任务产物', icon: Download },
   ];
@@ -623,7 +623,7 @@ output:
     }));
   }, [forecastSeries, forecastTrainSeries, showTrainData]);
 
-  
+
 
   // 偏差统计（正负相对/绝对偏差）
   const deviationStats = React.useMemo(() => {
@@ -1266,8 +1266,8 @@ output:
   };
 
   const toggleSection = (sectionId: string) => {
-    setExpandedSections(prev => 
-      prev.includes(sectionId) 
+    setExpandedSections(prev =>
+      prev.includes(sectionId)
         ? prev.filter(id => id !== sectionId)
         : [...prev, sectionId]
     );
@@ -1380,7 +1380,7 @@ output:
   };
 
   const handleExportCausalCSV = () => {
-    const factorLabels = ['温度_均值','压力_方差','设备功率','环境湿度','质量评分','历史缺陷率','维护间隔','设备老化指数','能耗比','设备震动','生产节拍','人员工时'];
+    const factorLabels = ['温度_均值', '压力_方差', '设备功率', '环境湿度', '质量评分', '历史缺陷率', '维护间隔', '设备老化指数', '能耗比', '设备震动', '生产节拍', '人员工时'];
     const rows = 20;
     const val = (r: number, c: number) => Math.sin(r * 0.25) + Math.cos(c * 0.45);
     const scores = factorLabels.map((_, c) => {
@@ -2229,7 +2229,7 @@ output:
                   <BarChart data={forecastingModelComparison} margin={{ left: 12, right: 12 }}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="model" tickLine={false} />
-                    <YAxis tickFormatter={(v) => fctCompareMetric === 'r2' ? `${(v * 100).toFixed(0)}%` : fctCompareMetric === 'mape' ? `${(v * 100).toFixed(0)}%` : `${v}` } />
+                    <YAxis tickFormatter={(v) => fctCompareMetric === 'r2' ? `${(v * 100).toFixed(0)}%` : fctCompareMetric === 'mape' ? `${(v * 100).toFixed(0)}%` : `${v}`} />
                     <Bar dataKey={fctCompareMetric} fill="var(--color-metric)" />
                     <ChartTooltip content={<ChartTooltipContent />} />
                   </BarChart>
@@ -2237,7 +2237,7 @@ output:
                   <LineChart data={forecastingModelComparison} margin={{ left: 12, right: 12 }}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="model" tickLine={false} />
-                    <YAxis tickFormatter={(v) => fctCompareMetric === 'r2' ? `${(v * 100).toFixed(0)}%` : fctCompareMetric === 'mape' ? `${(v * 100).toFixed(0)}%` : `${v}` } />
+                    <YAxis tickFormatter={(v) => fctCompareMetric === 'r2' ? `${(v * 100).toFixed(0)}%` : fctCompareMetric === 'mape' ? `${(v * 100).toFixed(0)}%` : `${v}`} />
                     <Line type="monotone" dataKey={fctCompareMetric} stroke="var(--color-metric)" dot />
                     <ChartTooltip content={<ChartTooltipContent />} />
                   </LineChart>
@@ -2369,7 +2369,7 @@ output:
                   <BarChart data={regressionModelComparison} margin={{ left: 12, right: 12 }}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="model" tickLine={false} />
-                    <YAxis tickFormatter={(v) => regCompareMetric === 'r2' ? `${(v * 100).toFixed(0)}%` : `${v}` } />
+                    <YAxis tickFormatter={(v) => regCompareMetric === 'r2' ? `${(v * 100).toFixed(0)}%` : `${v}`} />
                     <Bar dataKey={regCompareMetric} fill="var(--color-metric)" />
                     <ChartTooltip content={<ChartTooltipContent />} />
                   </BarChart>
@@ -2377,7 +2377,7 @@ output:
                   <LineChart data={regressionModelComparison} margin={{ left: 12, right: 12 }}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="model" tickLine={false} />
-                    <YAxis tickFormatter={(v) => regCompareMetric === 'r2' ? `${(v * 100).toFixed(0)}%` : `${v}` } />
+                    <YAxis tickFormatter={(v) => regCompareMetric === 'r2' ? `${(v * 100).toFixed(0)}%` : `${v}`} />
                     <Line type="monotone" dataKey={regCompareMetric} stroke="var(--color-metric)" dot />
                     <ChartTooltip content={<ChartTooltipContent />} />
                   </LineChart>
@@ -2425,9 +2425,9 @@ output:
             </CardTitle>
             <CardDescription>任务执行过程中的详细日志记录</CardDescription>
           </div>
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             className="text-blue-600 border-blue-200 hover:bg-blue-50"
             onClick={handleDownloadLogs}
           >
@@ -2439,18 +2439,16 @@ output:
           <div className="space-y-2 max-h-96 overflow-y-auto">
             {mockLogs.map((log, index) => (
               <div key={index} className="flex items-start gap-3 p-3 rounded-lg bg-gray-50">
-                <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
-                  log.level === 'error' ? 'bg-red-500' : 
+                <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${log.level === 'error' ? 'bg-red-500' :
                   log.level === 'warning' ? 'bg-yellow-500' : 'bg-green-500'
-                }`} />
+                  }`} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-xs text-gray-500 font-mono">{log.timestamp}</span>
-                    <Badge variant="outline" className={`text-xs ${
-                      log.level === 'error' ? 'border-red-200 text-red-700' :
+                    <Badge variant="outline" className={`text-xs ${log.level === 'error' ? 'border-red-200 text-red-700' :
                       log.level === 'warning' ? 'border-yellow-200 text-yellow-700' :
-                      'border-green-200 text-green-700'
-                    }`}>
+                        'border-green-200 text-green-700'
+                      }`}>
                       {log.level.toUpperCase()}
                     </Badge>
                   </div>
@@ -2495,8 +2493,8 @@ output:
                   <TableCell>{artifact.size}</TableCell>
                   <TableCell>
                     <div className="flex gap-2">
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         variant="outline"
                         className="transition-all duration-200 hover:bg-blue-50 hover:border-blue-200"
                         disabled={loadingAction === `download-${index}`}
@@ -2522,8 +2520,8 @@ output:
                         )}
                         下载
                       </Button>
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         variant="outline"
                         className="transition-all duration-200 hover:bg-green-50 hover:border-green-200"
                         disabled={loadingAction === `preview-${index}`}
@@ -2595,10 +2593,10 @@ output:
             <p className="text-sm text-gray-600">{task.taskName}</p>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-2">
           {/* 使用共享映射动态呈现操作按钮（过滤掉“详情”） */}
-            {getAvailableActions(computedTask).filter((a: TaskAction) => a.key !== 'view' && a.key !== 'edit').map((action: TaskAction) => {
+          {getAvailableActions(computedTask).filter((a: TaskAction) => a.key !== 'view' && a.key !== 'edit').map((action: TaskAction) => {
             const isLoading = loadingAction === `${task.id}:${action.key}`;
             const classMap: Record<string, string> = {
               start: 'text-green-600 border-green-200 hover:bg-green-50',
@@ -2667,6 +2665,164 @@ output:
 
           {/* 右侧内容区 */}
           <div ref={contentRef} className="flex-1 overflow-y-auto p-6 space-y-10">
+            {/* 任务结果 */}
+            <section id="results" className="scroll-mt-24">
+              <h2 className="text-lg font-semibold mb-4">任务结果</h2>
+              {renderMetricsTab()}
+            </section>
+
+            {/* 因果解释 */}
+            <section id="causal" className="scroll-mt-24">
+              <h2 className="text-lg font-semibold mb-4">因果解释</h2>
+
+              {/* 注：按用户要求移除顶部模型评估卡片（蓝色横幅与误差棒图） */}
+              <Card className="transition-all duration-200 hover:shadow-md border-gray-200">
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>因果解释图</CardTitle>
+                    <CardDescription>展示影响强度热图与因子贡献对比</CardDescription>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" onClick={handleExportCausalCSV}>
+                      <Download className="h-4 w-4 mr-2" />
+                      导出解释数据
+                    </Button>
+                    <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => setDeepSeekOpen(true)}>
+                      <Brain className="h-4 w-4 mr-2" />
+                      大模型预测过程
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div className="bg-white border rounded-lg p-3">
+                      <div className="text-sm font-medium text-gray-700 mb-2">影响强度热图</div>
+                      {(() => {
+                        const factorLabels = ['温度_均值', '压力_方差', '设备功率', '环境湿度', '质量评分', '历史缺陷率', '维护间隔', '设备老化指数', '能耗比', '设备震动', '生产节拍', '人员工时'];
+                        const times: string[] = Array.from({ length: 20 }).map((_, i) => {
+                          const d = new Date(Date.UTC(2025, 0, 16, i, 0, 0));
+                          const hh = String(d.getUTCHours()).padStart(2, '0');
+                          return `${hh}:00`;
+                        });
+                        const rows = times.length;
+                        const cols = factorLabels.length;
+                        const cellW = 24;
+                        const cellH = 14;
+                        const val = (r: number, c: number) => Math.sin(r * 0.25) + Math.cos(c * 0.45);
+                        const toColor = (x: number) => {
+                          const t = Math.max(-2, Math.min(2, x));
+                          const ratio = (t + 2) / 4;
+                          const rr = Math.round(255 * ratio);
+                          const bb = Math.round(255 * (1 - ratio));
+                          return `rgb(${rr},80,${bb})`;
+                        };
+                        const ml = 64;
+                        const mb = 100;
+                        const width = ml + cols * cellW;
+                        const height = mb + rows * cellH;
+                        const xLabel = '影响因子';
+                        const yLabel = '时间窗口';
+                        return (
+                          <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-64">
+                            <line x1={ml - 6} y1={0} x2={ml - 6} y2={rows * cellH} stroke="#9ca3af" strokeWidth={1} />
+                            <line x1={ml} y1={rows * cellH + 1} x2={ml + cols * cellW} y2={rows * cellH + 1} stroke="#9ca3af" strokeWidth={1} />
+                            {Array.from({ length: rows }).map((_, r) => (
+                              Array.from({ length: cols }).map((__, c) => (
+                                <rect key={`${r}-${c}`} x={ml + c * cellW} y={r * cellH} width={cellW} height={cellH} fill={toColor(val(r, c))} />
+                              ))
+                            ))}
+                            {factorLabels.map((name, i) => {
+                              const x = ml + i * cellW + cellW / 2;
+                              const y = rows * cellH + 40;
+                              return (
+                                <text key={`x-${i}`} x={x} y={y} fontSize={10} fill="#6b7280" textAnchor="end" transform={`rotate(-90 ${x} ${y})`} className="select-none">{name}</text>
+                              );
+                            })}
+                            {times.map((t, r) => (
+                              <g key={`y-${r}`}>
+                                <line x1={ml - 10} y1={r * cellH + cellH / 2} x2={ml - 6} y2={r * cellH + cellH / 2} stroke="#9ca3af" strokeWidth={1} />
+                                <text x={ml - 12} y={r * cellH + cellH / 2 + 3} fontSize={10} fill="#6b7280" textAnchor="end" className="select-none">{t}</text>
+                              </g>
+                            ))}
+                            <text x={ml + (cols * cellW) / 2} y={rows * cellH + mb - 2} fontSize={12} fill="#374151" textAnchor="middle" className="select-none">{xLabel}</text>
+                            <text x={18} y={(rows * cellH) / 2} fontSize={12} fill="#374151" textAnchor="middle" transform={`rotate(-90 18 ${(rows * cellH) / 2})`} className="select-none">{yLabel}</text>
+                          </svg>
+                        );
+                      })()}
+                    </div>
+                    <div className="bg-white border rounded-lg p-3">
+                      <div className="text-sm font-medium text-gray-700 mb-2">影响因子贡献对比</div>
+                      {(() => {
+                        const data = [
+                          { name: '温度_均值', score: -74.4 },
+                          { name: '压力_方差', score: 85.1 },
+                          { name: '设备功率', score: 42.6 },
+                          { name: '环境湿度', score: -12.8 },
+                          { name: '质量评分', score: 61.7 },
+                          { name: '历史缺陷率', score: -51.7 },
+                          { name: '维护间隔', score: 27.9 },
+                        ];
+                        const maxAbs = Math.max(...data.map(d => Math.abs(d.score))) || 1;
+                        const w = 520;
+                        const h = 260;
+                        const x0 = w / 2;
+                        const rowH = 30;
+                        return (
+                          <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-64">
+                            <line x1={x0} y1={10} x2={x0} y2={h - 10} stroke="#9ca3af" strokeWidth={1} />
+                            {data.map((d, i) => {
+                              const len = Math.round((Math.abs(d.score) / maxAbs) * (w / 2 - 40));
+                              const y = 20 + i * rowH;
+                              const color = d.score >= 0 ? '#22c55e' : '#ef4444';
+                              const x = d.score >= 0 ? x0 : x0 - len;
+                              return (
+                                <g key={d.name}>
+                                  <text x={10} y={y + 12} fontSize={12} fill="#374151">{d.name}</text>
+                                  <rect x={x} y={y} width={len} height={18} fill={color} rx={3} />
+                                  <text x={d.score >= 0 ? x + len + 6 : x - 34} y={y + 12} fontSize={12} fill="#374151">{d.score.toFixed(1)}</text>
+                                </g>
+                              );
+                            })}
+                          </svg>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              {/* 大模型预测过程弹窗 */}
+              <Dialog open={isDeepSeekOpen} onOpenChange={setDeepSeekOpen}>
+                <DialogContent className="sm:max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>大模型预测过程</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="p-3 bg-blue-50 rounded-lg">
+                      <div className="font-medium text-blue-700">模型推理的关键节点</div>
+                      <ul className="list-disc pl-5 text-sm text-blue-900 mt-2">
+                        {deepSeekSteps.map((s, i) => (
+                          <li key={i}>{s}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    {/* 特征权重分析已移除 */}
+                    <div>
+                      <div className="text-sm font-medium text-gray-700 mb-2">决策路径可视化</div>
+                      <div className="flex flex-wrap items-center gap-2 bg-gray-50 rounded-lg p-3">
+                        {decisionRules.map((r, idx) => (
+                          <React.Fragment key={idx}>
+                            <div className="px-3 py-1 bg-white border rounded-md text-sm">{r}</div>
+                            {idx < decisionRules.length - 1 && <span className="text-gray-400">→</span>}
+                          </React.Fragment>
+                        ))}
+                      </div>
+                      <div className="text-xs text-gray-500 mt-1">按规则链路依次判断并形成最终分类决策</div>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </section>
+
             {/* 概览信息 */}
             <section id="meta" className="scroll-mt-24">
               <h2 className="text-lg font-semibold mb-4">概览信息</h2>
@@ -2868,7 +3024,7 @@ output:
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <Card className="transition-all duration-200 hover:shadow-md border-gray-200">
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Brain className="h-5 w-5"/>主模型</CardTitle>
+                    <CardTitle className="flex items-center gap-2"><Brain className="h-5 w-5" />主模型</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
                     <div><span className="text-sm text-gray-600">模型名称</span><p className="font-medium">{task.modelName}</p></div>
@@ -2877,10 +3033,10 @@ output:
                     <div><span className="text-sm text-gray-600">模型描述</span><p className="text-gray-900">用于{getTaskTypeLabel(task.taskType)}任务的模型。</p></div>
                   </CardContent>
                 </Card>
-                {[1,2].map(i => (
+                {[1, 2].map(i => (
                   <Card key={i} className="transition-all duration-200 hover:shadow-md border-gray-200">
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2"><Brain className="h-5 w-5"/>并行模型 {i}</CardTitle>
+                      <CardTitle className="flex items-center gap-2"><Brain className="h-5 w-5" />并行模型 {i}</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-2">
                       <div><span className="text-sm text-gray-600">模型名称</span><p className="font-medium">Model-{i}</p></div>
@@ -2930,165 +3086,7 @@ output:
                   </div>
                 </CardContent>
               </Card>
-              {/* 参数 JSON 回显已移动到“任务产物”区展示 */}
-            </section>
-
-            {/* 任务结果 */}
-            <section id="results" className="scroll-mt-24">
-              <h2 className="text-lg font-semibold mb-4">任务结果</h2>
-              {renderMetricsTab()}
-            </section>
-
-            {/* 因果解释 */}
-            <section id="causal" className="scroll-mt-24">
-              <h2 className="text-lg font-semibold mb-4">因果解释</h2>
-
-              {/* 注：按用户要求移除顶部模型评估卡片（蓝色横幅与误差棒图） */}
-              <Card className="transition-all duration-200 hover:shadow-md border-gray-200">
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
-                    <CardTitle>因果解释图</CardTitle>
-                    <CardDescription>展示影响强度热图与因子贡献对比</CardDescription>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" onClick={handleExportCausalCSV}>
-                      <Download className="h-4 w-4 mr-2" />
-                      导出解释数据
-                    </Button>
-                    <Button className="bg-blue-600 hover:bg-blue-700" onClick={() => setDeepSeekOpen(true)}>
-                      <Brain className="h-4 w-4 mr-2" />
-                      大模型预测过程
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <div className="bg-white border rounded-lg p-3">
-                      <div className="text-sm font-medium text-gray-700 mb-2">影响强度热图</div>
-                      {(() => {
-                        const factorLabels = ['温度_均值','压力_方差','设备功率','环境湿度','质量评分','历史缺陷率','维护间隔','设备老化指数','能耗比','设备震动','生产节拍','人员工时'];
-                        const times: string[] = Array.from({ length: 20 }).map((_, i) => {
-                          const d = new Date(Date.UTC(2025, 0, 16, i, 0, 0));
-                          const hh = String(d.getUTCHours()).padStart(2, '0');
-                          return `${hh}:00`;
-                        });
-                        const rows = times.length;
-                        const cols = factorLabels.length;
-                        const cellW = 24;
-                        const cellH = 14;
-                        const val = (r: number, c: number) => Math.sin(r * 0.25) + Math.cos(c * 0.45);
-                        const toColor = (x: number) => {
-                          const t = Math.max(-2, Math.min(2, x));
-                          const ratio = (t + 2) / 4;
-                          const rr = Math.round(255 * ratio);
-                          const bb = Math.round(255 * (1 - ratio));
-                          return `rgb(${rr},80,${bb})`;
-                        };
-                        const ml = 64;
-                        const mb = 100;
-                        const width = ml + cols * cellW;
-                        const height = mb + rows * cellH;
-                        const xLabel = '影响因子';
-                        const yLabel = '时间窗口';
-                        return (
-                          <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-64">
-                            <line x1={ml - 6} y1={0} x2={ml - 6} y2={rows * cellH} stroke="#9ca3af" strokeWidth={1} />
-                            <line x1={ml} y1={rows * cellH + 1} x2={ml + cols * cellW} y2={rows * cellH + 1} stroke="#9ca3af" strokeWidth={1} />
-                            {Array.from({ length: rows }).map((_, r) => (
-                              Array.from({ length: cols }).map((__, c) => (
-                                <rect key={`${r}-${c}`} x={ml + c * cellW} y={r * cellH} width={cellW} height={cellH} fill={toColor(val(r, c))} />
-                              ))
-                            ))}
-                            {factorLabels.map((name, i) => {
-                              const x = ml + i * cellW + cellW / 2;
-                              const y = rows * cellH + 40;
-                              return (
-                                <text key={`x-${i}`} x={x} y={y} fontSize={10} fill="#6b7280" textAnchor="end" transform={`rotate(-90 ${x} ${y})`} className="select-none">{name}</text>
-                              );
-                            })}
-                            {times.map((t, r) => (
-                              <g key={`y-${r}`}>
-                                <line x1={ml - 10} y1={r * cellH + cellH / 2} x2={ml - 6} y2={r * cellH + cellH / 2} stroke="#9ca3af" strokeWidth={1} />
-                                <text x={ml - 12} y={r * cellH + cellH / 2 + 3} fontSize={10} fill="#6b7280" textAnchor="end" className="select-none">{t}</text>
-                              </g>
-                            ))}
-                            <text x={ml + (cols * cellW) / 2} y={rows * cellH + mb - 2} fontSize={12} fill="#374151" textAnchor="middle" className="select-none">{xLabel}</text>
-                            <text x={18} y={(rows * cellH) / 2} fontSize={12} fill="#374151" textAnchor="middle" transform={`rotate(-90 18 ${(rows * cellH) / 2})`} className="select-none">{yLabel}</text>
-                          </svg>
-                        );
-                      })()}
-                    </div>
-                    <div className="bg-white border rounded-lg p-3">
-                      <div className="text-sm font-medium text-gray-700 mb-2">影响因子贡献对比</div>
-                      {(() => {
-                        const data = [
-                          { name: '温度_均值', score: -74.4 },
-                          { name: '压力_方差', score: 85.1 },
-                          { name: '设备功率', score: 42.6 },
-                          { name: '环境湿度', score: -12.8 },
-                          { name: '质量评分', score: 61.7 },
-                          { name: '历史缺陷率', score: -51.7 },
-                          { name: '维护间隔', score: 27.9 },
-                        ];
-                        const maxAbs = Math.max(...data.map(d => Math.abs(d.score))) || 1;
-                        const w = 520;
-                        const h = 260;
-                        const x0 = w / 2;
-                        const rowH = 30;
-                        return (
-                          <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-64">
-                            <line x1={x0} y1={10} x2={x0} y2={h - 10} stroke="#9ca3af" strokeWidth={1} />
-                            {data.map((d, i) => {
-                              const len = Math.round((Math.abs(d.score) / maxAbs) * (w / 2 - 40));
-                              const y = 20 + i * rowH;
-                              const color = d.score >= 0 ? '#22c55e' : '#ef4444';
-                              const x = d.score >= 0 ? x0 : x0 - len;
-                              return (
-                                <g key={d.name}>
-                                  <text x={10} y={y + 12} fontSize={12} fill="#374151">{d.name}</text>
-                                  <rect x={x} y={y} width={len} height={18} fill={color} rx={3} />
-                                  <text x={d.score >= 0 ? x + len + 6 : x - 34} y={y + 12} fontSize={12} fill="#374151">{d.score.toFixed(1)}</text>
-                                </g>
-                              );
-                            })}
-                          </svg>
-                        );
-                      })()}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              {/* 大模型预测过程弹窗 */}
-              <Dialog open={isDeepSeekOpen} onOpenChange={setDeepSeekOpen}>
-                <DialogContent className="sm:max-w-2xl">
-                  <DialogHeader>
-                    <DialogTitle>大模型预测过程</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div className="p-3 bg-blue-50 rounded-lg">
-                      <div className="font-medium text-blue-700">模型推理的关键节点</div>
-                      <ul className="list-disc pl-5 text-sm text-blue-900 mt-2">
-                        {deepSeekSteps.map((s, i) => (
-                          <li key={i}>{s}</li>
-                        ))}
-                      </ul>
-                    </div>
-                    {/* 特征权重分析已移除 */}
-                    <div>
-                      <div className="text-sm font-medium text-gray-700 mb-2">决策路径可视化</div>
-                      <div className="flex flex-wrap items-center gap-2 bg-gray-50 rounded-lg p-3">
-                        {decisionRules.map((r, idx) => (
-                          <React.Fragment key={idx}>
-                            <div className="px-3 py-1 bg-white border rounded-md text-sm">{r}</div>
-                            {idx < decisionRules.length - 1 && <span className="text-gray-400">→</span>}
-                          </React.Fragment>
-                        ))}
-                      </div>
-                      <div className="text-xs text-gray-500 mt-1">按规则链路依次判断并形成最终分类决策</div>
-                    </div>
-                  </div>
-                </DialogContent>
-              </Dialog>
+              {/* 参数 JSON 回显已移动到"任务产物"区展示 */}
             </section>
 
             {/* 执行日志 */}
@@ -3131,12 +3129,12 @@ output:
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       ) : null}
                       {confirmDialog.action === 'start' ? '开始任务' :
-                       confirmDialog.action === 'stop' ? '停止任务' :
-                       confirmDialog.action === 'retry' ? '重试任务' :
-                       confirmDialog.action === 'rerun' ? '重新运行' :
-                       confirmDialog.action === 'cancel_queue' ? '取消排队' :
-                       confirmDialog.action === 'archive' ? '归档任务' :
-                       confirmDialog.action === 'delete' ? '删除任务' : '确认'}
+                        confirmDialog.action === 'stop' ? '停止任务' :
+                          confirmDialog.action === 'retry' ? '重试任务' :
+                            confirmDialog.action === 'rerun' ? '重新运行' :
+                              confirmDialog.action === 'cancel_queue' ? '取消排队' :
+                                confirmDialog.action === 'archive' ? '归档任务' :
+                                  confirmDialog.action === 'delete' ? '删除任务' : '确认'}
                     </Button>
                   </div>
                 </div>

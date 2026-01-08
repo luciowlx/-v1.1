@@ -10,7 +10,7 @@ import { ScrollArea } from "./ui/scroll-area";
 import { Input } from "./ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
-import { 
+import {
   ArrowLeft,
   Download,
   Settings,
@@ -28,6 +28,7 @@ import {
   Pencil
 } from "lucide-react";
 import VersionHistory from "./VersionHistory";
+import { mockProjects, getDatasetById } from "../mock/datasets";
 
 interface DataDetailFullPageProps {
   dataset: any;
@@ -91,12 +92,31 @@ export function DataDetailFullPage({ dataset, onClose, initialTab }: DataDetailF
     creator: "王五",
     sizeBytes: Math.round(2.8 * 1024 * 1024),
     status: "成功",
+    projectId: dataset?.projectId || "proj_001",
     description: dataset?.description ?? "包含2023年客户营销记录，涵盖产品信息、客户数据、交易数据等关键信息",
     tags: ["订阅更新版本", "客户", "营销", "交易", "安全"],
     stats: { totalRows: 891 },
     permissions: { canEditDescription: true, canDownload: true },
     downloadUrl: "https://example.com/download/mock.csv",
   };
+  // 内部元数据同步逻辑：当 dataset 属性变化时，通过 getDatasetById 重新对齐 mock 数据
+  useEffect(() => {
+    if (dataset?.id != null) {
+      const fullDataset = getDatasetById(Number(dataset.id));
+      if (fullDataset) {
+        setMeta(prev => ({
+          ...prev,
+          name: fullDataset.title,
+          description: fullDataset.description,
+          projectId: fullDataset.projectId || prev.projectId,
+          source: fullDataset.source || prev.source,
+          version: fullDataset.version || prev.version,
+        }));
+        setEditableDesc(fullDataset.description);
+      }
+    }
+  }, [dataset?.id]);
+
   const [meta, setMeta] = useState(initialMeta);
   // 新增：使用传入的 initialTab 初始化当前页签，默认为 overview
   const [activeTab, setActiveTab] = useState(initialTab || "overview");
@@ -229,10 +249,10 @@ export function DataDetailFullPage({ dataset, onClose, initialTab }: DataDetailF
   // 所有变量
   const allVariables = ["PassengerId", "Survived", "Pclass", "Name", "Sex", "Age", "SibSp", "Parch", "Ticket", "Fare", "Cabin", "Embarked"];
   useEffect(() => { setUniqueFields(allVariables as (keyof DataRow)[]); }, []);
-  
+
   // 只包含数值型变量
   const numericVariables = ["PassengerId", "Survived", "Pclass", "Age", "SibSp", "Parch", "Fare"];
-  
+
   // 缺失率与唯一值比例（按列）计算：用于表头上方展示
   const calcColumnStats = () => {
     const totalRows = previewRows.length;
@@ -256,7 +276,7 @@ export function DataDetailFullPage({ dataset, onClose, initialTab }: DataDetailF
     });
     return stats;
   };
-  
+
   // 计算“唯一值占比（字段平均）”：对每个字段计算非空值的唯一比例并取平均
   const getUniqueValueRatioPercent = () => {
     if (!previewRows || previewRows.length === 0) return 0;
@@ -312,7 +332,7 @@ export function DataDetailFullPage({ dataset, onClose, initialTab }: DataDetailF
     }));
     setActiveTab("overview");
   };
-  
+
   /**
    * 失败日志弹窗开关状态
    * 用途：当数据状态为“失败”时，允许用户查看模拟的失败日志详情。
@@ -485,21 +505,21 @@ export function DataDetailFullPage({ dataset, onClose, initialTab }: DataDetailF
     }
     return data;
   };
-  
-  
+
+
   // 新增：缺失分析 mock 指标计算
   const getMissingAnalysisMock = () => {
     const totalRows = previewRows.length;
     const totalFields = allVariables.length;
-  
+
     let missingCells = 0;
     let rowsWithMissing = 0;
     let singleMissingRows = 0;
     let multiMissingRows = 0;
-  
+
     const fieldMissingCounts: Record<string, number> = {};
     allVariables.forEach((f) => { fieldMissingCounts[f] = 0; });
-  
+
     previewRows.forEach((row) => {
       let missingInRow = 0;
       allVariables.forEach((f) => {
@@ -517,18 +537,18 @@ export function DataDetailFullPage({ dataset, onClose, initialTab }: DataDetailF
         else multiMissingRows++;
       }
     });
-  
+
     const totalCells = totalRows * totalFields;
     const missingRatio = totalCells === 0 ? 0 : (missingCells / totalCells) * 100;
     const rowsWithMissingRatio = totalRows === 0 ? 0 : (rowsWithMissing / totalRows) * 100;
     const completeRows = totalRows - rowsWithMissing;
-  
+
     // 计算缺失特征相关性（Jaccard 相似度）
     const indicators: Record<string, boolean[]> = {};
     allVariables.forEach((f) => {
       indicators[f] = previewRows.map((row) => isMissingValue(row[f as keyof DataRow]));
     });
-  
+
     let bestPair: [string, string] | null = null;
     let bestScore = -1;
     const pairScores: { pair: [string, string]; score: number }[] = [];
@@ -554,7 +574,7 @@ export function DataDetailFullPage({ dataset, onClose, initialTab }: DataDetailF
         pairScores.push({ pair: [a, b], score: jaccard });
       }
     }
-  
+
     const topMissingFields = Object.entries(fieldMissingCounts)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 3)
@@ -564,7 +584,7 @@ export function DataDetailFullPage({ dataset, onClose, initialTab }: DataDetailF
       .sort((a, b) => b.score - a.score)
       .slice(0, 5)
       .map(({ pair, score }) => ({ pair, scorePercent: score * 100 }));
-  
+
     return {
       totalRows,
       totalFields,
@@ -626,7 +646,7 @@ export function DataDetailFullPage({ dataset, onClose, initialTab }: DataDetailF
     setUniqueOnly(false);
     setMeta((prev) => ({ ...prev, stats: { ...prev.stats, totalRows: next.length } }));
   };
-  
+
   // 数据交互分析功能已移除以简化界面
   const renderDataOverview = () => (
     <div className="space-y-6">
@@ -643,96 +663,116 @@ export function DataDetailFullPage({ dataset, onClose, initialTab }: DataDetailF
             {/* 操作按钮已迁移至“数据表预览”工具栏，强调针对当前预览版本执行 */}
           </div>
         </CardHeader>
-        <CardContent className="pt-0 pb-4">
-          <div className="grid grid-cols-1 gap-6">
-            {/* 左侧：基本信息网格（更紧凑） */}
-            <div className="grid grid-cols-2 gap-x-8 gap-y-4">
-              {/* 置顶：数据ID（左对齐垂直堆叠；按需移除数据名称字段） */}
-              <div className="col-span-2">
-                <div className="flex flex-col items-start space-y-1">
-                  <div className="flex items-center space-x-2">
-                    <div className="text-sm text-gray-600">数据ID</div>
-                    <span className="text-base font-mono">{meta.id}</span>
-                    {/* 复制ID按钮与提示已移除 */}
-                  </div>
-                </div>
-              </div>
-
-              {/* 其它基础字段 */}
-              {/* 版本号展示已移除 */}
+        <CardContent className="pt-0 pb-4 text-sm">
+          <div className="grid grid-cols-5 gap-x-6 gap-y-4">
+            {/* 第一列：ID 与 来源 */}
+            <div className="space-y-4">
               <div>
-                <div className="text-sm text-gray-600">来源方式</div>
+                <div className="text-gray-500 mb-1">数据ID</div>
+                <div className="font-mono text-gray-900">{meta.id}</div>
+              </div>
+              <div>
+                <div className="text-gray-500 mb-1">来源方式</div>
                 <div>
                   {(() => {
                     const label = mapSourceLabel(meta.source);
                     const cls = getSourceClass(label);
-                    return <span className={`inline-block px-2 py-1 rounded border text-xs ${cls}`}>{label}</span>;
+                    return <span className={`inline-block px-2 py-0.5 rounded border text-[11px] ${cls}`}>{label}</span>;
                   })()}
-                </div>
-              </div>
-              <div>
-                <div className="text-sm text-gray-600">创建时间</div>
-                <div className="text-base">{formatDateTime(meta.createdAt)}</div>
-              </div>
-              <div>
-                <div className="text-sm text-gray-600">创建人</div>
-                <div className="text-base">{meta.creator}</div>
-              </div>
-              <div>
-                <div className="text-sm text-gray-600">数据大小</div>
-                <div className="text-base">{formatBytes(meta.sizeBytes)}</div>
-              </div>
-              {/* 新增：文件数量（取自下方数据子集数量） */}
-              <div>
-                <div className="text-sm text-gray-600">文件数量</div>
-                <div className="text-base">{getCurrentSubDatasetOptions().length}</div>
-              </div>
-              <div>
-                <div className="text-sm text-gray-600">状态</div>
-                <div>
-                  {(() => {
-                    const { cls, label } = getStatusStyling(meta.status);
-                    return <span className={`inline-block px-2 py-1 rounded border text-xs ${cls}`}>{label}</span>;
-                  })()}
-                </div>
-              </div>
-
-              {/* 描述 + 标签 */}
-              <div className="col-span-2">
-                <div className="text-sm text-gray-600">描述</div>
-                {!isEditingDesc ? (
-                  <div className="text-gray-800">{editableDesc}</div>
-                ) : (
-                  <div className="space-y-2">
-                    <Input
-                      value={editableDesc}
-                      onChange={(e) => setEditableDesc(e.target.value)}
-                      placeholder="请输入描述"
-                    />
-                    <div className="flex justify-end space-x-2">
-                      <Button size="sm" onClick={() => { setIsEditingDesc(false); }}>保存</Button>
-                      <Button variant="outline" size="sm" onClick={() => { setEditableDesc(meta.description); setIsEditingDesc(false); }}>取消</Button>
-                    </div>
-                  </div>
-                )}
-                {/* 数据标签 */}
-                <div className="mt-3">
-                  <div className="text-sm text-gray-600 mb-1">数据标签</div>
-                  {renderGrayTextLabels(meta.tags)}
                 </div>
               </div>
             </div>
 
-            
+            {/* 第二列：创建人 与 创建时间 */}
+            <div className="space-y-4">
+              <div>
+                <div className="text-gray-500 mb-1">创建人</div>
+                <div className="text-gray-900">{meta.creator}</div>
+              </div>
+              <div>
+                <div className="text-gray-500 mb-1">创建时间</div>
+                <div className="text-gray-900">{formatDateTime(meta.createdAt)}</div>
+              </div>
+            </div>
+
+            {/* 第三列：数据大小 与 文件数量 */}
+            <div className="space-y-4">
+              <div>
+                <div className="text-gray-500 mb-1">数据大小</div>
+                <div className="text-gray-900">{formatBytes(meta.sizeBytes)}</div>
+              </div>
+              <div>
+                <div className="text-gray-500 mb-1">文件数量</div>
+                <div className="text-gray-900">{getCurrentSubDatasetOptions().length}</div>
+              </div>
+            </div>
+
+            {/* 第四列：状态 */}
+            <div className="space-y-4">
+              <div>
+                <div className="text-gray-500 mb-1">状态</div>
+                <div>
+                  {(() => {
+                    const { cls, label } = getStatusStyling(meta.status);
+                    return <span className={`inline-block px-2 py-0.5 rounded border text-[11px] ${cls}`}>{label}</span>;
+                  })()}
+                </div>
+              </div>
+            </div>
+
+            {/* 第五列：所属项目 */}
+            <div className="space-y-4">
+              <div>
+                <div className="text-gray-500 mb-1">所属项目</div>
+                <div className="text-gray-900 font-medium">
+                  {(() => {
+                    const project = mockProjects.find(p => p.id.toLowerCase() === meta.projectId?.toLowerCase());
+                    return project ? project.title : (meta.projectId || '—');
+                  })()}
+                </div>
+              </div>
+            </div>
+
+            {/* 描述与标签（同行展示） */}
+            <div className="col-span-5 pt-4 border-t border-gray-100 mt-2">
+              <div className="flex flex-col md:flex-row gap-8">
+                {/* 左侧：描述 (约占 60-70%) */}
+                <div className="flex-1 min-w-0">
+                  <div className="text-gray-500 mb-2">描述</div>
+                  {!isEditingDesc ? (
+                    <div className="text-gray-700 leading-relaxed text-sm">{editableDesc}</div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Input
+                        value={editableDesc}
+                        onChange={(e) => setEditableDesc(e.target.value)}
+                        placeholder="请输入描述"
+                        className="text-sm"
+                      />
+                      <div className="flex justify-end space-x-2">
+                        <Button size="sm" onClick={() => { setIsEditingDesc(false); }}>保存</Button>
+                        <Button variant="outline" size="sm" onClick={() => { setEditableDesc(meta.description); setIsEditingDesc(false); }}>取消</Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 右侧：数据标签 (约占 30-40%) */}
+                <div className="w-full md:w-80 shrink-0">
+                  <div className="text-gray-500 mb-2">数据标签</div>
+                  {renderGrayTextLabels(meta.tags)}
+                </div>
+              </div>
+            </div>
           </div>
-      </CardContent>
+        </CardContent>
       </Card>
 
       <div>
         <VersionHistory
           datasetId={meta.id}
           datasetName={meta.name}
-          onBack={() => {}}
+          onBack={() => { }}
           onSwitchVersion={handleSwitchVersion}
           compact
         />
@@ -773,7 +813,7 @@ export function DataDetailFullPage({ dataset, onClose, initialTab }: DataDetailF
                     ))}
                   </SelectContent>
                 </Select>
-                
+
                 {/* 按钮改为两个：缺失值 与 唯一值（可叠加），并添加字段选择器 */}
                 <Button
                   variant="outline"
@@ -1189,7 +1229,7 @@ export function DataDetailFullPage({ dataset, onClose, initialTab }: DataDetailF
         </div>
       </div>
 
-      
+
 
       {/* 主要内容区域（可滚动） */}
       <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain bg-gray-50">

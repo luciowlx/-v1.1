@@ -110,6 +110,9 @@ export default function App() {
   // 决策推理页面状态
   const [isCreateTaskDialogOpen, setIsCreateTaskDialogOpen] = useState(false);
 
+  // 因果洞察初始视图状态：'list' 默认列表, 'create' 打开创建任务
+  const [causalInsightInitialView, setCausalInsightInitialView] = useState<'list' | 'create'>('list');
+
   // 个人中心状态
   const [isPersonalCenterOpen, setIsPersonalCenterOpen] = useState(false);
   const [isJupyterStandalone, setIsJupyterStandalone] = useState(false);
@@ -165,10 +168,11 @@ export default function App() {
       mode: "协作模式",
       description: "基于用户产品智能推荐引荐用户中的智能推荐功能重新推荐",
       status: "进行中",
-      stats: { datasets: 3, models: 7, tasks: 12 },
+      stats: { datasets: 3, models: 7, tasks: 12, causalTasks: 5 },
       dataset: "缺陷图像数据集",
       model: "CNN检测模型",
       task: "缺陷识别分类",
+      causalTask: "缺陷成因回溯分析",
       date: "2024/9/18",
       members: 5,
       dataSource: "文件上传",
@@ -192,10 +196,11 @@ export default function App() {
       mode: "独立模式",
       description: "基于企业管理数据统计中的服务分支以外的智能推荐功能进而特制",
       status: "进行中",
-      stats: { datasets: 1, models: 3, tasks: 6 },
+      stats: { datasets: 1, models: 3, tasks: 6, causalTasks: 2 },
       dataset: "能源消耗数据",
       model: "时间序列预测",
       task: "能源需求预测",
+      causalTask: "气温对能耗影响分析",
       date: "2024/1/8",
       members: 2,
       dataSource: "API接口",
@@ -219,10 +224,11 @@ export default function App() {
       mode: "协作模式",
       description: "基于目标数据智能推荐中的分析化。量实最终优化产品分析",
       status: "已归档",
-      stats: { datasets: 4, models: 6, tasks: 10 },
+      stats: { datasets: 4, models: 6, tasks: 10, causalTasks: 4 },
       dataset: "生产工艺数据",
       model: "优化算法模型",
       task: "工艺参数优化",
+      causalTask: "压力对成品率贡献度分析",
       date: "2024/7/9",
       members: 4,
       dataSource: "数据库",
@@ -246,10 +252,11 @@ export default function App() {
       mode: "协作模式",
       description: "基于供应链数据进行库存优化、需求预测和成本分析",
       status: "进行中",
-      stats: { datasets: 2, models: 4, tasks: 8 },
+      stats: { datasets: 2, models: 4, tasks: 8, causalTasks: 3 },
       dataset: "供应链数据",
       model: "库存优化模型",
       task: "供应链分析",
+      causalTask: "物流延迟归因分析",
       date: "2024/6/15",
       members: 4,
       dataSource: "数据库",
@@ -882,7 +889,7 @@ export default function App() {
               }}
               onNavigateToTaskManagement={() => {
                 setActiveTab("决策推理");
-                setIsCreateTaskDialogOpen(true);
+                setIsFullPageTaskCreateOpen(true);
               }}
               onNavigateToModelManagement={() => {
                 setActiveTab("模型管理");
@@ -890,6 +897,7 @@ export default function App() {
               }}
               onNavigateToCausalInsight={() => {
                 setActiveTab("因果洞察");
+                setCausalInsightInitialView('create');
               }}
               // 新增：从系统总览打开统一活动中心
               onOpenActivityCenter={handleOpenActivityCenter}
@@ -1304,6 +1312,10 @@ export default function App() {
                       setIsProjectDetailOpen(false);
                       setActiveTab("模型管理");
                     }}
+                    onNavigateToCausalInsight={() => {
+                      setIsProjectDetailOpen(false);
+                      setActiveTab("因果洞察");
+                    }}
                     onQuickPredict={() => {
                       // TODO: 实现快速预测功能
                       console.log("快速预测功能");
@@ -1671,7 +1683,12 @@ export default function App() {
           </div>
         );
       case "因果洞察":
-        return <CausalInsight />;
+        return (
+          <CausalInsight
+            initialView={causalInsightInitialView}
+            onResetView={() => setCausalInsightInitialView('list')}
+          />
+        );
       case "模型管理":
         console.log("正在渲染模型管理页面, showModelTuning:", showModelTuning); // 添加调试日志
         if (showModelTuning) {

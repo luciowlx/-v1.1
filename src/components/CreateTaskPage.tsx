@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Splitter, Checkbox } from 'antd';
 import {
     AreaChart,
@@ -26,8 +26,44 @@ import {
     CheckCircle2,
     Circle,
     HelpCircle,
-    Pencil
+    Pencil,
+    AlertTriangle // Added for potential warning icons if needed, though using badges now
 } from 'lucide-react';
+
+interface ColumnStats {
+    missingRate: string;
+    uniqueCount: number;
+}
+
+const calculateColumnStats = (data: any[], columns: string[]): Record<string, ColumnStats> => {
+    const stats: Record<string, ColumnStats> = {};
+    const totalRows = data.length;
+
+    columns.forEach(col => {
+        let missingCount = 0;
+        const uniqueValues = new Set();
+
+        data.forEach(row => {
+            const val = row[col];
+            // Check for missing values (null, undefined, empty string)
+            if (val === null || val === undefined || val === '') {
+                missingCount++;
+            } else {
+                uniqueValues.add(val);
+            }
+        });
+
+        const missingRate = totalRows > 0 ? ((missingCount / totalRows) * 100).toFixed(1) : '0.0';
+
+        stats[col] = {
+            missingRate,
+            uniqueCount: uniqueValues.size
+        };
+    });
+
+    return stats;
+};
+
 import { toast } from 'sonner';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -124,6 +160,11 @@ export const CreateTaskPage: React.FC<CreateTaskPageProps> = ({
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showDatasetPreview, setShowDatasetPreview] = useState(false);
     const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+    // 配置区域高度状态（用于拖拽分隔条）
+    const [configHeight, setConfigHeight] = useState<number | null>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const isDraggingRef = useRef(false);
 
     const steps = [
         { number: 1, label: '基础信息配置' },
@@ -380,11 +421,47 @@ export const CreateTaskPage: React.FC<CreateTaskPageProps> = ({
         );
     }, [currentProjectDatasets, formData.searchDatasetTerm]);
 
-    const [previewFileName, setPreviewFileName] = useState<string>('');
+    const [previewFileName, setPreviewFileName] = useState<string | null>(null);
+
     const previewData = useMemo(() => {
         if (!previewFileName) return [];
         return datasetPreviewRows[previewFileName] || [];
     }, [previewFileName]);
+
+    const columnStats = useMemo(() => {
+        if (!previewData || previewData.length === 0) return {};
+        const columns = Object.keys(previewData[0]);
+        return calculateColumnStats(previewData, columns);
+    }, [previewData]);
+
+    // 拖拽分隔条处理函数
+    const handleResizeMouseDown = useCallback((e: React.MouseEvent) => {
+        e.preventDefault();
+        isDraggingRef.current = true;
+        document.body.style.cursor = 'row-resize';
+        document.body.style.userSelect = 'none';
+
+        const startY = e.clientY;
+        const startHeight = configHeight ?? (containerRef.current?.querySelector('.config-panel')?.getBoundingClientRect().height || 400);
+
+        const handleMouseMove = (moveEvent: MouseEvent) => {
+            if (!isDraggingRef.current) return;
+            const deltaY = moveEvent.clientY - startY;
+            const newHeight = Math.max(100, Math.min(startHeight + deltaY, (containerRef.current?.clientHeight || 800) - 150));
+            setConfigHeight(newHeight);
+        };
+
+        const handleMouseUp = () => {
+            isDraggingRef.current = false;
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+            document.removeEventListener('mousemove', handleMouseMove);
+            document.removeEventListener('mouseup', handleMouseUp);
+        };
+
+        document.addEventListener('mousemove', handleMouseMove);
+        document.addEventListener('mouseup', handleMouseUp);
+    }, [configHeight]);
 
     // 计算公共字段交集
     const featureFieldsIntersection = useMemo(() => {
@@ -398,12 +475,13 @@ export const CreateTaskPage: React.FC<CreateTaskPageProps> = ({
     }, [formData.selectedFilesMetadata]);
 
     // 计算可选的预测目标列字段
-    // 当只选择一个文件时（按比例切分场景），使用该文件的全部字段
-    // 当选择多个文件时，使用所有训练集文件的字段交集
+    // 单文件场景：直接使用 featureFieldsIntersection，确保与输入特征列完全一致
+    // 多文件场景：只从训练集文件中提取字段交集
     const targetFieldsIntersection = useMemo(() => {
-        // 单文件按比例切分场景：直接使用该文件的所有字段
-        if (formData.selectedFilesMetadata.length === 1) {
-            return formData.selectedFilesMetadata[0].fields || [];
+        // 单文件场景：直接使用与输入特征列相同的字段列表
+        // 确保预测目标列和输入特征列使用完全相同的数据源
+        if (formData.selectedFilesMetadata.length <= 1) {
+            return [...featureFieldsIntersection];
         }
         // 多文件场景：只从训练集文件中提取字段交集
         const trainFiles = formData.selectedFilesMetadata.filter(f => formData.fileRoles[f.name] === 'train');
@@ -414,7 +492,7 @@ export const CreateTaskPage: React.FC<CreateTaskPageProps> = ({
             intersection = intersection.filter(f => currentFields.has(f));
         }
         return intersection;
-    }, [formData.selectedFilesMetadata, formData.fileRoles]);
+    }, [formData.selectedFilesMetadata, formData.fileRoles, featureFieldsIntersection]);
 
     // 计算可用的输入特征列（排除已选中的预测目标列）
     const availableFeatureFields = useMemo(() => {
@@ -432,6 +510,49 @@ export const CreateTaskPage: React.FC<CreateTaskPageProps> = ({
         // 排除已选中的输入特征列
         return targetFieldsIntersection.filter(f => !formData.targetFields.includes(f));
     }, [targetFieldsIntersection, formData.targetFields]);
+
+    // 计算分类任务的目标列唯一值（分类标签）
+    // 用于展示分类标签回显和判断是否显示 Average Method
+    const classificationLabels = useMemo(() => {
+        if (formData.taskType !== TASK_TYPES.classification) return [];
+        const targetCol = formData.classificationConfig.targetColumn;
+        if (!targetCol) return [];
+
+        // 从所有训练集文件的预览数据中提取目标列的唯一值
+        const allValues: Set<string> = new Set();
+        const trainFiles = formData.selectedFilesMetadata.filter(f =>
+            formData.selectedFilesMetadata.length === 1 || formData.fileRoles[f.name] === 'train'
+        );
+
+        trainFiles.forEach(file => {
+            const rows = datasetPreviewRows[file.name] || [];
+            rows.forEach(row => {
+                if (row[targetCol] !== undefined && row[targetCol] !== null) {
+                    allValues.add(String(row[targetCol]));
+                }
+            });
+        });
+
+        // 如果没有从预览数据中获取到值，模拟生成一些分类标签
+        if (allValues.size === 0) {
+            // 根据目标列名称模拟合理的分类标签
+            const colLower = targetCol.toLowerCase();
+            if (colLower.includes('status') || colLower.includes('状态')) {
+                return ['正常', '异常', '待检测'];
+            } else if (colLower.includes('defect') || colLower.includes('缺陷')) {
+                return ['无缺陷', '轻微缺陷', '中度缺陷', '严重缺陷'];
+            } else if (colLower.includes('level') || colLower.includes('等级')) {
+                return ['A级', 'B级', 'C级', 'D级', 'E级'];
+            } else if (colLower.includes('type') || colLower.includes('类型')) {
+                return ['类型A', '类型B', '类型C'];
+            } else {
+                // 默认返回二分类标签
+                return ['类别0', '类别1'];
+            }
+        }
+
+        return Array.from(allValues).sort();
+    }, [formData.taskType, formData.classificationConfig.targetColumn, formData.selectedFilesMetadata, formData.fileRoles]);
 
     // 自动识别并设置时间列（当文件选择变化时）
     useEffect(() => {
@@ -839,7 +960,7 @@ export const CreateTaskPage: React.FC<CreateTaskPageProps> = ({
                         )}
 
                         {currentStep === 2 && (
-                            <Splitter className="bg-white rounded-xl border shadow-sm min-h-[700px] overflow-hidden">
+                            <Splitter className="bg-white rounded-xl border shadow-sm overflow-hidden" style={{ minHeight: 'calc(100vh - 220px)' }}>
                                 {/* 左侧：数据选择 */}
                                 <Splitter.Panel defaultSize="25%" min="15%" max="40%" className="flex flex-col bg-gray-50/30">
                                     <div className="p-4 border-b bg-white shrink-0">
@@ -909,67 +1030,15 @@ export const CreateTaskPage: React.FC<CreateTaskPageProps> = ({
                                     </ScrollArea>
                                 </Splitter.Panel>
 
-                                {/* 右侧：预览与配置 - 使用垂直 Splitter 实现上下可拖拽分割 */}
+                                {/* 右侧：配置与预览 - 使用 flex 布局，配置区域自适应高度 */}
                                 <Splitter.Panel className="flex flex-col overflow-hidden">
-                                    <Splitter layout="vertical" className="flex-1">
-                                        {/* 预览部分 */}
-                                        <Splitter.Panel defaultSize="50%" min="20%" max="80%" className="flex flex-col">
-                                            <div className="px-6 py-3 border-b bg-white flex items-center justify-between shrink-0">
-                                                <div className="flex items-center space-x-2 min-w-0">
-                                                    <Eye className="h-4 w-4 text-blue-500 shrink-0" />
-                                                    <span className="font-semibold text-gray-900">数据详情预览</span>
-                                                    {previewFileName && (
-                                                        <Badge variant="secondary" className="font-normal bg-blue-50 text-blue-600 border-blue-100 truncate max-w-[150px]">
-                                                            {previewFileName}
-                                                        </Badge>
-                                                    )}
-                                                </div>
-                                                {previewFileName && (
-                                                    <div className="text-xs text-gray-500 flex items-center space-x-4 shrink-0">
-                                                        <span>行数：{formData.selectedFilesMetadata.find(f => f.name === previewFileName)?.rows || '-'}</span>
-                                                        <span>列数：{formData.selectedFilesMetadata.find(f => f.name === previewFileName)?.columns || '-'}</span>
-                                                        <span>大小：{formData.selectedFilesMetadata.find(f => f.name === previewFileName)?.size || '-'}</span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="flex-1 overflow-hidden bg-gray-50/50">
-                                                {previewFileName ? (
-                                                    <div className="h-full p-4">
-                                                        <div style={{ height: '100%', overflowY: 'auto', overflowX: 'auto' }} className="border rounded-lg bg-white">
-                                                            <table className="w-full text-sm" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
-                                                                <thead style={{ position: 'sticky', top: 0, zIndex: 10, backgroundColor: '#f9fafb' }}>
-                                                                    <tr className="border-b">
-                                                                        {previewData[0] && Object.keys(previewData[0]).map(key => (
-                                                                            <th key={key} style={{ position: 'sticky', top: 0, backgroundColor: '#f9fafb' }} className="whitespace-nowrap px-4 py-3 text-left font-medium">{key}</th>
-                                                                        ))}
-                                                                    </tr>
-                                                                </thead>
-                                                                <tbody>
-                                                                    {previewData.map((row, idx) => (
-                                                                        <tr key={idx} className="border-b hover:bg-gray-50/50">
-                                                                            {Object.values(row).map((val: unknown, vIdx) => (
-                                                                                <td key={vIdx} className="px-4 py-2 border-r last:border-r-0 max-w-[200px] truncate">
-                                                                                    {String(val)}
-                                                                                </td>
-                                                                            ))}
-                                                                        </tr>
-                                                                    ))}
-                                                                </tbody>
-                                                            </table>
-                                                        </div>
-                                                    </div>
-                                                ) : (
-                                                    <div className="h-full flex flex-col items-center justify-center text-gray-400 space-y-2">
-                                                        <Database className="h-12 w-12 text-gray-200" />
-                                                        <p>请在大资产树中点击预览图标查看数据</p>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </Splitter.Panel>
-
-                                        {/* 配置部分 */}
-                                        <Splitter.Panel className="flex flex-col overflow-auto bg-white">
-                                            <div className="flex-1 p-6 space-y-6">
+                                    <div ref={containerRef} className="flex flex-col h-full">
+                                        {/* 配置部分（上）- 根据内容自适应高度，不滚动 */}
+                                        <div
+                                            className="config-panel bg-white overflow-auto"
+                                            style={configHeight ? { height: configHeight, flexShrink: 0 } : { flexShrink: 0 }}
+                                        >
+                                            <div className="p-6 space-y-6">
                                                 <div className="space-y-4">
                                                     <div className="flex items-center justify-between">
                                                         <h4 className="font-bold text-gray-900 flex items-center">
@@ -984,35 +1053,31 @@ export const CreateTaskPage: React.FC<CreateTaskPageProps> = ({
                                                         </TooltipProvider>
                                                     </div>
 
-                                                    {/* 全局配置：时序预测任务的时间列选择 (单文件/多文件通用) */}
-                                                    {formData.taskType === TASK_TYPES.forecasting && formData.selectedFilesMetadata.length > 0 && (
-                                                        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-                                                            <div className="flex items-center space-x-4">
-                                                                <Label className="text-sm font-medium text-gray-700 whitespace-nowrap">
-                                                                    <span className="text-red-500 mr-1">*</span>时间列
-                                                                </Label>
-                                                                <Select
-                                                                    value={formData.forecastingConfig.timeColumn}
-                                                                    onValueChange={(v: string) => handleInputChange('forecastingConfig', { ...formData.forecastingConfig, timeColumn: v })}
-                                                                >
-                                                                    <SelectTrigger className="flex-1 bg-gray-50/50">
-                                                                        <SelectValue placeholder="请选择时间列" />
-                                                                    </SelectTrigger>
-                                                                    <SelectContent>
-                                                                        {featureFieldsIntersection.map(f => (
-                                                                            <SelectItem key={f} value={f}>{f}</SelectItem>
-                                                                        ))}
-                                                                    </SelectContent>
-                                                                </Select>
-                                                            </div>
-                                                        </div>
-                                                    )}
-
                                                     {formData.selectedFilesMetadata.length === 1 ? (
                                                         formData.taskType === TASK_TYPES.forecasting ? (
                                                             /* 时序预测专用数据划分配置 */
                                                             <div className="space-y-6">
-                                                                {/* (REMOVED: Time column selection moved to top level) */}
+                                                                {/* 时间列选择 */}
+                                                                <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                                                                    <div className="flex items-center space-x-4">
+                                                                        <Label className="text-sm font-medium text-gray-700 whitespace-nowrap">
+                                                                            <span className="text-red-500 mr-1">*</span>时间列
+                                                                        </Label>
+                                                                        <Select
+                                                                            value={formData.forecastingConfig.timeColumn}
+                                                                            onValueChange={(v: string) => handleInputChange('forecastingConfig', { ...formData.forecastingConfig, timeColumn: v })}
+                                                                        >
+                                                                            <SelectTrigger className="flex-1 bg-gray-50/50">
+                                                                                <SelectValue placeholder="请选择时间列" />
+                                                                            </SelectTrigger>
+                                                                            <SelectContent>
+                                                                                {featureFieldsIntersection.map(f => (
+                                                                                    <SelectItem key={f} value={f}>{f}</SelectItem>
+                                                                                ))}
+                                                                            </SelectContent>
+                                                                        </Select>
+                                                                    </div>
+                                                                </div>
 
                                                                 {/* 数据划分配置 */}
                                                                 <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-5">
@@ -1040,184 +1105,168 @@ export const CreateTaskPage: React.FC<CreateTaskPageProps> = ({
                                                                         </label>
                                                                     </div>
 
-                                                                    {/* 百分比划分模式 */}
+                                                                    {/* 百分比划分模式 - 使用滑块效果 */}
                                                                     {formData.forecastingConfig.splitMode === 'percent' && (
-                                                                        <div className="space-y-4">
-                                                                            <div className="grid grid-cols-2 gap-6">
-                                                                                <div className="space-y-2">
-                                                                                    <Label className="text-sm text-gray-600">训练集比例(%)</Label>
-                                                                                    <Input
-                                                                                        type="number"
-                                                                                        min={10}
-                                                                                        max={90}
-                                                                                        value={formData.forecastingConfig.trainRatio}
-                                                                                        onChange={(e) => {
-                                                                                            const val = Math.max(10, Math.min(90, parseInt(e.target.value) || 80));
-                                                                                            handleInputChange('forecastingConfig', {
-                                                                                                ...formData.forecastingConfig,
-                                                                                                trainRatio: val,
-                                                                                                testRatio: 100 - val
-                                                                                            });
-                                                                                        }}
-                                                                                        className="h-10 bg-gray-50/50"
-                                                                                    />
+                                                                        <div className="space-y-6">
+                                                                            {/* 标签区域 */}
+                                                                            <div className="flex items-center justify-between">
+                                                                                <div className="flex flex-col">
+                                                                                    <span className="text-sm text-gray-500 mb-1">训练集比例</span>
+                                                                                    <span className="text-3xl font-bold text-blue-600">{formData.forecastingConfig.trainRatio}%</span>
                                                                                 </div>
-                                                                                <div className="space-y-2">
-                                                                                    <Label className="text-sm text-gray-600">测试集比例(%)</Label>
-                                                                                    <Input
-                                                                                        type="number"
-                                                                                        min={10}
-                                                                                        max={90}
-                                                                                        value={formData.forecastingConfig.testRatio}
-                                                                                        onChange={(e) => {
-                                                                                            const val = Math.max(10, Math.min(90, parseInt(e.target.value) || 20));
-                                                                                            handleInputChange('forecastingConfig', {
-                                                                                                ...formData.forecastingConfig,
-                                                                                                testRatio: val,
-                                                                                                trainRatio: 100 - val
-                                                                                            });
-                                                                                        }}
-                                                                                        className="h-10 bg-gray-50/50"
-                                                                                    />
+                                                                                <div className="flex flex-col items-end">
+                                                                                    <span className="text-sm text-gray-500 mb-1">测试集比例</span>
+                                                                                    <span className="text-3xl font-bold text-orange-500">{100 - formData.forecastingConfig.trainRatio}%</span>
                                                                                 </div>
                                                                             </div>
+
+                                                                            {/* 双色轨道 Slider */}
+                                                                            <div className="relative">
+                                                                                <div
+                                                                                    className="absolute top-2 left-0 right-0 h-2 rounded-full overflow-hidden"
+                                                                                    style={{ pointerEvents: 'none' }}
+                                                                                >
+                                                                                    <div className="flex h-full">
+                                                                                        <div
+                                                                                            className="bg-blue-500 transition-all duration-200"
+                                                                                            style={{ width: `${formData.forecastingConfig.trainRatio}%` }}
+                                                                                        />
+                                                                                        <div
+                                                                                            className="bg-orange-400 transition-all duration-200"
+                                                                                            style={{ width: `${100 - formData.forecastingConfig.trainRatio}%` }}
+                                                                                        />
+                                                                                    </div>
+                                                                                </div>
+                                                                                <Slider
+                                                                                    value={[formData.forecastingConfig.trainRatio]}
+                                                                                    min={10}
+                                                                                    max={90}
+                                                                                    step={1}
+                                                                                    onValueChange={(val: number[]) => {
+                                                                                        const ratio = Math.max(10, Math.min(val[0], 90));
+                                                                                        handleInputChange('forecastingConfig', {
+                                                                                            ...formData.forecastingConfig,
+                                                                                            trainRatio: ratio,
+                                                                                            testRatio: 100 - ratio
+                                                                                        });
+                                                                                    }}
+                                                                                    className="relative z-10"
+                                                                                    style={{
+                                                                                        '--slider-track-bg': 'transparent',
+                                                                                        '--slider-range-bg': 'transparent',
+                                                                                        '--slider-thumb-size': '20px',
+                                                                                    } as React.CSSProperties}
+                                                                                />
+                                                                            </div>
+
+                                                                            {/* 提示文字 */}
+                                                                            <p className="text-xs text-center text-gray-400 italic">拖动滑块调整切分比例</p>
+                                                                            <p className="text-[10px] text-red-500/80 italic font-medium">提示：训练集和测试集比例均不得低于 10%</p>
                                                                         </div>
                                                                     )}
 
-                                                                    {/* 特定时间划分模式 */}
+                                                                    {/* 特定时间划分模式 - 使用滑块效果 */}
                                                                     {formData.forecastingConfig.splitMode === 'date' && (
-                                                                        <div className="space-y-2">
-                                                                            <Label className="text-sm text-gray-600">选择分割时间</Label>
-                                                                            <Popover>
-                                                                                <PopoverTrigger asChild>
-                                                                                    <Button variant="outline" className="w-full justify-start text-left font-normal bg-gray-50/50 h-10">
-                                                                                        <CalendarIcon className="mr-2 h-4 w-4 text-gray-400" />
+                                                                        <div className="space-y-6">
+                                                                            {/* 标签区域 - 显示时间范围 */}
+                                                                            <div className="flex items-center justify-between">
+                                                                                <div className="flex flex-col">
+                                                                                    <span className="text-sm text-gray-500 mb-1">训练集 (Training)</span>
+                                                                                    <span className="text-lg font-bold text-blue-600">
+                                                                                        {forecastingMockData[0]?.date ? dayjs(forecastingMockData[0].date).format('MM-DD') : '起点'}
+                                                                                        {' ~ '}
+                                                                                        {formData.forecastingConfig.splitDate
+                                                                                            ? dayjs(formData.forecastingConfig.splitDate).format('MM-DD')
+                                                                                            : dayjs(forecastingMockData[Math.floor(forecastingMockData.length * 0.8)]?.date).format('MM-DD')
+                                                                                        }
+                                                                                    </span>
+                                                                                </div>
+                                                                                <div className="flex flex-col items-center">
+                                                                                    <span className="text-sm text-gray-500 mb-1">分割时间</span>
+                                                                                    <span className="text-lg font-bold text-gray-700">
                                                                                         {formData.forecastingConfig.splitDate
                                                                                             ? dayjs(formData.forecastingConfig.splitDate).format('YYYY-MM-DD')
-                                                                                            : <span className="text-gray-400">选择日期</span>
+                                                                                            : dayjs(forecastingMockData[Math.floor(forecastingMockData.length * 0.8)]?.date).format('YYYY-MM-DD')
                                                                                         }
-                                                                                    </Button>
-                                                                                </PopoverTrigger>
-                                                                                <PopoverContent className="w-auto p-0" align="start">
-                                                                                    <UiCalendar
-                                                                                        mode="single"
-                                                                                        selected={formData.forecastingConfig.splitDate}
-                                                                                        onSelect={(date) => handleInputChange('forecastingConfig', { ...formData.forecastingConfig, splitDate: date })}
-                                                                                        initialFocus
-                                                                                    />
-                                                                                </PopoverContent>
-                                                                            </Popover>
+                                                                                    </span>
+                                                                                </div>
+                                                                                <div className="flex flex-col items-end">
+                                                                                    <span className="text-sm text-gray-500 mb-1">测试集 (Test)</span>
+                                                                                    <span className="text-lg font-bold text-orange-500">
+                                                                                        {formData.forecastingConfig.splitDate
+                                                                                            ? dayjs(formData.forecastingConfig.splitDate).format('MM-DD')
+                                                                                            : dayjs(forecastingMockData[Math.floor(forecastingMockData.length * 0.8)]?.date).format('MM-DD')
+                                                                                        }
+                                                                                        {' ~ '}
+                                                                                        {forecastingMockData[forecastingMockData.length - 1]?.date ? dayjs(forecastingMockData[forecastingMockData.length - 1].date).format('MM-DD') : '终点'}
+                                                                                    </span>
+                                                                                </div>
+                                                                            </div>
+
+                                                                            {/* 双色轨道 Slider - 时间范围 */}
+                                                                            <div className="relative">
+                                                                                <div
+                                                                                    className="absolute top-2 left-0 right-0 h-2 rounded-full overflow-hidden"
+                                                                                    style={{ pointerEvents: 'none' }}
+                                                                                >
+                                                                                    <div className="flex h-full">
+                                                                                        <div
+                                                                                            className="bg-blue-500 transition-all duration-200"
+                                                                                            style={{
+                                                                                                width: formData.forecastingConfig.splitDate
+                                                                                                    ? `${(dayjs(formData.forecastingConfig.splitDate).diff(dayjs(forecastingMockData[0]?.date), 'day') / forecastingMockData.length) * 100}%`
+                                                                                                    : '80%'
+                                                                                            }}
+                                                                                        />
+                                                                                        <div
+                                                                                            className="bg-orange-400 transition-all duration-200"
+                                                                                            style={{
+                                                                                                width: formData.forecastingConfig.splitDate
+                                                                                                    ? `${100 - (dayjs(formData.forecastingConfig.splitDate).diff(dayjs(forecastingMockData[0]?.date), 'day') / forecastingMockData.length) * 100}%`
+                                                                                                    : '20%'
+                                                                                            }}
+                                                                                        />
+                                                                                    </div>
+                                                                                </div>
+                                                                                <Slider
+                                                                                    value={[
+                                                                                        formData.forecastingConfig.splitDate
+                                                                                            ? Math.min(forecastingMockData.length - 1, Math.max(0, dayjs(formData.forecastingConfig.splitDate).diff(dayjs(forecastingMockData[0]?.date), 'day')))
+                                                                                            : Math.floor(forecastingMockData.length * 0.8)
+                                                                                    ]}
+                                                                                    min={Math.floor(forecastingMockData.length * 0.1)}
+                                                                                    max={Math.floor(forecastingMockData.length * 0.9)}
+                                                                                    step={1}
+                                                                                    onValueChange={(val: number[]) => {
+                                                                                        const dayIndex = val[0];
+                                                                                        const newDate = dayjs(forecastingMockData[0]?.date).add(dayIndex, 'day').toDate();
+                                                                                        handleInputChange('forecastingConfig', {
+                                                                                            ...formData.forecastingConfig,
+                                                                                            splitDate: newDate
+                                                                                        });
+                                                                                    }}
+                                                                                    className="relative z-10"
+                                                                                    style={{
+                                                                                        '--slider-track-bg': 'transparent',
+                                                                                        '--slider-range-bg': 'transparent',
+                                                                                        '--slider-thumb-size': '20px',
+                                                                                    } as React.CSSProperties}
+                                                                                />
+                                                                            </div>
+
+                                                                            {/* 时间刻度 */}
+                                                                            <div className="flex items-center justify-between text-[10px] text-gray-400">
+                                                                                <span>{forecastingMockData[0]?.date ? dayjs(forecastingMockData[0].date).format('YYYY-MM-DD') : ''}</span>
+                                                                                <span>{forecastingMockData[forecastingMockData.length - 1]?.date ? dayjs(forecastingMockData[forecastingMockData.length - 1].date).format('YYYY-MM-DD') : ''}</span>
+                                                                            </div>
+
+                                                                            {/* 提示文字 */}
+                                                                            <p className="text-xs text-center text-gray-400 italic">拖动滑块选择分割时间点</p>
+                                                                            <p className="text-[10px] text-red-500/80 italic font-medium">提示：训练集和测试集比例均不得低于 10%</p>
                                                                         </div>
                                                                     )}
                                                                 </div>
 
-                                                                {/* 可视化图表预览 */}
-                                                                <div className="bg-slate-800 p-4 rounded-xl">
-                                                                    <div className="flex items-center justify-between mb-3">
-                                                                        <h5 className="text-sm font-medium text-white">数据划分可视化预览</h5>
-                                                                        <span className="text-[10px] text-gray-400 italic">点击图表可调整划分位置</span>
-                                                                    </div>
-                                                                    <div style={{ width: '100%', height: 200, cursor: 'crosshair' }}>
-                                                                        <ResponsiveContainer width="100%" height="100%">
-                                                                            <AreaChart
-                                                                                data={forecastingMockData}
-                                                                                margin={{ top: 10, right: 20, left: 0, bottom: 5 }}
-                                                                                onClick={(e: any) => {
-                                                                                    if (e && e.activeTooltipIndex !== undefined) {
-                                                                                        const clickedIndex = e.activeTooltipIndex;
-                                                                                        const total = forecastingMockData.length;
-                                                                                        const newRatio = Math.max(10, Math.min(90, Math.round((clickedIndex / total) * 100)));
-                                                                                        // 百分比模式：更新 trainRatio
-                                                                                        if (formData.forecastingConfig.splitMode === 'percent') {
-                                                                                            handleInputChange('forecastingConfig', {
-                                                                                                ...formData.forecastingConfig,
-                                                                                                trainRatio: newRatio,
-                                                                                                testRatio: 100 - newRatio
-                                                                                            });
-                                                                                        } else {
-                                                                                            // 日期模式：更新 splitDate
-                                                                                            const clickedDate = forecastingMockData[clickedIndex]?.date;
-                                                                                            if (clickedDate) {
-                                                                                                handleInputChange('forecastingConfig', {
-                                                                                                    ...formData.forecastingConfig,
-                                                                                                    splitDate: dayjs(clickedDate).toDate()
-                                                                                                });
-                                                                                            }
-                                                                                        }
-                                                                                    }
-                                                                                }}
-                                                                            >
-                                                                                <defs>
-                                                                                    <linearGradient id="forecastTrainGradient" x1="0" y1="0" x2="0" y2="1">
-                                                                                        <stop offset="5%" stopColor="#8B5A2B" stopOpacity={0.9} />
-                                                                                        <stop offset="95%" stopColor="#8B5A2B" stopOpacity={0.5} />
-                                                                                    </linearGradient>
-                                                                                </defs>
-                                                                                <CartesianGrid strokeDasharray="3 3" stroke="#475569" vertical={false} />
-                                                                                <XAxis
-                                                                                    dataKey="date"
-                                                                                    stroke="#94a3b8"
-                                                                                    tick={{ fontSize: 10, fill: '#94a3b8' }}
-                                                                                    tickFormatter={(val: string) => dayjs(val).format('MM-DD')}
-                                                                                    interval={60}
-                                                                                    axisLine={{ stroke: '#475569' }}
-                                                                                    tickLine={{ stroke: '#475569' }}
-                                                                                />
-                                                                                <YAxis
-                                                                                    stroke="#94a3b8"
-                                                                                    tick={{ fontSize: 10, fill: '#94a3b8' }}
-                                                                                    domain={[20, 90]}
-                                                                                    axisLine={{ stroke: '#475569' }}
-                                                                                    tickLine={{ stroke: '#475569' }}
-                                                                                    width={35}
-                                                                                />
-                                                                                <RechartsTooltip
-                                                                                    contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569', borderRadius: '8px' }}
-                                                                                    labelStyle={{ color: '#e2e8f0' }}
-                                                                                    itemStyle={{ color: '#d4a574' }}
-                                                                                    labelFormatter={(val: string) => dayjs(val).format('YYYY-MM-DD')}
-                                                                                />
-                                                                                <Area
-                                                                                    type="monotone"
-                                                                                    dataKey="value"
-                                                                                    stroke="#d4a574"
-                                                                                    strokeWidth={1.5}
-                                                                                    fill="url(#forecastTrainGradient)"
-                                                                                    isAnimationActive={false}
-                                                                                />
-                                                                                {/* 划分线 */}
-                                                                                <ReferenceLine
-                                                                                    x={forecastingMockData[forecastingSplitState.splitIndex]?.date}
-                                                                                    stroke="#f59e0b"
-                                                                                    strokeWidth={3}
-                                                                                    strokeDasharray="6 4"
-                                                                                    label={{
-                                                                                        value: `${formData.forecastingConfig.splitMode === 'percent'
-                                                                                            ? formData.forecastingConfig.trainRatio + '%'
-                                                                                            : dayjs(forecastingMockData[forecastingSplitState.splitIndex]?.date).format('MM-DD')}`,
-                                                                                        position: 'top',
-                                                                                        fill: '#f59e0b',
-                                                                                        fontSize: 12,
-                                                                                        fontWeight: 600
-                                                                                    }}
-                                                                                />
-                                                                            </AreaChart>
-                                                                        </ResponsiveContainer>
-                                                                    </div>
-                                                                    <div className="flex justify-between text-xs text-gray-400 mt-3 px-2">
-                                                                        <span className="flex items-center">
-                                                                            <span className="w-3 h-3 rounded-sm bg-[#8B5A2B] mr-1.5"></span>
-                                                                            训练集 (Training)
-                                                                        </span>
-                                                                        <span className="flex items-center">
-                                                                            <span className="w-3 h-3 rounded-sm bg-[#D2691E] mr-1.5"></span>
-                                                                            测试集 (Test)
-                                                                        </span>
-                                                                    </div>
-                                                                </div>
-
-                                                                {/* 提示文字 */}
-                                                                <p className="text-[10px] text-red-500/80 italic font-medium">提示：训练集和测试集比例均不得低于 10%</p>
                                                             </div>
                                                         ) : (
                                                             /* 分类/回归任务的百分比划分（原有逻辑） */
@@ -1337,6 +1386,30 @@ export const CreateTaskPage: React.FC<CreateTaskPageProps> = ({
                                                                 </Table>
                                                             </div>
 
+                                                            {/* 时序预测任务的时间列选择（在文件表格之后显示） */}
+                                                            {formData.taskType === TASK_TYPES.forecasting && (
+                                                                <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                                                                    <div className="flex items-center space-x-4">
+                                                                        <Label className="text-sm font-medium text-gray-700 whitespace-nowrap">
+                                                                            <span className="text-red-500 mr-1">*</span>时间列
+                                                                        </Label>
+                                                                        <Select
+                                                                            value={formData.forecastingConfig.timeColumn}
+                                                                            onValueChange={(v: string) => handleInputChange('forecastingConfig', { ...formData.forecastingConfig, timeColumn: v })}
+                                                                        >
+                                                                            <SelectTrigger className="flex-1 bg-gray-50/50">
+                                                                                <SelectValue placeholder="请选择时间列" />
+                                                                            </SelectTrigger>
+                                                                            <SelectContent>
+                                                                                {featureFieldsIntersection.map(f => (
+                                                                                    <SelectItem key={f} value={f}>{f}</SelectItem>
+                                                                                ))}
+                                                                            </SelectContent>
+                                                                        </Select>
+                                                                    </div>
+                                                                </div>
+                                                            )}
+
                                                             {/* 洗牌选项（多文件场景，仅分类/回归任务） */}
                                                             {(formData.taskType === TASK_TYPES.classification || formData.taskType === TASK_TYPES.regression) && (
                                                                 <div className="flex items-center space-x-3 mt-4 pt-4 border-t border-gray-100">
@@ -1389,37 +1462,39 @@ export const CreateTaskPage: React.FC<CreateTaskPageProps> = ({
                                                                 <Command>
                                                                     <CommandInput placeholder="搜索字段..." className="h-9" />
                                                                     <CommandEmpty>未找到字段</CommandEmpty>
-                                                                    <CommandGroup className="max-h-64 overflow-auto">
-                                                                        <div className="flex items-center space-x-2 px-2 py-1.5 border-b mb-1">
-                                                                            <Button
-                                                                                variant="ghost"
-                                                                                size="sm"
-                                                                                className="text-[10px] h-7 px-2"
-                                                                                onClick={() => handleInputChange('targetFields', availableFeatureFields)}
-                                                                            >全选</Button>
-                                                                            <Button
-                                                                                variant="ghost"
-                                                                                size="sm"
-                                                                                className="text-[10px] h-7 px-2"
-                                                                                onClick={() => handleInputChange('targetFields', [])}
-                                                                            >清空</Button>
-                                                                        </div>
-                                                                        {availableFeatureFields.map(f => (
-                                                                            <CommandItem
-                                                                                key={f}
-                                                                                onSelect={() => {
-                                                                                    const next = formData.targetFields.includes(f)
-                                                                                        ? formData.targetFields.filter(i => i !== f)
-                                                                                        : [...formData.targetFields, f];
-                                                                                    handleInputChange('targetFields', next);
-                                                                                }}
-                                                                                className="text-xs"
-                                                                            >
-                                                                                <CheckCircle2 className={`mr-2 h-3.5 w-3.5 ${formData.targetFields.includes(f) ? "text-blue-500 opacity-100" : "opacity-0"}`} />
-                                                                                {f}
-                                                                            </CommandItem>
-                                                                        ))}
-                                                                    </CommandGroup>
+                                                                    <div className="flex items-center space-x-2 px-2 py-1.5 border-b">
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                            className="text-[10px] h-7 px-2"
+                                                                            onClick={() => handleInputChange('targetFields', availableFeatureFields)}
+                                                                        >全选</Button>
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                            className="text-[10px] h-7 px-2"
+                                                                            onClick={() => handleInputChange('targetFields', [])}
+                                                                        >清空</Button>
+                                                                    </div>
+                                                                    <CommandList className="max-h-64">
+                                                                        <CommandGroup>
+                                                                            {availableFeatureFields.map(f => (
+                                                                                <CommandItem
+                                                                                    key={f}
+                                                                                    onSelect={() => {
+                                                                                        const next = formData.targetFields.includes(f)
+                                                                                            ? formData.targetFields.filter(i => i !== f)
+                                                                                            : [...formData.targetFields, f];
+                                                                                        handleInputChange('targetFields', next);
+                                                                                    }}
+                                                                                    className="text-xs"
+                                                                                >
+                                                                                    <CheckCircle2 className={`mr-2 h-3.5 w-3.5 ${formData.targetFields.includes(f) ? "text-blue-500 opacity-100" : "opacity-0"}`} />
+                                                                                    {f}
+                                                                                </CommandItem>
+                                                                            ))}
+                                                                        </CommandGroup>
+                                                                    </CommandList>
                                                                 </Command>
                                                             </PopoverContent>
                                                         </Popover>
@@ -1440,22 +1515,99 @@ export const CreateTaskPage: React.FC<CreateTaskPageProps> = ({
                                                             <SelectTrigger className="bg-gray-50/50 h-10 border border-gray-200">
                                                                 <SelectValue placeholder="选择预测目标列" />
                                                             </SelectTrigger>
-                                                            <SelectContent>
+                                                            <SelectContent className="max-h-80">
                                                                 <Command>
                                                                     <CommandInput placeholder="搜索目标列..." className="h-9" />
-                                                                    <CommandGroup className="max-h-64 overflow-auto">
-                                                                        {availableTargetFields.map(f => (
-                                                                            <SelectItem key={f} value={f} className="text-xs">{f}</SelectItem>
-                                                                        ))}
-                                                                    </CommandGroup>
+                                                                    <CommandList className="max-h-64">
+                                                                        <CommandGroup>
+                                                                            {availableTargetFields.map(f => (
+                                                                                <SelectItem key={f} value={f} className="text-xs">{f}</SelectItem>
+                                                                            ))}
+                                                                        </CommandGroup>
+                                                                    </CommandList>
                                                                 </Command>
                                                             </SelectContent>
                                                         </Select>
                                                     </div>
                                                 </div>
                                             </div>
-                                        </Splitter.Panel>
-                                    </Splitter>
+                                        </div>
+
+                                        {/* 可拖拽分隔条 */}
+                                        <div
+                                            className="h-2 bg-gray-100 hover:bg-blue-100 cursor-row-resize flex items-center justify-center border-y border-gray-200 transition-colors group"
+                                            onMouseDown={handleResizeMouseDown}
+                                        >
+                                            <div className="w-10 h-1 bg-gray-300 group-hover:bg-blue-400 rounded-full transition-colors" />
+                                        </div>
+
+                                        {/* 预览部分（下）- 占用剩余空间 */}
+                                        <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-white">
+                                            <div className="px-6 py-3 border-b bg-white flex items-center justify-between shrink-0">
+                                                <div className="flex items-center space-x-2 min-w-0">
+                                                    <Eye className="h-4 w-4 text-blue-500 shrink-0" />
+                                                    <span className="font-semibold text-gray-900">数据详情预览</span>
+                                                    {previewFileName && (
+                                                        <Badge variant="secondary" className="font-normal bg-blue-50 text-blue-600 border-blue-100 truncate max-w-[150px]">
+                                                            {previewFileName}
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                                {previewFileName && (
+                                                    <div className="text-xs text-gray-500 flex items-center space-x-4 shrink-0">
+                                                        <span>行数：{formData.selectedFilesMetadata.find(f => f.name === previewFileName)?.rows || '-'}</span>
+                                                        <span>列数：{formData.selectedFilesMetadata.find(f => f.name === previewFileName)?.columns || '-'}</span>
+                                                        <span>大小：{formData.selectedFilesMetadata.find(f => f.name === previewFileName)?.size || '-'}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="flex-1 overflow-hidden bg-gray-50/50">
+                                                {previewFileName ? (
+                                                    <div className="h-full p-4">
+                                                        <div style={{ height: '100%', overflowY: 'auto', overflowX: 'auto' }} className="border rounded-lg bg-white">
+                                                            <table className="w-full text-sm" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
+                                                                <thead style={{ position: 'sticky', top: 0, zIndex: 10, backgroundColor: '#f9fafb' }}>
+                                                                    <tr className="border-b">
+                                                                        {previewData[0] && Object.keys(previewData[0]).map(key => (
+                                                                            <th key={key} style={{ position: 'sticky', top: 0, backgroundColor: '#f9fafb' }} className="whitespace-nowrap px-4 py-3 text-left font-medium">
+                                                                                <div className="flex flex-col space-y-1.5 min-w-[120px]">
+                                                                                    <div className="flex items-center space-x-2">
+                                                                                        <Badge variant="secondary" className="bg-orange-50 text-orange-600 border-orange-100 px-1.5 py-0 text-[10px] h-5 font-normal hover:bg-orange-100">
+                                                                                            Unique: {columnStats[key]?.uniqueCount ?? '-'}
+                                                                                        </Badge>
+                                                                                        <Badge variant="secondary" className="bg-red-50 text-red-600 border-red-100 px-1.5 py-0 text-[10px] h-5 font-normal hover:bg-red-100">
+                                                                                            Missing: {columnStats[key]?.missingRate ?? '0.0'}%
+                                                                                        </Badge>
+                                                                                    </div>
+                                                                                    <span className="text-gray-900 font-semibold">{key}</span>
+                                                                                </div>
+                                                                            </th>
+                                                                        ))}
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    {previewData.map((row, idx) => (
+                                                                        <tr key={idx} className="border-b hover:bg-gray-50/50">
+                                                                            {Object.values(row).map((val: unknown, vIdx) => (
+                                                                                <td key={vIdx} className="px-4 py-2 border-r last:border-r-0 max-w-[200px] truncate">
+                                                                                    {String(val)}
+                                                                                </td>
+                                                                            ))}
+                                                                        </tr>
+                                                                    ))}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="h-full flex flex-col items-center justify-center text-gray-400 space-y-2">
+                                                        <Database className="h-12 w-12 text-gray-200" />
+                                                        <p>请在大资产树中点击预览图标查看数据</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </Splitter.Panel>
                             </Splitter>
                         )}
@@ -1708,30 +1860,95 @@ export const CreateTaskPage: React.FC<CreateTaskPageProps> = ({
                                                             ))}
                                                         </div>
 
-                                                        <div className="flex items-center space-x-4 bg-gray-50 p-4 rounded-lg border border-gray-100 max-w-md">
-                                                            <Label className="text-xs font-semibold text-gray-700 whitespace-nowrap">Average Method:</Label>
-                                                            <Select
-                                                                value={formData.outputConfig.classification.metrics.averageMethod}
-                                                                onValueChange={(val: AverageMethod) => {
-                                                                    handleInputChange('outputConfig', {
-                                                                        ...formData.outputConfig,
-                                                                        classification: {
-                                                                            ...formData.outputConfig.classification,
-                                                                            metrics: { ...formData.outputConfig.classification.metrics, averageMethod: val }
-                                                                        }
-                                                                    });
-                                                                }}
-                                                            >
-                                                                <SelectTrigger className="h-8 text-xs bg-white">
-                                                                    <SelectValue />
-                                                                </SelectTrigger>
-                                                                <SelectContent>
-                                                                    <SelectItem value="micro">micro</SelectItem>
-                                                                    <SelectItem value="macro">macro</SelectItem>
-                                                                    <SelectItem value="weighted">weighted</SelectItem>
-                                                                </SelectContent>
-                                                            </Select>
-                                                        </div>
+                                                        {/* 分类标签回显展示 */}
+                                                        {formData.classificationConfig.targetColumn && classificationLabels.length > 0 && (
+                                                            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-100">
+                                                                <div className="flex items-center justify-between mb-2">
+                                                                    <span className="text-xs font-semibold text-gray-700">
+                                                                        目标列分类标签 ({classificationLabels.length} 个类别)
+                                                                    </span>
+                                                                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${classificationLabels.length === 2
+                                                                        ? 'bg-green-100 text-green-700'
+                                                                        : 'bg-blue-100 text-blue-700'
+                                                                        }`}>
+                                                                        {classificationLabels.length === 2 ? '二分类' : '多分类'}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="flex flex-wrap gap-2">
+                                                                    {classificationLabels.length <= 8 ? (
+                                                                        // 标签数量较少时，全部展示
+                                                                        classificationLabels.map((label, idx) => (
+                                                                            <span
+                                                                                key={idx}
+                                                                                className="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-md bg-white border border-gray-200 text-gray-700 shadow-sm"
+                                                                            >
+                                                                                <span className={`w-2 h-2 rounded-full mr-1.5 ${idx % 6 === 0 ? 'bg-blue-500' :
+                                                                                    idx % 6 === 1 ? 'bg-green-500' :
+                                                                                        idx % 6 === 2 ? 'bg-yellow-500' :
+                                                                                            idx % 6 === 3 ? 'bg-red-500' :
+                                                                                                idx % 6 === 4 ? 'bg-purple-500' : 'bg-pink-500'
+                                                                                    }`} />
+                                                                                {label}
+                                                                            </span>
+                                                                        ))
+                                                                    ) : (
+                                                                        // 标签数量较多时，只展示前6个 + 省略提示
+                                                                        <>
+                                                                            {classificationLabels.slice(0, 6).map((label, idx) => (
+                                                                                <span
+                                                                                    key={idx}
+                                                                                    className="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-md bg-white border border-gray-200 text-gray-700 shadow-sm"
+                                                                                >
+                                                                                    <span className={`w-2 h-2 rounded-full mr-1.5 ${idx % 6 === 0 ? 'bg-blue-500' :
+                                                                                        idx % 6 === 1 ? 'bg-green-500' :
+                                                                                            idx % 6 === 2 ? 'bg-yellow-500' :
+                                                                                                idx % 6 === 3 ? 'bg-red-500' :
+                                                                                                    idx % 6 === 4 ? 'bg-purple-500' : 'bg-pink-500'
+                                                                                        }`} />
+                                                                                    {label}
+                                                                                </span>
+                                                                            ))}
+                                                                            <span className="inline-flex items-center px-2.5 py-1 text-xs text-gray-500 italic">
+                                                                                ... 等 {classificationLabels.length} 个分类
+                                                                            </span>
+                                                                        </>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Average Method - 仅多分类时显示 */}
+                                                        {classificationLabels.length > 2 ? (
+                                                            <div className="flex items-center space-x-4 bg-gray-50 p-4 rounded-lg border border-gray-100 max-w-md">
+                                                                <Label className="text-xs font-semibold text-gray-700 whitespace-nowrap">Average Method:</Label>
+                                                                <Select
+                                                                    value={formData.outputConfig.classification.metrics.averageMethod}
+                                                                    onValueChange={(val: AverageMethod) => {
+                                                                        handleInputChange('outputConfig', {
+                                                                            ...formData.outputConfig,
+                                                                            classification: {
+                                                                                ...formData.outputConfig.classification,
+                                                                                metrics: { ...formData.outputConfig.classification.metrics, averageMethod: val }
+                                                                            }
+                                                                        });
+                                                                    }}
+                                                                >
+                                                                    <SelectTrigger className="h-8 text-xs bg-white">
+                                                                        <SelectValue />
+                                                                    </SelectTrigger>
+                                                                    <SelectContent>
+                                                                        <SelectItem value="micro">micro</SelectItem>
+                                                                        <SelectItem value="macro">macro</SelectItem>
+                                                                        <SelectItem value="weighted">weighted</SelectItem>
+                                                                    </SelectContent>
+                                                                </Select>
+                                                            </div>
+                                                        ) : classificationLabels.length === 2 ? (
+                                                            <div className="flex items-center space-x-2 bg-green-50 p-3 rounded-lg border border-green-100 max-w-md">
+                                                                <span className="text-green-600 text-xs">✓</span>
+                                                                <span className="text-xs text-green-700">二分类任务无需配置 Average Method</span>
+                                                            </div>
+                                                        ) : null}
 
                                                         <div className="space-y-3">
                                                             <Label className="text-xs font-semibold text-gray-700">自定义评价指标 (Custom Metrics)</Label>

@@ -271,6 +271,9 @@ const messages: Record<Lang, Record<string, string>> = {
     "project.cards.modelsCount": "模型数量",
     "project.cards.mainModel": "主要模型:",
     "project.cards.enterModels": "进入模型管理",
+    "project.cards.causal.title": "因果洞察",
+    "project.cards.causalTasksCount": "因果洞察数量",
+    "project.cards.enterCausal": "进入因果洞察",
     "project.cards.basicInfo": "基本信息",
     "project.cards.autoClean": "自动清洗",
 
@@ -963,9 +966,12 @@ const messages: Record<Lang, Record<string, string>> = {
     "project.cards.enterTasks": "Go to Task Mgmt",
     "project.cards.model.title": "Model Management",
     "project.cards.modelsCount": "Models Count",
-    "project.cards.mainModel": "Primary Model:",
-    "project.cards.enterModels": "Go to Model Mgmt",
-    "project.cards.basicInfo": "Basic Info",
+    "project.cards.mainModel": "Main Model:",
+    "project.cards.enterModels": "Enter Model Management",
+    "project.cards.causal.title": "Causal Insight",
+    "project.cards.causalTasksCount": "Causal Tasks Count",
+    "project.cards.enterCausal": "Enter Causal Insight",
+    "project.cards.basicInfo": "Basic Information",
     "project.cards.autoClean": "Auto Cleaning",
 
     // Common permissions & visibility

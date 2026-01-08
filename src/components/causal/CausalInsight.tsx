@@ -25,6 +25,7 @@ import {
 import { message, Modal, Popconfirm, Tooltip, Empty, DatePicker, Slider, InputNumber, Checkbox, Space, Select as AntSelect, Table, Badge as AntBadge, Tag, Card as AntCard } from 'antd';
 import { useLanguage } from "../../i18n/LanguageContext";
 import { mockCITasks, CausalInsightTask, getDecisionTaskSchema, getCausalResultData } from '../../mock/causal';
+import { mockProjects } from '../../mock/datasets';
 import {
     ComposedChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip,
     ResponsiveContainer, Cell, Line, Scatter
@@ -35,12 +36,22 @@ const AntdCard = AntCard;
 
 
 /**
+ * 因果洞察主组件 Props
+ */
+interface CausalInsightProps {
+    /** 初始视图：list（列表）/ create（创建任务）/ detail（详情） */
+    initialView?: 'list' | 'create' | 'detail';
+    /** 视图重置回调，用于从外部切换回列表时同步状态 */
+    onResetView?: () => void;
+}
+
+/**
  * 因果洞察主组件
  * 管理列表、创建、详情三个视图的状态切换
  */
-export default function CausalInsight() {
+export default function CausalInsight({ initialView = 'list', onResetView }: CausalInsightProps) {
     const { t } = useLanguage();
-    const [view, setView] = useState<'list' | 'create' | 'detail'>('list');
+    const [view, setView] = useState<'list' | 'create' | 'detail'>(initialView);
     const [tasks, setTasks] = useState<CausalInsightTask[]>(mockCITasks);
     const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
@@ -87,6 +98,8 @@ export default function CausalInsight() {
         setView('list');
         setSelectedTaskId(null);
         setEditingTask(null);
+        // 通知外部重置状态
+        if (onResetView) onResetView();
     };
 
     const handleDeleteTask = (taskId: string) => {
@@ -202,6 +215,7 @@ function CITaskList({ tasks, onSearch, onCreate, onViewDetail, onEdit, onDelete,
     // 筛选状态
     const [sourceFilter, setSourceFilter] = useState<string>('all');
     const [statusFilter, setStatusFilter] = useState<string>('all');
+    const [projectFilter, setProjectFilter] = useState<string>('all');
 
     // 获取来源任务列表（去重）
     const sourceOptions = useMemo(() => {
@@ -219,14 +233,24 @@ function CITaskList({ tasks, onSearch, onCreate, onViewDetail, onEdit, onDelete,
         { value: 'FAILED', label: '失败' },
     ];
 
+    // 获取项目选项
+    const projectOptions = useMemo(() => {
+        const projectIds = [...new Set(tasks.map((t: any) => t.projectId))] as string[];
+        return projectIds.map(pid => {
+            const proj = mockProjects.find(p => p.id === pid);
+            return { value: pid, label: proj ? proj.title : pid };
+        });
+    }, [tasks]);
+
     // 过滤后的任务列表
     const filteredTasks = useMemo(() => {
         return tasks.filter((t: any) => {
             const matchSource = sourceFilter === 'all' || t.sourceDecisionTaskName === sourceFilter;
             const matchStatus = statusFilter === 'all' || t.status === statusFilter;
-            return matchSource && matchStatus;
+            const matchProject = projectFilter === 'all' || t.projectId === projectFilter;
+            return matchSource && matchStatus && matchProject;
         });
-    }, [tasks, sourceFilter, statusFilter]);
+    }, [tasks, sourceFilter, statusFilter, projectFilter]);
 
     const columns: any[] = [
         {
@@ -249,6 +273,21 @@ function CITaskList({ tasks, onSearch, onCreate, onViewDetail, onEdit, onDelete,
             key: 'source',
             width: 180,
             render: (text: string) => <span className="text-slate-600 text-sm">{text}</span>
+        },
+        {
+            title: '所属项目',
+            dataIndex: 'projectId',
+            key: 'project',
+            width: 160,
+            render: (pid: string) => {
+                const proj = mockProjects.find(p => p.id === pid);
+                return (
+                    <div className="flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+                        <span className="text-slate-600 text-sm">{proj ? proj.title : pid}</span>
+                    </div>
+                );
+            }
         },
         {
             title: 'Y 字段',
@@ -379,6 +418,16 @@ function CITaskList({ tasks, onSearch, onCreate, onViewDetail, onEdit, onDelete,
                             value={statusFilter}
                             onChange={setStatusFilter}
                             options={statusOptions}
+                        />
+                        <AntSelect
+                            placeholder="所属项目"
+                            style={{ width: 160 }}
+                            value={projectFilter}
+                            onChange={setProjectFilter}
+                            options={[
+                                { value: 'all', label: '全部项目' },
+                                ...projectOptions
+                            ]}
                         />
                     </div>
                 </div>

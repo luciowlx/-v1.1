@@ -53,6 +53,7 @@ interface DatasetTableProps {
   onCopy: (id: number | string) => void;
   onDelete: (id: number | string) => void;
   onCancelUpload: (id: number | string) => void;
+  projects?: Array<{ id: string; title: string }>;
 }
 
 export function DatasetTable(props: DatasetTableProps) {
@@ -87,6 +88,7 @@ export function DatasetTable(props: DatasetTableProps) {
     onCopy,
     onDelete,
     onCancelUpload,
+    projects = []
   } = props;
 
   return (
@@ -99,7 +101,7 @@ export function DatasetTable(props: DatasetTableProps) {
           enableColumnResize
           enableColumnDrag
           freezeRightCount={1}
-          sortState={{ column: sortBy, order: sortOrder }}
+          sortState={{ column: sortBy, order: sortOrder as 'asc' | 'desc' }}
           onSortChange={(column, order) => onSortChange(String(column), String(order))}
           style={{ border: 'none' }}
           headerRight={
@@ -130,14 +132,25 @@ export function DatasetTable(props: DatasetTableProps) {
             columnSettings.name ? {
               key: 'name',
               label: t('data.columns.name'),
+              width: 180,
               sortable: true,
               render: (_v: any, row: any) => (
                 <span className="font-medium">{row.title}</span>
               )
             } : undefined,
+            {
+              key: 'project',
+              label: '所属项目',
+              width: 160,
+              render: (_v: any, row: any) => {
+                const project = projects.find(p => p.id === row.projectId);
+                return <span className="text-gray-600 italic">{project ? project.title : (row.projectId || '-')}</span>;
+              }
+            },
             columnSettings.description ? {
               key: 'description',
               label: t('data.columns.description'),
+              width: 240,
               render: (v: any) => (
                 <span className="max-w-xs truncate inline-block align-middle">{v}</span>
               )

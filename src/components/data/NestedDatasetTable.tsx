@@ -55,6 +55,8 @@ interface NestedDatasetTableProps {
     onCopyVersion?: (datasetId: number, version: string) => void;
     /** 删除回调 */
     onDelete: (id: number) => void;
+    /** 项目列表 */
+    projects?: Array<{ id: string; title: string }>;
 }
 
 /**
@@ -74,6 +76,7 @@ export function NestedDatasetTable(props: NestedDatasetTableProps) {
         onCopy,
         onCopyVersion,
         onDelete,
+        projects = []
     } = props;
 
     // 展开的数据集 ID 列表
@@ -273,6 +276,16 @@ export function NestedDatasetTable(props: NestedDatasetTableProps) {
             width: 200,
             ellipsis: true,
             render: (text: string) => <span className="font-medium">{text}</span>,
+        },
+        {
+            title: '所属项目',
+            dataIndex: 'projectId',
+            key: 'projectId',
+            width: 160,
+            render: (projectId: string) => {
+                const project = projects.find(p => p.id === projectId);
+                return <span className="text-gray-600">{project ? project.title : (projectId || '-')}</span>;
+            }
         },
         {
             title: '描述',

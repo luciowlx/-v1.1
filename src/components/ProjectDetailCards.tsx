@@ -2,14 +2,14 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
-import { 
-  Users, 
-  Calendar, 
-  Database, 
-  CheckCircle, 
-  Brain, 
-  Upload, 
-  BarChart3, 
+import {
+  Users,
+  Calendar,
+  Database,
+  CheckCircle,
+  Brain,
+  Upload,
+  BarChart3,
   TrendingUp,
   FileText,
   Settings,
@@ -20,7 +20,8 @@ import {
   Send,
   MessageSquare,
   Clock,
-  Eye
+  Eye,
+  GitBranch
 } from 'lucide-react';
 import { useLanguage } from '../i18n/LanguageContext';
 
@@ -30,16 +31,18 @@ interface ProjectDetailCardsProps {
   onNavigateToData?: () => void;
   onNavigateToTasks?: () => void;
   onNavigateToModels?: () => void;
+  onNavigateToCausalInsight?: () => void;
   onQuickPredict?: () => void;
   onViewReports?: () => void;
 }
 
-export function ProjectDetailCards({ 
-  project, 
-  mode, 
+export function ProjectDetailCards({
+  project,
+  mode,
   onNavigateToData,
   onNavigateToTasks,
   onNavigateToModels,
+  onNavigateToCausalInsight,
   onQuickPredict,
   onViewReports
 }: ProjectDetailCardsProps) {
@@ -47,7 +50,7 @@ export function ProjectDetailCards({
   // 语音指令 & 会话记录（仅在自动模式下使用）
   const [voiceInput, setVoiceInput] = React.useState('');
   const [isRecording, setIsRecording] = React.useState(false);
-  const [autoSessions, setAutoSessions] = React.useState<Array<{id: string; taskName: string; time: string; rawCommand: string; operations: string[]}>>([]);
+  const [autoSessions, setAutoSessions] = React.useState<Array<{ id: string; taskName: string; time: string; rawCommand: string; operations: string[] }>>([]);
   const [expandedRecordId, setExpandedRecordId] = React.useState<string | null>(null);
 
   // 简单的语义理解示例：依据关键词生成简化任务名与预计操作
@@ -92,7 +95,7 @@ export function ProjectDetailCards({
     setVoiceInput('');
     setExpandedRecordId(id); // 执行后默认展开详情
   };
-  
+
   if (mode === 'traditional') {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -141,7 +144,7 @@ export function ProjectDetailCards({
                 </div>
               </div>
             </div>
-            
+
             {/* 项目完成度字段已移除：当前系统无法准确计算该指标，避免误导用户 */}
           </CardContent>
         </Card>
@@ -164,14 +167,14 @@ export function ProjectDetailCards({
               <div className="text-sm font-medium">{project?.dataSource}</div>
             </div>
             <div className="space-y-2">
-              <Button 
+              <Button
                 onClick={onNavigateToData}
                 className="w-full bg-black hover:bg-gray-800 text-white"
               >
                 <Upload className="h-4 w-4 mr-2" />
                 {t('project.cards.importData')}
               </Button>
-              <Button 
+              <Button
                 onClick={onNavigateToData}
                 variant="outline"
                 className="w-full border-green-600 text-green-600 hover:bg-green-50"
@@ -206,7 +209,7 @@ export function ProjectDetailCards({
               <div className="text-sm text-gray-600">{t('project.cards.currentTask')}</div>
               <div className="text-sm font-medium">{project?.task}</div>
             </div>
-            <Button 
+            <Button
               onClick={onNavigateToTasks}
               className="w-full bg-blue-600 hover:bg-blue-700"
             >
@@ -216,29 +219,30 @@ export function ProjectDetailCards({
           </CardContent>
         </Card>
 
-        {/* 模型卡片 */}
+        {/* 因果洞察卡片 (代替原模型卡片) */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Brain className="h-5 w-5 text-purple-600" />
-              {t('project.cards.model.title')}
+              <GitBranch className="h-5 w-5" style={{ color: '#7c3aed' }} />
+              {t('project.cards.causal.title')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="text-center p-4 bg-purple-50 rounded-lg">
-              <div className="text-2xl font-semibold text-purple-600">{project?.stats?.models || 7}</div>
-              <div className="text-sm text-gray-500">{t('project.cards.modelsCount')}</div>
+            <div className="text-center p-4 rounded-lg" style={{ backgroundColor: '#f5f3ff' }}>
+              <div className="text-2xl font-semibold" style={{ color: '#7c3aed' }}>{project?.stats?.causalTasks || 5}</div>
+              <div className="text-sm text-gray-500">{t('project.cards.causalTasksCount')}</div>
             </div>
             <div className="space-y-2">
-              <div className="text-sm text-gray-600">{t('project.cards.mainModel')}</div>
-              <div className="text-sm font-medium">{project?.model || 'CNN神经模型'}</div>
+              <div className="text-sm text-gray-600">{t('project.cards.currentTask')}</div>
+              <div className="text-sm font-medium">{project?.causalTask || '销售趋势因果分析'}</div>
             </div>
-            <Button 
-              onClick={onNavigateToModels}
-              className="w-full bg-black hover:bg-gray-800 text-white"
+            <Button
+              onClick={onNavigateToCausalInsight}
+              className="w-full text-white"
+              style={{ backgroundColor: '#7c3aed' }}
             >
-              <Brain className="h-4 w-4 mr-2" />
-              {t('project.cards.enterModels')}
+              <GitBranch className="h-4 w-4 mr-2" />
+              {t('project.cards.enterCausal')}
             </Button>
           </CardContent>
         </Card>
@@ -299,7 +303,7 @@ export function ProjectDetailCards({
             <div className="text-sm text-gray-600 mb-2">拖拽或点击上传表格文件</div>
             <div className="text-xs text-gray-500">支持 CSV, Excel 格式</div>
           </div>
-          <Button 
+          <Button
             onClick={onQuickPredict}
             className="w-full bg-blue-600 hover:bg-blue-700"
           >
@@ -333,7 +337,7 @@ export function ProjectDetailCards({
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <Button 
+            <Button
               variant="outline"
               onClick={onViewReports}
               className="text-green-600 border-green-200 hover:bg-green-50"
