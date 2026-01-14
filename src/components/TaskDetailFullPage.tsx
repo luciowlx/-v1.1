@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, Clock, User, Database, Brain, AlertCircle, CheckCircle, XCircle, Pause, Play, RotateCcw, Archive, Eye, Settings, Download, Share2, Calendar, Tag, FileText, BarChart3, Activity, Zap, Loader2, Filter, Search, TrendingUp, ArrowUpDown, ChevronLeft, ChevronRight, GripVertical, Circle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { useLanguage } from "../i18n/LanguageContext";
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Progress } from './ui/progress';
@@ -92,6 +93,7 @@ interface TaskDetailFullPageProps {
 }
 
 const TaskDetailFullPage: React.FC<TaskDetailFullPageProps> = ({ task, onClose, onOpenDataDetail, onTaskPatched }) => {
+  const { t } = useLanguage();
   const [isLoading, setIsLoading] = useState(false);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{ isOpen: boolean; action: string; taskId: string; taskName: string }>({ isOpen: false, action: '', taskId: '', taskName: '' });
@@ -306,14 +308,14 @@ output:
   }, [task]);
 
   const sections = [
-    { id: 'results', label: '任务结果', icon: BarChart3 },
-    { id: 'causal', label: '因果解释', icon: Zap },
-    { id: 'meta', label: '概览信息', icon: FileText },
-    { id: 'dataset', label: '数据集信息', icon: Database },
-    { id: 'model', label: '模型信息', icon: Brain },
-    { id: 'params', label: '参数配置', icon: Settings },
-    { id: 'logs', label: '执行日志', icon: FileText },
-    { id: 'artifacts', label: '任务产物', icon: Download },
+    { id: 'results', label: t('taskDetail.section.results'), icon: BarChart3 },
+    { id: 'causal', label: t('taskDetail.section.causal'), icon: Zap },
+    { id: 'meta', label: t('taskDetail.section.meta'), icon: FileText },
+    { id: 'dataset', label: t('taskDetail.section.dataset'), icon: Database },
+    { id: 'model', label: t('taskDetail.section.model'), icon: Brain },
+    { id: 'params', label: t('taskDetail.section.params'), icon: Settings },
+    { id: 'logs', label: t('taskDetail.section.logs'), icon: FileText },
+    { id: 'artifacts', label: t('taskDetail.section.artifacts'), icon: Download },
   ];
 
   // Mock data for demonstration
@@ -1334,15 +1336,15 @@ output:
   const handleExportHTML = () => {
     const resultsHTML = resultsRef.current?.innerHTML || '';
     const causalHTML = causalRef.current?.innerHTML || '';
-    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>任务${task.id} 报告</title><style>
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>${t('taskDetail.export.reportTitle')} ${task.id}</title><style>
       body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Apple Color Emoji","Segoe UI Emoji";padding:24px;}
       h1{font-size:20px;margin-bottom:8px} h2{font-size:16px;margin:20px 0 8px}
       .section{margin-bottom:24px;border-top:1px solid #eee;padding-top:12px}
       svg{max-width:100%}
     </style></head><body>
-      <h1>任务报告 - ${task.taskName}</h1>
-      <div class="section"><h2>指标与可视化</h2>${resultsHTML}</div>
-      <div class="section"><h2>因果解释</h2>${causalHTML}</div>
+      <h1>${t('taskDetail.export.reportTitle')} - ${task.taskName}</h1>
+      <div class="section"><h2>${t('taskDetail.export.metricsViz')}</h2>${resultsHTML}</div>
+      <div class="section"><h2>${t('taskDetail.export.causalExpl')}</h2>${causalHTML}</div>
     </body></html>`;
     const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -1356,16 +1358,16 @@ output:
   const handleExportPDF = () => {
     const resultsHTML = resultsRef.current?.innerHTML || '';
     const causalHTML = causalRef.current?.innerHTML || '';
-    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>任务${task.id} 报告</title><style>
+    const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>${t('taskDetail.export.reportTitle')} ${task.id}</title><style>
       body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; padding:24px;}
       h1{font-size:20px;margin-bottom:8px} h2{font-size:16px;margin:20px 0 8px}
       .section{margin-bottom:24px;border-top:1px solid #eee;padding-top:12px}
       svg{max-width:100%}
       @page { size: A4; margin: 16mm; }
     </style></head><body>
-      <h1>任务报告 - ${task.taskName}</h1>
-      <div class="section"><h2>指标与可视化</h2>${resultsHTML}</div>
-      <div class="section"><h2>因果解释</h2>${causalHTML}</div>
+      <h1>${t('taskDetail.export.reportTitle')} - ${task.taskName}</h1>
+      <div class="section"><h2>${t('taskDetail.export.metricsViz')}</h2>${resultsHTML}</div>
+      <div class="section"><h2>${t('taskDetail.export.causalExpl')}</h2>${causalHTML}</div>
     </body></html>`;
     const printWin = window.open('', 'printWindow');
     if (!printWin) return;
@@ -1501,35 +1503,35 @@ output:
                   <FileText className="h-5 w-5" />
                   任务概要
                 </CardTitle>
-                <CardDescription>紧凑展示核心信息</CardDescription>
+                <CardDescription>{t('taskDetail.overview.compactShow')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
                   <div>
-                    <p className="text-gray-600">任务名称</p>
+                    <p className="text-gray-600">{t('taskDetail.overview.taskName')}</p>
                     <p className="font-medium">{task.taskName}</p>
                   </div>
                   <div>
-                    <p className="text-gray-600">任务ID</p>
+                    <p className="text-gray-600">{t('taskDetail.overview.taskId')}</p>
                     <p className="font-mono font-medium">{task.id}</p>
                   </div>
                   <div>
-                    <p className="text-gray-600">任务类型</p>
+                    <p className="text-gray-600">{t('taskDetail.overview.taskType')}</p>
                     <Badge variant="outline" className="mt-1">{getTaskTypeLabel(task.taskType)}</Badge>
                   </div>
                   <div>
-                    <p className="text-gray-600">状态</p>
+                    <p className="text-gray-600">{t('taskDetail.overview.status')}</p>
                     <div className="flex items-center gap-2 mt-1">
                       {React.createElement(getStatusConfig(computedTask.status).icon, { className: "h-4 w-4" })}
                       <Badge className={getStatusConfig(computedTask.status).color}>{getStatusConfig(computedTask.status).label}</Badge>
                     </div>
                   </div>
                   <div>
-                    <p className="text-gray-600">优先级</p>
+                    <p className="text-gray-600">{t('taskDetail.overview.priority')}</p>
                     <Badge className={`${getPriorityConfig(task.priority).color} mt-1`}>{getPriorityConfig(task.priority).label}</Badge>
                   </div>
                   <div>
-                    <p className="text-gray-600">创建者</p>
+                    <p className="text-gray-600">{t('taskDetail.overview.creator')}</p>
                     <div className="flex items-center gap-2 mt-1">
                       <User className="h-4 w-4 text-gray-500" />
                       <span className="font-medium">{task.createdBy}</span>
@@ -1537,7 +1539,7 @@ output:
                   </div>
                   {task.datasets && task.datasets.length > 0 ? (
                     <div className="col-span-2">
-                      <p className="text-gray-600">已关联数据集（多选）</p>
+                      <p className="text-gray-600">{t('taskDetail.overview.associatedDatasetsMulti')}</p>
                       <div className="flex flex-wrap gap-2 mt-1">
                         {task.datasets.map((ds) => (
                           <Badge key={ds.id} variant="secondary" className="flex items-center space-x-2">
@@ -1550,44 +1552,44 @@ output:
                   ) : (
                     <>
                       <div>
-                        <p className="text-gray-600">数据集名称</p>
+                        <p className="text-gray-600">{t('taskDetail.overview.datasetName')}</p>
                         <p className="font-medium">{task.datasetName}</p>
                       </div>
                       <div>
-                        <p className="text-gray-600">数据集ID + 版本号</p>
+                        <p className="text-gray-600">{t('taskDetail.overview.datasetIdVersion')}</p>
                         <p className="font-mono font-medium">{task.datasetVersion}</p>
                       </div>
                     </>
                   )}
                   <div>
-                    <p className="text-gray-600">来源</p>
-                    <p className="font-medium">上传</p>
+                    <p className="text-gray-600">{t('taskDetail.overview.source')}</p>
+                    <p className="font-medium">{t('taskDetail.overview.sourceUpload')}</p>
                   </div>
                   <div>
-                    <p className="text-gray-600">资源</p>
+                    <p className="text-gray-600">{t('taskDetail.overview.resource')}</p>
                     <p className="font-medium">GPU</p>
                   </div>
                   <div>
-                    <p className="text-gray-600">配额</p>
+                    <p className="text-gray-600">{t('taskDetail.overview.quota')}</p>
                     <p className="font-medium">2 vGPU / 16GB</p>
                   </div>
                 </div>
                 {task.description && (
                   <div className="mt-4">
-                    <p className="text-sm text-gray-600">任务描述</p>
+                    <p className="text-sm text-gray-600">{t('taskDetail.overview.taskDescription')}</p>
                     <p className="text-gray-900 leading-relaxed mt-1">{task.description}</p>
                   </div>
                 )}
                 {/* 状态轨迹：排队 → 运行中 → 完成/失败 */}
                 <div className="mt-6">
-                  <p className="text-sm text-gray-600 mb-2">状态轨迹</p>
+                  <p className="text-sm text-gray-600 mb-2">{t('taskDetail.overview.statusTrajectory')}</p>
                   <div className="flex items-center">
                     {/* 排队 */}
                     <div className="flex flex-col items-center w-32">
                       <div className={`flex items-center justify-center w-8 h-8 rounded-full border ${task.status === 'pending' ? 'bg-gray-100 border-gray-300' : 'bg-gray-50 border-gray-200'}`}>
                         <Clock className={`h-4 w-4 ${task.status === 'pending' ? 'text-gray-700' : 'text-gray-500'}`} />
                       </div>
-                      <span className="mt-1 text-xs text-gray-700">排队</span>
+                      <span className="mt-1 text-xs text-gray-700">{t('taskDetail.overview.statusQueued')}</span>
                       <span className="mt-1 text-[11px] text-gray-500 font-mono">{task.createdAt}</span>
                     </div>
                     <div className="flex-1 h-px bg-gray-200" />
@@ -1596,8 +1598,8 @@ output:
                       <div className={`flex items-center justify-center w-8 h-8 rounded-full border ${task.status === 'running' ? 'bg-blue-100 border-blue-300' : 'bg-gray-50 border-gray-200'}`}>
                         <Play className={`h-4 w-4 ${task.status === 'running' ? 'text-blue-700' : 'text-gray-500'}`} />
                       </div>
-                      <span className={`mt-1 text-xs ${task.status === 'running' ? 'text-blue-700' : 'text-gray-700'}`}>运行中</span>
-                      <span className="mt-1 text-[11px] text-gray-500 font-mono">{task.estimatedTime || '预计耗时未知'}</span>
+                      <span className={`mt-1 text-xs ${task.status === 'running' ? 'text-blue-700' : 'text-gray-700'}`}>{t('taskDetail.overview.statusRunning')}</span>
+                      <span className="mt-1 text-[11px] text-gray-500 font-mono">{task.estimatedTime || t('taskDetail.overview.estTimeUnknown')}</span>
                     </div>
                     <div className="flex-1 h-px bg-gray-200" />
                     {/* 完成/失败 */}
@@ -1611,7 +1613,7 @@ output:
                           <CheckCircle className="h-4 w-4 text-gray-500" />
                         )}
                       </div>
-                      <span className="mt-1 text-xs text-gray-700">{task.status === 'failed' ? '失败' : '完成'}</span>
+                      <span className="mt-1 text-xs text-gray-700">{task.status === 'failed' ? t('taskDetail.overview.statusFailed') : t('taskDetail.overview.statusSuccess')}</span>
                       <span className="mt-1 text-[11px] text-gray-500 font-mono">{task.actualTime || '-'}</span>
                     </div>
                   </div>
@@ -1635,8 +1637,8 @@ output:
           <Card className="transition-all duration-200 hover:shadow-md border-gray-200">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle>分类任务指标报表</CardTitle>
-                <CardDescription>支持 micro / macro / weighted 平均</CardDescription>
+                <CardTitle>{t('taskDetail.classification.metricsTitle')}</CardTitle>
+                <CardDescription>{t('taskDetail.classification.metricsDesc')}</CardDescription>
               </div>
               <div className="w-48">
                 <Select value={avgMethod} onValueChange={(v: 'micro' | 'macro' | 'weighted') => setAvgMethod(v)}>
@@ -1663,9 +1665,9 @@ output:
                   <Card key={item.key} className="border-gray-200">
                     <CardContent className="pt-6">
                       <p className="text-sm text-gray-600">{item.key}</p>
-                      <p className="text-xl font-bold text-gray-900">{(item.test * 100).toFixed(1)}% <span className="text-sm font-medium text-gray-500">(测试)</span></p>
+                      <p className="text-xl font-bold text-gray-900">{(item.test * 100).toFixed(1)}% <span className="text-sm font-medium text-gray-500">{t('taskDetail.classification.test')}</span></p>
                       {showTrainData && (
-                        <p className="text-base font-semibold text-purple-700 mt-1">{(item.train * 100).toFixed(1)}% <span className="text-xs font-medium text-purple-600">(训练)</span></p>
+                        <p className="text-base font-semibold text-purple-700 mt-1">{(item.train * 100).toFixed(1)}% <span className="text-xs font-medium text-purple-600">{t('taskDetail.classification.train')}</span></p>
                       )}
                     </CardContent>
                   </Card>
@@ -1676,8 +1678,8 @@ output:
 
           <Card className="transition-all duration-200 hover:shadow-md border-gray-200">
             <CardHeader>
-              <CardTitle>ROC 曲线</CardTitle>
-              <CardDescription>多分类每一类 + micro/macro 平均</CardDescription>
+              <CardTitle>{t('taskDetail.classification.rocTitle')}</CardTitle>
+              <CardDescription>{t('taskDetail.classification.rocDesc')}</CardDescription>
             </CardHeader>
             <CardContent>
               <ChartContainer
@@ -1708,8 +1710,8 @@ output:
 
           <Card className="transition-all duration-200 hover:shadow-md border-gray-200">
             <CardHeader>
-              <CardTitle>Precision-Recall 曲线</CardTitle>
-              <CardDescription>不同阈值下模型表现</CardDescription>
+              <CardTitle>{t('taskDetail.classification.prTitle')}</CardTitle>
+              <CardDescription>{t('taskDetail.classification.prDesc')}</CardDescription>
             </CardHeader>
             <CardContent>
               <ChartContainer
@@ -1740,8 +1742,8 @@ output:
 
           <Card className="transition-all duration-200 hover:shadow-md border-gray-200">
             <CardHeader>
-              <CardTitle>混淆矩阵</CardTitle>
-              <CardDescription>真实标签 vs 预测结果</CardDescription>
+              <CardTitle>{t('taskDetail.classification.confusionTitle')}</CardTitle>
+              <CardDescription>{t('taskDetail.classification.confusionDesc')}</CardDescription>
             </CardHeader>
             <CardContent>
               {(() => {
@@ -1749,7 +1751,7 @@ output:
                 return (
                   <div className="overflow-auto">
                     <div className="inline-grid" style={{ gridTemplateColumns: `120px repeat(${confusionMatrix.labels.length}, 80px)` }}>
-                      <div className="font-medium text-gray-700 flex items-center">真实/预测</div>
+                      <div className="font-medium text-gray-700 flex items-center">{t('taskDetail.classification.confusionAxis')}</div>
                       {confusionMatrix.labels.map((l) => (
                         <div key={l} className="text-center text-sm text-gray-600">{l}</div>
                       ))}
@@ -1777,8 +1779,8 @@ output:
           <Card className="transition-all duration-200 hover:shadow-md border-gray-200">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle>模型对比</CardTitle>
-                <CardDescription>按指标查看不同模型的表现</CardDescription>
+                <CardTitle>{t('taskDetail.regression.compareTitle')}</CardTitle>
+                <CardDescription>{t('taskDetail.regression.compareDesc')}</CardDescription>
               </div>
               <div className="flex items-center gap-3">
                 <div className="w-48">
@@ -1794,8 +1796,8 @@ output:
                   </Select>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button size="sm" variant={compareChartType === 'bar' ? 'default' : 'outline'} onClick={() => setCompareChartType('bar')}>柱状</Button>
-                  <Button size="sm" variant={compareChartType === 'line' ? 'default' : 'outline'} onClick={() => setCompareChartType('line')}>折线</Button>
+                  <Button size="sm" variant={compareChartType === 'bar' ? 'default' : 'outline'} onClick={() => setCompareChartType('bar')}>{t('taskDetail.compare.bar')}</Button>
+                  <Button size="sm" variant={compareChartType === 'line' ? 'default' : 'outline'} onClick={() => setCompareChartType('line')}>{t('taskDetail.compare.line')}</Button>
                 </div>
               </div>
             </CardHeader>
@@ -1825,8 +1827,8 @@ output:
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card className="transition-all duration-200 hover:shadow-md border-gray-200">
               <CardHeader>
-                <CardTitle>学习曲线（Accuracy）</CardTitle>
-                <CardDescription>训练与验证准确率随Epoch变化</CardDescription>
+                <CardTitle>{t('taskDetail.classification.learningTitle')}</CardTitle>
+                <CardDescription>{t('taskDetail.classification.learningDesc')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <ChartContainer className="h-64" config={{
@@ -1848,8 +1850,8 @@ output:
 
             <Card className="transition-all duration-200 hover:shadow-md border-gray-200">
               <CardHeader>
-                <CardTitle>损失曲线（Loss）</CardTitle>
-                <CardDescription>训练与验证损失随Epoch变化</CardDescription>
+                <CardTitle>{t('taskDetail.classification.lossTitle')}</CardTitle>
+                <CardDescription>{t('taskDetail.classification.lossDesc')}</CardDescription>
               </CardHeader>
               <CardContent>
                 <ChartContainer className="h-64" config={{
@@ -1896,12 +1898,12 @@ output:
             <CardHeader>
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <CardTitle>预测结果表</CardTitle>
-                  <CardDescription>最后一列为预测结果，前面的列为测试集的实际字段（默认每页 10 行，可分页查看更多）</CardDescription>
+                  <CardTitle>{t('taskDetail.regression.predictionTitle')}</CardTitle>
+                  <CardDescription>{t('taskDetail.regression.predictionDesc')}</CardDescription>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-700">显示训练数据</span>
+                    <span className="text-sm text-gray-700">{t('taskDetail.regression.showTraining')}</span>
                     <Switch checked={showTrainData} onCheckedChange={(checked) => setShowTrainData(Boolean(checked))} />
                   </div>
                   <Button variant="outline" size="sm" onClick={handleDownloadForecastCSV} className="shrink-0">
@@ -1916,8 +1918,8 @@ output:
                 <Table className="min-w-[1040px]">
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="sticky top-0 bg-white z-10 whitespace-nowrap">时间</TableHead>
-                      <TableHead className="sticky top-0 bg-white z-10 whitespace-nowrap">数据集</TableHead>
+                      <TableHead className="sticky top-0 bg-white z-10 whitespace-nowrap">{t('taskDetail.table.time')}</TableHead>
+                      <TableHead className="sticky top-0 bg-white z-10 whitespace-nowrap">{t('taskDetail.table.dataset')}</TableHead>
                       {testFeatureFieldNames.map((name) => (
                         <TableHead key={name} className="sticky top-0 bg-white z-10 whitespace-nowrap">{name}</TableHead>
                       ))}
@@ -2011,8 +2013,8 @@ output:
           {/* 指标趋势折线图：RMSE & MAPE (%) */}
           <Card className="transition-all duration-200 hover:shadow-md border-gray-200">
             <CardHeader>
-              <CardTitle>指标趋势</CardTitle>
-              <CardDescription>RMSE 与 MAPE 随时间变化（示意）</CardDescription>
+              <CardTitle>{t('taskDetail.timeseries.trendTitle')}</CardTitle>
+              <CardDescription>{t('taskDetail.timeseries.trendDesc')}</CardDescription>
             </CardHeader>
             <CardContent>
               <ChartContainer className="h-64" config={showTrainData ? {
@@ -2043,8 +2045,8 @@ output:
           {/* 时序预测折线图：真实值 / 预测值 / CI 上下界 */}
           <Card className="transition-all duration-200 hover:shadow-md border-gray-200">
             <CardHeader>
-              <CardTitle>时序预测曲线</CardTitle>
-              <CardDescription>展示真实值、预测值与区间上下界</CardDescription>
+              <CardTitle>{t('taskDetail.timeseries.curveTitle')}</CardTitle>
+              <CardDescription>{t('taskDetail.timeseries.curveDesc')}</CardDescription>
             </CardHeader>
             <CardContent>
               <ChartContainer className="h-64" config={showTrainData ? {
@@ -2081,8 +2083,8 @@ output:
           {/* 预测值 vs 真实值散点图 */}
           <Card className="transition-all duration-200 hover:shadow-md border-gray-200">
             <CardHeader>
-              <CardTitle>预测值 vs 真实值散点图</CardTitle>
-              <CardDescription>用于直观比较预测与实际情况</CardDescription>
+              <CardTitle>{t('taskDetail.regression.scatterTitle')}</CardTitle>
+              <CardDescription>{t('taskDetail.regression.scatterDesc')}</CardDescription>
             </CardHeader>
             <CardContent>
               <ChartContainer className="h-64" config={{ scatter: { label: '测试集', color: 'hsl(210 90% 55%)' } }}>
@@ -2106,8 +2108,8 @@ output:
           {/* 残差图 */}
           <Card className="transition-all duration-200 hover:shadow-md border-gray-200">
             <CardHeader>
-              <CardTitle>残差图（Residual Plot）</CardTitle>
-              <CardDescription>横坐标为预测值，纵坐标为残差</CardDescription>
+              <CardTitle>{t('taskDetail.regression.residualTitle')}</CardTitle>
+              <CardDescription>{t('taskDetail.regression.residualDesc')}</CardDescription>
             </CardHeader>
             <CardContent>
               <ChartContainer className="h-64" config={{ residual: { label: '测试集', color: 'hsl(8 80% 55%)' } }}>
@@ -2129,8 +2131,8 @@ output:
           {/* 误差分布直方图 */}
           <Card className="transition-all duration-200 hover:shadow-md border-gray-200">
             <CardHeader>
-              <CardTitle>误差分布直方图</CardTitle>
-              <CardDescription>展示预测误差的分布情况</CardDescription>
+              <CardTitle>{t('taskDetail.regression.errorTitle')}</CardTitle>
+              <CardDescription>{t('taskDetail.regression.errorDesc')}</CardDescription>
             </CardHeader>
             <CardContent>
               <ChartContainer className="h-64" config={showTrainData ? {
@@ -2159,34 +2161,34 @@ output:
           {/* 偏差统计（正负相对偏差 / 正负绝对偏差） */}
           <Card className="transition-all duration-200 hover:shadow-md border-gray-200">
             <CardHeader>
-              <CardTitle>偏差统计</CardTitle>
-              <CardDescription>正负相对偏差（±10%、±20%）与正负绝对偏差（±10、±20）</CardDescription>
+              <CardTitle>{t('taskDetail.regression.biasTitle')}</CardTitle>
+              <CardDescription>{t('taskDetail.regression.biasDesc')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-gray-600 mb-2">相对偏差</p>
+                  <p className="text-sm text-gray-600 mb-2">{t('taskDetail.regression.relativeBias')}</p>
                   <div className="grid grid-cols-3 gap-3">
                     {deviationStats.relative.map((d) => (
                       <Card key={`rel-${d.threshold}`} className="border-gray-200">
                         <CardContent className="pt-4">
                           <p className="text-xs text-gray-500">±{(d.threshold * 100).toFixed(0)}%</p>
-                          <div className="text-sm text-gray-700 mt-1">在范围内：{(d.withinRate * 100).toFixed(1)}%</div>
-                          <div className="text-xs text-gray-600">正向超阈：{(d.posRate * 100).toFixed(1)}% | 负向超阈：{(d.negRate * 100).toFixed(1)}%</div>
+                          <div className="text-sm text-gray-700 mt-1">{t('taskDetail.regression.withinRange', { val: (d.withinRate * 100).toFixed(1) })}</div>
+                          <div className="text-xs text-gray-600">{t('taskDetail.regression.posNegBias', { pos: (d.posRate * 100).toFixed(1), neg: (d.negRate * 100).toFixed(1) })}</div>
                         </CardContent>
                       </Card>
                     ))}
                   </div>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 mb-2">绝对偏差</p>
+                  <p className="text-sm text-gray-600 mb-2">{t('taskDetail.regression.absoluteBias')}</p>
                   <div className="grid grid-cols-3 gap-3">
                     {deviationStats.absolute.map((d) => (
                       <Card key={`abs-${d.threshold}`} className="border-gray-200">
                         <CardContent className="pt-4">
                           <p className="text-xs text-gray-500">±{d.threshold}</p>
-                          <div className="text-sm text-gray-700 mt-1">在范围内：{(d.withinRate * 100).toFixed(1)}%</div>
-                          <div className="text-xs text-gray-600">正向超阈：{(d.posRate * 100).toFixed(1)}% | 负向超阈：{(d.negRate * 100).toFixed(1)}%</div>
+                          <div className="text-sm text-gray-700 mt-1">{t('taskDetail.regression.withinRange', { val: (d.withinRate * 100).toFixed(1) })}</div>
+                          <div className="text-xs text-gray-600">{t('taskDetail.regression.posNegBias', { pos: (d.posRate * 100).toFixed(1), neg: (d.negRate * 100).toFixed(1) })}</div>
                         </CardContent>
                       </Card>
                     ))}
@@ -2200,8 +2202,8 @@ output:
           <Card className="transition-all duration-200 hover:shadow-md border-gray-200">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle>模型对比</CardTitle>
-                <CardDescription>多模型并行时对比不同指标</CardDescription>
+                <CardTitle>{t('taskDetail.compare.title')}</CardTitle>
+                <CardDescription>{t('taskDetail.regression.multiModelCompareDesc')}</CardDescription>
               </div>
               <div className="flex items-center gap-3">
                 <div className="w-48">
@@ -2218,8 +2220,8 @@ output:
                   </Select>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button size="sm" variant={compareChartType === 'bar' ? 'default' : 'outline'} onClick={() => setCompareChartType('bar')}>柱状</Button>
-                  <Button size="sm" variant={compareChartType === 'line' ? 'default' : 'outline'} onClick={() => setCompareChartType('line')}>折线</Button>
+                  <Button size="sm" variant={compareChartType === 'bar' ? 'default' : 'outline'} onClick={() => setCompareChartType('bar')}>{t('taskDetail.compare.bar')}</Button>
+                  <Button size="sm" variant={compareChartType === 'line' ? 'default' : 'outline'} onClick={() => setCompareChartType('line')}>{t('taskDetail.compare.line')}</Button>
                 </div>
               </div>
             </CardHeader>
@@ -2250,15 +2252,15 @@ output:
           <Card className="transition-all duration-200 hover:shadow-md border-gray-200">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle>自定义指标</CardTitle>
-                <CardDescription>p-范数误差（p=1 为 MAE，p=2 为 RMSE）</CardDescription>
+                <CardTitle>{t('taskDetail.regression.customMetricTitle')}</CardTitle>
+                <CardDescription>{t('taskDetail.regression.customMetricDesc')}</CardDescription>
               </div>
               <div className="w-40">
                 <Input type="number" step="0.1" min={0.1} max={10} value={customP} onChange={(e) => setCustomP(Number(e.target.value))} />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-sm text-gray-700">当前 p = {customP}，值：<span className="font-semibold">{customMetricValue.toFixed(3)}</span></div>
+              <div className="text-sm text-gray-700">{t('taskDetail.regression.currentP', { p: customP, val: customMetricValue.toFixed(3) })}</div>
             </CardContent>
           </Card>
         </>
@@ -2282,8 +2284,8 @@ output:
 
           <Card className="transition-all duration-200 hover:shadow-md border-gray-200">
             <CardHeader>
-              <CardTitle>预测值 vs 真实值</CardTitle>
-              <CardDescription>直观比较模型预测与实际情况</CardDescription>
+              <CardTitle>{t('taskDetail.regression.scatterTitleMini')}</CardTitle>
+              <CardDescription>{t('taskDetail.regression.scatterDescMini')}</CardDescription>
             </CardHeader>
             <CardContent>
               <ChartContainer className="h-64" config={{ scatter: { label: 'Points', color: 'hsl(210 90% 55%)' } }}>
@@ -2302,8 +2304,8 @@ output:
 
           <Card className="transition-all duration-200 hover:shadow-md border-gray-200">
             <CardHeader>
-              <CardTitle>残差图</CardTitle>
-              <CardDescription>横坐标为预测值，纵坐标为残差</CardDescription>
+              <CardTitle>{t('taskDetail.regression.residualTitleMini')}</CardTitle>
+              <CardDescription>{t('taskDetail.regression.residualDescMini')}</CardDescription>
             </CardHeader>
             <CardContent>
               <ChartContainer className="h-64" config={{ residual: { label: 'Residual', color: 'hsl(8 80% 55%)' } }}>
@@ -2321,8 +2323,8 @@ output:
 
           <Card className="transition-all duration-200 hover:shadow-md border-gray-200">
             <CardHeader>
-              <CardTitle>误差分布直方图</CardTitle>
-              <CardDescription>展示预测误差的分布情况</CardDescription>
+              <CardTitle>{t('taskDetail.regression.errorTitle')}</CardTitle>
+              <CardDescription>{t('taskDetail.regression.errorDesc')}</CardDescription>
             </CardHeader>
             <CardContent>
               <ChartContainer className="h-64" config={{ hist: { label: 'Error Count', color: 'hsl(210 90% 55%)' } }}>
@@ -2340,8 +2342,8 @@ output:
           <Card className="transition-all duration-200 hover:shadow-md border-gray-200">
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle>模型对比</CardTitle>
-                <CardDescription>不同模型在所选指标下的表现</CardDescription>
+                <CardTitle>{t('taskDetail.compare.title')}</CardTitle>
+                <CardDescription>{t('taskDetail.compare.description')}</CardDescription>
               </div>
               <div className="flex items-center gap-3">
                 <div className="w-48">
@@ -2358,8 +2360,8 @@ output:
                   </Select>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button size="sm" variant={compareChartType === 'bar' ? 'default' : 'outline'} onClick={() => setCompareChartType('bar')}>柱状</Button>
-                  <Button size="sm" variant={compareChartType === 'line' ? 'default' : 'outline'} onClick={() => setCompareChartType('line')}>折线</Button>
+                  <Button size="sm" variant={compareChartType === 'bar' ? 'default' : 'outline'} onClick={() => setCompareChartType('bar')}>{t('taskDetail.compare.bar')}</Button>
+                  <Button size="sm" variant={compareChartType === 'line' ? 'default' : 'outline'} onClick={() => setCompareChartType('line')}>{t('taskDetail.compare.line')}</Button>
                 </div>
               </div>
             </CardHeader>
@@ -2389,11 +2391,11 @@ output:
       ) : (
         <Card className="transition-all duration-200 hover:shadow-md border-gray-200">
           <CardHeader>
-            <CardTitle>任务类型暂不支持详细结果展示</CardTitle>
-            <CardDescription>当前仅针对 分类 / 回归 / 时序预测 任务提供结果展示</CardDescription>
+            <CardTitle>{t('taskDetail.result.unsupported')}</CardTitle>
+            <CardDescription>{t('taskDetail.result.supportedNote')}</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-gray-600">请创建分类或回归任务以体验完整的结果可视化。</p>
+            <p className="text-sm text-gray-600">{t('taskDetail.result.supportedHint')}</p>
           </CardContent>
         </Card>
       )}
@@ -2423,7 +2425,7 @@ output:
               <FileText className="h-5 w-5" />
               执行日志
             </CardTitle>
-            <CardDescription>任务执行过程中的详细日志记录</CardDescription>
+            <CardDescription>{t('taskDetail.logs.description')}</CardDescription>
           </div>
           <Button
             variant="outline"
@@ -2471,16 +2473,16 @@ output:
             <Download className="h-5 w-5" />
             任务产物
           </CardTitle>
-          <CardDescription>任务执行生成的文件和资源</CardDescription>
+          <CardDescription>{t('taskDetail.artifacts.description')}</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>文件名</TableHead>
-                <TableHead>类型</TableHead>
-                <TableHead>大小</TableHead>
-                <TableHead>操作</TableHead>
+                <TableHead>{t('taskDetail.artifacts.tableName')}</TableHead>
+                <TableHead>{t('taskDetail.artifacts.tableType')}</TableHead>
+                <TableHead>{t('taskDetail.artifacts.tableSize')}</TableHead>
+                <TableHead>{t('taskDetail.artifacts.tableAction')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -2564,7 +2566,7 @@ output:
       <Dialog open={artifactPreviewOpen} onOpenChange={setArtifactPreviewOpen}>
         <DialogContent className="sm:max-w-4xl w-[92vw] max-h-[72vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>预览：{artifactPreviewName}</DialogTitle>
+            <DialogTitle>{t('taskDetail.artifacts.preview')}{artifactPreviewName}</DialogTitle>
           </DialogHeader>
           <pre className="bg-gray-50 rounded-md p-4 text-xs w-full max-h-[60vh] overflow-auto whitespace-pre break-words">
             {artifactPreviewContent}
@@ -2589,7 +2591,7 @@ output:
             返回
           </Button>
           <div>
-            <h1 className="text-xl font-semibold">任务详情分析</h1>
+            <h1 className="text-xl font-semibold">{t('taskDetail.analysis.title')}</h1>
             <p className="text-sm text-gray-600">{task.taskName}</p>
           </div>
         </div>
@@ -2618,9 +2620,9 @@ output:
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={handleExportPDF}>导出 PDF</DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleExportHTML}>导出 HTML</DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleExportParamsJson}>导出参数 JSON</DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleExportPDF}>{t('taskDetail.export.pdf')}</DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleExportHTML}>{t('taskDetail.export.html')}</DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleExportParamsJson}>{t('taskDetail.export.json')}</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               );
@@ -2667,20 +2669,20 @@ output:
           <div ref={contentRef} className="flex-1 overflow-y-auto p-6 space-y-10">
             {/* 任务结果 */}
             <section id="results" className="scroll-mt-24">
-              <h2 className="text-lg font-semibold mb-4">任务结果</h2>
+              <h2 className="text-lg font-semibold mb-4">{t('taskDetail.section.results')}</h2>
               {renderMetricsTab()}
             </section>
 
             {/* 因果解释 */}
             <section id="causal" className="scroll-mt-24">
-              <h2 className="text-lg font-semibold mb-4">因果解释</h2>
+              <h2 className="text-lg font-semibold mb-4">{t('taskDetail.section.causal')}</h2>
 
               {/* 注：按用户要求移除顶部模型评估卡片（蓝色横幅与误差棒图） */}
               <Card className="transition-all duration-200 hover:shadow-md border-gray-200">
                 <CardHeader className="flex flex-row items-center justify-between">
                   <div>
-                    <CardTitle>因果解释图</CardTitle>
-                    <CardDescription>展示影响强度热图与因子贡献对比</CardDescription>
+                    <CardTitle>{t('taskDetail.section.causal')}</CardTitle>
+                    <CardDescription>{t('taskDetail.causal.desc')}</CardDescription>
                   </div>
                   <div className="flex items-center gap-2">
                     <Button variant="outline" onClick={handleExportCausalCSV}>
@@ -2696,7 +2698,7 @@ output:
                 <CardContent>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <div className="bg-white border rounded-lg p-3">
-                      <div className="text-sm font-medium text-gray-700 mb-2">影响强度热图</div>
+                      <div className="text-sm font-medium text-gray-700 mb-2">{t('taskDetail.causal.heatmap')}</div>
                       {(() => {
                         const factorLabels = ['温度_均值', '压力_方差', '设备功率', '环境湿度', '质量评分', '历史缺陷率', '维护间隔', '设备老化指数', '能耗比', '设备震动', '生产节拍', '人员工时'];
                         const times: string[] = Array.from({ length: 20 }).map((_, i) => {
@@ -2751,7 +2753,7 @@ output:
                       })()}
                     </div>
                     <div className="bg-white border rounded-lg p-3">
-                      <div className="text-sm font-medium text-gray-700 mb-2">影响因子贡献对比</div>
+                      <div className="text-sm font-medium text-gray-700 mb-2">{t('taskDetail.causal.contribution')}</div>
                       {(() => {
                         const data = [
                           { name: '温度_均值', score: -74.4 },
@@ -2794,11 +2796,11 @@ output:
               <Dialog open={isDeepSeekOpen} onOpenChange={setDeepSeekOpen}>
                 <DialogContent className="sm:max-w-2xl">
                   <DialogHeader>
-                    <DialogTitle>大模型预测过程</DialogTitle>
+                    <DialogTitle>{t('taskDetail.deepseek.process')}</DialogTitle>
                   </DialogHeader>
                   <div className="space-y-4">
                     <div className="p-3 bg-blue-50 rounded-lg">
-                      <div className="font-medium text-blue-700">模型推理的关键节点</div>
+                      <div className="font-medium text-blue-700">{t('taskDetail.deepseek.nodes')}</div>
                       <ul className="list-disc pl-5 text-sm text-blue-900 mt-2">
                         {deepSeekSteps.map((s, i) => (
                           <li key={i}>{s}</li>
@@ -2807,7 +2809,7 @@ output:
                     </div>
                     {/* 特征权重分析已移除 */}
                     <div>
-                      <div className="text-sm font-medium text-gray-700 mb-2">决策路径可视化</div>
+                      <div className="text-sm font-medium text-gray-700 mb-2">{t('taskDetail.deepseek.path')}</div>
                       <div className="flex flex-wrap items-center gap-2 bg-gray-50 rounded-lg p-3">
                         {decisionRules.map((r, idx) => (
                           <React.Fragment key={idx}>
@@ -2816,7 +2818,7 @@ output:
                           </React.Fragment>
                         ))}
                       </div>
-                      <div className="text-xs text-gray-500 mt-1">按规则链路依次判断并形成最终分类决策</div>
+                      <div className="text-xs text-gray-500 mt-1">{t('taskDetail.deepseek.note')}</div>
                     </div>
                   </div>
                 </DialogContent>
@@ -2825,13 +2827,13 @@ output:
 
             {/* 概览信息 */}
             <section id="meta" className="scroll-mt-24">
-              <h2 className="text-lg font-semibold mb-4">概览信息</h2>
+              <h2 className="text-lg font-semibold mb-4">{t('taskDetail.section.meta')}</h2>
               {renderOverviewTab()}
             </section>
 
             {/* 数据集信息 */}
             <section id="dataset" className="scroll-mt-24">
-              <h2 className="text-lg font-semibold mb-4">数据集信息</h2>
+              <h2 className="text-lg font-semibold mb-4">{t('taskDetail.section.dataset')}</h2>
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <Card className="transition-all duration-200 hover:shadow-md border-gray-200 lg:col-span-1">
                   <CardHeader>
@@ -2843,7 +2845,7 @@ output:
                   <CardContent className="space-y-3">
                     {task.datasets && task.datasets.length > 0 ? (
                       <div>
-                        <p className="text-sm text-gray-600">已关联数据集（多选）</p>
+                        <p className="text-sm text-gray-600">{t('taskDetail.dataset.associatedMulti')}</p>
                         <div className="flex flex-wrap gap-2 mt-2">
                           {task.datasets.map((ds) => (
                             <Badge key={ds.id} variant="secondary" className="flex items-center gap-2">
@@ -2855,11 +2857,11 @@ output:
                       </div>
                     ) : (
                       <div>
-                        <p className="text-sm text-gray-600">已关联数据集</p>
+                        <p className="text-sm text-gray-600">{t('taskDetail.dataset.associatedSingle')}</p>
                         <div className="flex flex-wrap gap-2 mt-2">
                           <Badge variant="secondary" className="flex items-center gap-2">
-                            <span>{task.datasetName || '未设置'}</span>
-                            <span className="text-xs text-gray-500">{(task as any).datasetId || '未设置'}{task.datasetVersion ? ` · ${task.datasetVersion}` : ''}</span>
+                            <span>{task.datasetName || t('taskDetail.dataset.notSet')}</span>
+                            <span className="text-xs text-gray-500">{(task as any).datasetId || t('taskDetail.dataset.notSet')}{task.datasetVersion ? ` · ${task.datasetVersion}` : ''}</span>
                           </Badge>
                         </div>
                       </div>
@@ -2868,20 +2870,20 @@ output:
                     <div className="mt-2 space-y-3">
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <div className="text-sm text-gray-600">来源</div>
-                          <div className="text-base font-medium">{aggregatedStats?.sourceLabel ?? '未设置'}</div>
+                          <div className="text-sm text-gray-600">{t('taskDetail.dataset.source')}</div>
+                          <div className="text-base font-medium">{aggregatedStats?.sourceLabel ?? t('taskDetail.dataset.notSet')}</div>
                         </div>
                         <div>
-                          <div className="text-sm text-gray-600">样本总数</div>
-                          <div className="text-base font-medium">{aggregatedStats ? aggregatedStats.totalSamples.toLocaleString() : '未设置'}</div>
+                          <div className="text-sm text-gray-600">{t('taskDetail.dataset.sampleCount')}</div>
+                          <div className="text-base font-medium">{aggregatedStats ? aggregatedStats.totalSamples.toLocaleString() : t('taskDetail.dataset.notSet')}</div>
                         </div>
                         <div>
-                          <div className="text-sm text-gray-600">字段并集数量</div>
-                          <div className="text-base font-medium">{aggregatedStats ? aggregatedStats.unionFieldCount.toLocaleString() : '未设置'}</div>
+                          <div className="text-sm text-gray-600">{t('taskDetail.dataset.unionFields')}</div>
+                          <div className="text-base font-medium">{aggregatedStats ? aggregatedStats.unionFieldCount.toLocaleString() : t('taskDetail.dataset.notSet')}</div>
                         </div>
                         <div>
-                          <div className="text-sm text-gray-600">合集大小</div>
-                          <div className="text-base font-medium">{aggregatedStats ? formatSizeMB(aggregatedStats.totalSizeMB) : '未设置'}</div>
+                          <div className="text-sm text-gray-600">{t('taskDetail.dataset.totalSize')}</div>
+                          <div className="text-base font-medium">{aggregatedStats ? formatSizeMB(aggregatedStats.totalSizeMB) : t('taskDetail.dataset.notSet')}</div>
                         </div>
                       </div>
                     </div>
@@ -2890,8 +2892,8 @@ output:
                 <Card className="transition-all duration-200 hover:shadow-md border-gray-200 lg:col-span-2">
                   <CardHeader className="flex-row items-center justify-between">
                     <div>
-                      <CardTitle>数据预览</CardTitle>
-                      <CardDescription>参考数据管理-数据详情样式，支持排序/筛选/分页/列控制</CardDescription>
+                      <CardTitle>{t('preprocess.dataset.preview')}</CardTitle>
+                      <CardDescription>{t('taskDetail.preview.desc')}</CardDescription>
                     </div>
                     <div className="flex items-center gap-2 flex-wrap">
                       <div className="w-52">
@@ -2932,14 +2934,14 @@ output:
 
                       <div className="relative">
                         <Search className="h-4 w-4 absolute left-2 top-2 text-gray-400" />
-                        <Input className="pl-8 w-40" value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} placeholder="搜索行内容" />
+                        <Input className="pl-8 w-40" value={searchTerm} onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }} placeholder={t('taskDetail.preview.searchPlaceholder')} />
                       </div>
 
                       <Button variant="outline" size="sm" onClick={() => setMissingOnly((prev) => !prev)} className={missingOnly ? "bg-red-50 border-red-500 text-red-600" : ""}>
-                        <Filter className="h-4 w-4 mr-1" />缺失值
+                        <Filter className="h-4 w-4 mr-1" />{t('taskDetail.preview.missingValues')}
                       </Button>
                       <Button variant="outline" size="sm" onClick={() => setUniqueOnly((prev) => !prev)} className={uniqueOnly ? "bg-orange-50 border-orange-500 text-orange-600" : ""}>
-                        <TrendingUp className="h-4 w-4 mr-1" />唯一值
+                        <TrendingUp className="h-4 w-4 mr-1" />{t('taskDetail.preview.uniqueValues')}
                       </Button>
                       <Select value={uniqueField || ''} onValueChange={(v: string) => { setUniqueField(v || null); setCurrentPage(1); }}>
                         <SelectTrigger className="w-40">
@@ -2958,7 +2960,7 @@ output:
                             <SelectValue placeholder="列排序" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="original">原顺序</SelectItem>
+                            <SelectItem value="original">{t('taskDetail.preview.orderOriginal')}</SelectItem>
                             <SelectItem value="asc">A-Z</SelectItem>
                             <SelectItem value="desc">Z-A</SelectItem>
                           </SelectContent>
@@ -2971,9 +2973,9 @@ output:
                             <SelectValue placeholder="密度" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="compact">紧凑</SelectItem>
-                            <SelectItem value="normal">适中</SelectItem>
-                            <SelectItem value="comfortable">宽松</SelectItem>
+                            <SelectItem value="compact">{t('taskDetail.preview.densityCompact')}</SelectItem>
+                            <SelectItem value="normal">{t('taskDetail.preview.densityNormal')}</SelectItem>
+                            <SelectItem value="comfortable">{t('taskDetail.preview.densityComfortable')}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -3020,28 +3022,28 @@ output:
 
             {/* 模型信息 */}
             <section id="model" className="scroll-mt-24">
-              <h2 className="text-lg font-semibold mb-4">模型信息</h2>
+              <h2 className="text-lg font-semibold mb-4">{t('taskDetail.section.model')}</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <Card className="transition-all duration-200 hover:shadow-md border-gray-200">
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Brain className="h-5 w-5" />主模型</CardTitle>
+                    <CardTitle className="flex items-center gap-2"><Brain className="h-5 w-5" />{t('taskDetail.model.main')}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
-                    <div><span className="text-sm text-gray-600">模型名称</span><p className="font-medium">{task.modelName}</p></div>
-                    <div><span className="text-sm text-gray-600">模型类型</span><p className="font-medium">自研</p></div>
-                    <div><span className="text-sm text-gray-600">版本号</span><p className="font-medium">v1.0</p></div>
-                    <div><span className="text-sm text-gray-600">模型描述</span><p className="text-gray-900">用于{getTaskTypeLabel(task.taskType)}任务的模型。</p></div>
+                    <div><span className="text-sm text-gray-600">{t('taskDetail.model.name')}</span><p className="font-medium">{task.modelName}</p></div>
+                    <div><span className="text-sm text-gray-600">{t('taskDetail.model.type')}</span><p className="font-medium">{t('common.selfDeveloped') || '自研'}</p></div>
+                    <div><span className="text-sm text-gray-600">{t('taskDetail.model.version')}</span><p className="font-medium">v1.0</p></div>
+                    <div><span className="text-sm text-gray-600">{t('taskDetail.model.desc')}</span><p className="text-gray-900">{t('taskDetail.model.descNote', { type: getTaskTypeLabel(task.taskType) })}</p></div>
                   </CardContent>
                 </Card>
                 {[1, 2].map(i => (
                   <Card key={i} className="transition-all duration-200 hover:shadow-md border-gray-200">
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2"><Brain className="h-5 w-5" />并行模型 {i}</CardTitle>
+                      <CardTitle className="flex items-center gap-2"><Brain className="h-5 w-5" />{t('taskDetail.model.parallel')} {i}</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-2">
-                      <div><span className="text-sm text-gray-600">模型名称</span><p className="font-medium">Model-{i}</p></div>
-                      <div><span className="text-sm text-gray-600">模型类型</span><p className="font-medium">微调</p></div>
-                      <div><span className="text-sm text-gray-600">版本号</span><p className="font-medium">v{i}.2</p></div>
+                      <div><span className="text-sm text-gray-600">{t('taskDetail.model.name')}</span><p className="font-medium">Model-{i}</p></div>
+                      <div><span className="text-sm text-gray-600">{t('taskDetail.model.type')}</span><p className="font-medium">{t('common.finetuning') || '微调'}</p></div>
+                      <div><span className="text-sm text-gray-600">{t('taskDetail.model.version')}</span><p className="font-medium">v{i}.2</p></div>
                     </CardContent>
                   </Card>
                 ))}
@@ -3050,38 +3052,38 @@ output:
 
             {/* 参数配置 */}
             <section id="params" className="scroll-mt-24">
-              <h2 className="text-lg font-semibold mb-4">参数配置</h2>
+              <h2 className="text-lg font-semibold mb-4">{t('taskDetail.section.params')}</h2>
               {/* 用户配置的参数字段展示（替换X/Y字段选择） */}
               <Card className="transition-all duration-200 hover:shadow-md border-gray-200">
                 <CardHeader>
-                  <CardTitle>用户配置的参数字段</CardTitle>
-                  <CardDescription>展示任务创建时填写的时序预测相关参数</CardDescription>
+                  <CardTitle>{t('taskDetail.params.userConfig')}</CardTitle>
+                  <CardDescription>{t('taskDetail.params.timeseriesNote')}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <span className="text-sm text-gray-600">上下文长度</span>
+                      <span className="text-sm text-gray-600">{t('taskDetail.params.contextLength')}</span>
                       <p className="font-medium">{forecastingParams?.contextLength ?? '-'}</p>
                     </div>
                     <div>
-                      <span className="text-sm text-gray-600">预测步长</span>
+                      <span className="text-sm text-gray-600">{t('taskDetail.params.predictStep')}</span>
                       <p className="font-medium">{forecastingParams?.stepLength ?? '-'}</p>
                     </div>
                     <div>
-                      <span className="text-sm text-gray-600">预测长度</span>
+                      <span className="text-sm text-gray-600">{t('taskDetail.params.predictLength')}</span>
                       <p className="font-medium">{forecastingParams?.forecastLength ?? '-'}</p>
                     </div>
                     <div>
-                      <span className="text-sm text-gray-600">预测开始时间</span>
+                      <span className="text-sm text-gray-600">{t('taskDetail.params.startTime')}</span>
                       <p className="font-medium">{forecastingParams?.startTime ?? '-'}</p>
                     </div>
                     <div>
-                      <span className="text-sm text-gray-600">主变量文件</span>
-                      <p className="font-medium">{forecastingParams?.mainVariableFile || '未指定'}</p>
+                      <span className="text-sm text-gray-600">{t('taskDetail.params.mainFile')}</span>
+                      <p className="font-medium">{forecastingParams?.mainVariableFile || t('taskDetail.params.none')}</p>
                     </div>
                     <div>
-                      <span className="text-sm text-gray-600">协变量文件</span>
-                      <p className="font-medium">{(forecastingParams?.covariateFiles && forecastingParams.covariateFiles.length > 0) ? forecastingParams.covariateFiles.join(', ') : '无'}</p>
+                      <span className="text-sm text-gray-600">{t('taskDetail.params.covariateFiles')}</span>
+                      <p className="font-medium">{(forecastingParams?.covariateFiles && forecastingParams.covariateFiles.length > 0) ? forecastingParams.covariateFiles.join(', ') : t('taskDetail.params.none')}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -3091,13 +3093,13 @@ output:
 
             {/* 执行日志 */}
             <section id="logs" className="scroll-mt-24">
-              <h2 className="text-lg font-semibold mb-4">执行日志</h2>
+              <h2 className="text-lg font-semibold mb-4">{t('taskDetail.section.logs')}</h2>
               {renderLogsTab()}
             </section>
 
             {/* 任务产物 */}
             <section id="artifacts" className="scroll-mt-24">
-              <h2 className="text-lg font-semibold mb-4">任务产物</h2>
+              <h2 className="text-lg font-semibold mb-4">{t('taskDetail.section.artifacts')}</h2>
               {renderArtifactsTab()}
             </section>
 
@@ -3105,7 +3107,7 @@ output:
             <Dialog open={confirmDialog.isOpen} onOpenChange={() => handleCancelConfirm()}>
               <DialogContent className="sm:max-w-md">
                 <DialogHeader>
-                  <DialogTitle>确认操作</DialogTitle>
+                  <DialogTitle>{t('common.confirmAction')}</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div className="text-sm text-gray-600">
@@ -3119,7 +3121,7 @@ output:
                   </div>
                   <p className="font-medium">{confirmDialog.taskName}</p>
                   <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={handleCancelConfirm}>取消</Button>
+                    <Button variant="outline" onClick={handleCancelConfirm}>{t('common.cancel')}</Button>
                     <Button
                       onClick={() => executeTaskAction(confirmDialog.action, confirmDialog.taskId)}
                       disabled={loadingAction === `${confirmDialog.taskId}:${confirmDialog.action}`}

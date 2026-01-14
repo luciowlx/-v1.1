@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
+import { useLanguage } from '../i18n/LanguageContext';
 import {
     TrendingUp,
     Database,
@@ -52,43 +53,45 @@ export const Dashboard: React.FC<DashboardProps> = ({
     onOpenActivityCenter,
     onNavigateToProjectOverview
 }) => {
+    const { t } = useLanguage();
+
     // 模拟统计数据
     const stats = [
-        { label: '项目总数', value: '12', icon: Folder, color: 'bg-blue-100 text-blue-600', trend: '+2 本周' },
-        { label: '数据资产', value: '48', icon: Database, color: 'bg-green-100 text-green-600', trend: '+8 本周' },
-        { label: '决策推理', value: '5', icon: Activity, color: 'bg-orange-100 text-orange-600', trend: '3 排队中' },
-        { label: '因果洞察', value: '23', icon: GitBranch, color: 'bg-purple-100 text-purple-600', trend: '+5 本周' },
+        { labelKey: 'dashboard.stats.totalProjects', value: '12', icon: Folder, color: 'bg-blue-100 text-blue-600', trendKey: 'dashboard.stats.thisWeek', trendValue: '+2' },
+        { labelKey: 'dashboard.stats.dataAssets', value: '48', icon: Database, color: 'bg-green-100 text-green-600', trendKey: 'dashboard.stats.thisWeek', trendValue: '+8' },
+        { labelKey: 'dashboard.stats.reasoningTask', value: '5', icon: Activity, color: 'bg-orange-100 text-orange-600', trendKey: 'dashboard.stats.queued', trendValue: '3' },
+        { labelKey: 'dashboard.stats.causalInsight', value: '23', icon: GitBranch, color: 'bg-purple-100 text-purple-600', trendKey: 'dashboard.stats.thisWeek', trendValue: '+5' },
     ];
 
     // 快捷操作入口
     const quickActions = [
-        { label: '创建项目', icon: Plus, description: '新建机器学习项目', onClick: onNavigateToProjectManagement },
-        { label: '上传数据', icon: Database, description: '上传或导入数据集', onClick: onNavigateToDataManagement },
-        { label: '决策推理', icon: Target, description: '创建新的决策推理任务', onClick: onNavigateToTaskManagement },
-        { label: '因果洞察', icon: GitBranch, description: '探索数据因果关系', onClick: onNavigateToCausalInsight },
+        { labelKey: 'dashboard.quickActions.createProject', icon: Plus, descKey: 'dashboard.quickActions.createProject.desc', onClick: onNavigateToProjectManagement },
+        { labelKey: 'dashboard.quickActions.uploadData', icon: Database, descKey: 'dashboard.quickActions.uploadData.desc', onClick: onNavigateToDataManagement },
+        { labelKey: 'dashboard.quickActions.reasoningTask', icon: Target, descKey: 'dashboard.quickActions.reasoningTask.desc', onClick: onNavigateToTaskManagement },
+        { labelKey: 'dashboard.quickActions.causalInsight', icon: GitBranch, descKey: 'dashboard.quickActions.causalInsight.desc', onClick: onNavigateToCausalInsight },
     ];
 
-    // 最近项目
+    // 最近项目（Mock数据保持原样，用于展示）
     const recentProjects = [
-        { name: '钢铁缺陷预测', status: '进行中', progress: 75, updatedAt: '2小时前' },
-        { name: '电力能源预测', status: '已完成', progress: 100, updatedAt: '1天前' },
-        { name: '工艺时序预测', status: '进行中', progress: 45, updatedAt: '3天前' },
+        { name: '钢铁缺陷预测', statusKey: 'dashboard.recentProjects.inProgress', progress: 75, updatedAt: '2' + t('dashboard.time.hoursAgo') },
+        { name: '电力能源预测', statusKey: 'dashboard.recentProjects.completed', progress: 100, updatedAt: '1' + t('dashboard.time.daysAgo') },
+        { name: '工艺时序预测', statusKey: 'dashboard.recentProjects.inProgress', progress: 45, updatedAt: '3' + t('dashboard.time.daysAgo') },
     ];
 
     // 最近活动
     const recentActivities = [
-        { action: '任务完成', target: '销售预测模型训练', time: '10分钟前', status: 'success' },
-        { action: '数据上传', target: '2024年Q4销售数据.csv', time: '1小时前', status: 'success' },
-        { action: '任务失败', target: '客户流失预测', time: '2小时前', status: 'error' },
-        { action: '模型部署', target: 'XGBoost-v2.1', time: '5小时前', status: 'success' },
+        { actionKey: 'dashboard.activity.taskComplete', target: '销售预测模型训练', time: '10' + t('dashboard.time.minutesAgo'), status: 'success' },
+        { actionKey: 'dashboard.activity.dataUpload', target: '2024年Q4销售数据.csv', time: '1' + t('dashboard.time.hoursAgo'), status: 'success' },
+        { actionKey: 'dashboard.activity.taskFailed', target: '客户流失预测', time: '2' + t('dashboard.time.hoursAgo'), status: 'error' },
+        { actionKey: 'dashboard.activity.modelDeploy', target: 'XGBoost-v2.1', time: '5' + t('dashboard.time.hoursAgo'), status: 'success' },
     ];
 
     return (
         <div className="space-y-6">
             {/* 页面标题 */}
             <div className="mb-6">
-                <h1 className="text-2xl font-semibold text-gray-900 mb-2">系统总览</h1>
-                <p className="text-gray-600">欢迎回来！这是您的数据分析平台概览</p>
+                <h1 className="text-2xl font-semibold text-gray-900 mb-2">{t('dashboard.title')}</h1>
+                <p className="text-gray-600">{t('dashboard.welcome')}</p>
             </div>
 
             {/* 统计卡片 */}
@@ -98,9 +101,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         <CardContent className="p-6">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <p className="text-sm font-medium text-gray-500">{stat.label}</p>
+                                    <p className="text-sm font-medium text-gray-500">{t(stat.labelKey)}</p>
                                     <p className="text-3xl font-bold text-gray-900 mt-1">{stat.value}</p>
-                                    <p className="text-xs text-gray-400 mt-1">{stat.trend}</p>
+                                    <p className="text-xs text-gray-400 mt-1">{stat.trendValue} {t(stat.trendKey)}</p>
                                 </div>
                                 <div className={`p-3 rounded-lg ${stat.color}`}>
                                     <stat.icon className="h-6 w-6" />
@@ -116,7 +119,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <CardHeader>
                     <CardTitle className="text-lg flex items-center gap-2">
                         <Zap className="h-5 w-5 text-yellow-500" />
-                        快捷操作
+                        {t('dashboard.quickActions.title')}
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -131,8 +134,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                     <action.icon className="h-5 w-5 text-blue-600" />
                                 </div>
                                 <div>
-                                    <p className="font-medium text-gray-900">{action.label}</p>
-                                    <p className="text-sm text-gray-500">{action.description}</p>
+                                    <p className="font-medium text-gray-900">{t(action.labelKey)}</p>
+                                    <p className="text-sm text-gray-500">{t(action.descKey)}</p>
                                 </div>
                             </button>
                         ))}
@@ -147,10 +150,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <CardHeader className="flex flex-row items-center justify-between">
                         <CardTitle className="text-lg flex items-center gap-2">
                             <Folder className="h-5 w-5 text-blue-500" />
-                            最近项目
+                            {t('dashboard.recentProjects.title')}
                         </CardTitle>
                         <Button variant="ghost" size="sm" onClick={onNavigateToProjectOverview} className="text-blue-600 hover:text-blue-700">
-                            查看全部 <ArrowRight className="h-4 w-4 ml-1" />
+                            {t('common.viewAll')} <ArrowRight className="h-4 w-4 ml-1" />
                         </Button>
                     </CardHeader>
                     <CardContent>
@@ -158,7 +161,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             {recentProjects.map((project, index) => (
                                 <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
                                     <div className="flex items-center gap-3">
-                                        <div className={`w-2 h-2 rounded-full ${project.status === '已完成' ? 'bg-green-500' : 'bg-blue-500'}`} />
+                                        <div className={`w-2 h-2 rounded-full ${project.statusKey === 'dashboard.recentProjects.completed' ? 'bg-green-500' : 'bg-blue-500'}`} />
                                         <div>
                                             <p className="font-medium text-gray-900">{project.name}</p>
                                             <p className="text-sm text-gray-500">{project.updatedAt}</p>
@@ -167,7 +170,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                     <div className="flex items-center gap-2">
                                         <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
                                             <div
-                                                className={`h-full ${project.status === '已完成' ? 'bg-green-500' : 'bg-blue-500'}`}
+                                                className={`h-full ${project.statusKey === 'dashboard.recentProjects.completed' ? 'bg-green-500' : 'bg-blue-500'}`}
                                                 style={{ width: `${project.progress}%` }}
                                             />
                                         </div>
@@ -184,10 +187,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <CardHeader className="flex flex-row items-center justify-between">
                         <CardTitle className="text-lg flex items-center gap-2">
                             <Activity className="h-5 w-5 text-green-500" />
-                            最近活动
+                            {t('dashboard.recentActivity.title')}
                         </CardTitle>
                         <Button variant="ghost" size="sm" onClick={onOpenActivityCenter} className="text-blue-600 hover:text-blue-700">
-                            查看全部 <ArrowRight className="h-4 w-4 ml-1" />
+                            {t('common.viewAll')} <ArrowRight className="h-4 w-4 ml-1" />
                         </Button>
                     </CardHeader>
                     <CardContent>
@@ -203,7 +206,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                     </div>
                                     <div className="flex-1">
                                         <p className="text-sm text-gray-900">
-                                            <span className="font-medium">{activity.action}</span>
+                                            <span className="font-medium">{t(activity.actionKey)}</span>
                                             <span className="text-gray-500"> - </span>
                                             {activity.target}
                                         </p>
@@ -227,12 +230,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                 <GitBranch className="h-6 w-6 text-indigo-600" />
                             </div>
                             <div>
-                                <h3 className="text-lg font-semibold text-gray-900">因果洞察</h3>
-                                <p className="text-sm text-gray-600">探索数据之间的因果关系，发现隐藏的业务洞察</p>
+                                <h3 className="text-lg font-semibold text-gray-900">{t('dashboard.causalCard.title')}</h3>
+                                <p className="text-sm text-gray-600">{t('dashboard.causalCard.desc')}</p>
                             </div>
                         </div>
                         <Button onClick={onNavigateToCausalInsight} className="bg-indigo-600 hover:bg-indigo-700">
-                            开始探索 <ArrowRight className="h-4 w-4 ml-2" />
+                            {t('dashboard.causalCard.explore')} <ArrowRight className="h-4 w-4 ml-2" />
                         </Button>
                     </div>
                 </CardContent>

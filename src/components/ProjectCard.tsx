@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Users, Calendar } from "lucide-react";
 import { Button } from "./ui/button";
+import { useLanguage } from "../i18n/LanguageContext";
 
 interface ProjectCardProps {
   // 允许在列表渲染中传入 React 的特殊属性 `key`（不会在组件内部使用）
@@ -23,7 +24,15 @@ interface ProjectCardProps {
   onManage?: () => void;
 }
 
+/**
+ * 项目卡片组件
+ * 功能：展示项目基本信息、统计数据和操作按钮
+ * 参数：title - 项目标题, description - 描述, status - 状态, stats - 统计数据
+ * 返回：项目卡片 UI
+ */
 export function ProjectCard({ title, description, status, stats, date, members, dataSource, color = "blue", onViewDetails, onManage }: ProjectCardProps) {
+  const { t } = useLanguage();
+
   const colorClasses = {
     blue: "bg-blue-50 border-blue-200",
     green: "bg-green-50 border-green-200",
@@ -39,7 +48,7 @@ export function ProjectCard({ title, description, status, stats, date, members, 
   };
 
   // 归档状态统一灰色显示，其他状态按卡片色系展示
-  const statusBadgeClass = status === '已归档' ? 'bg-gray-100 text-gray-700' : badgeColors[color];
+  const statusBadgeClass = status === t('project.stats.archived') ? 'bg-gray-100 text-gray-700' : badgeColors[color];
 
   return (
     <Card className={`${colorClasses[color]} hover:shadow-md transition-shadow flex flex-col h-full`}>
@@ -60,15 +69,15 @@ export function ProjectCard({ title, description, status, stats, date, members, 
         <div className="grid grid-cols-3 gap-4 mb-4">
           <div className="text-center">
             <div className="text-2xl font-semibold">{stats.datasets}</div>
-            <div className="text-xs text-gray-500">数据集</div>
+            <div className="text-xs text-gray-500">{t('projectCard.datasets')}</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-semibold">{stats.models}</div>
-            <div className="text-xs text-gray-500">模型</div>
+            <div className="text-xs text-gray-500">{t('projectCard.models')}</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-semibold">{stats.tasks}</div>
-            <div className="text-xs text-gray-500">任务</div>
+            <div className="text-xs text-gray-500">{t('projectCard.tasks')}</div>
           </div>
         </div>
 
@@ -76,13 +85,13 @@ export function ProjectCard({ title, description, status, stats, date, members, 
           {date && (
             <div className="flex items-center space-x-1">
               <Calendar className="h-3 w-3" />
-              <span>创建时间: {date}</span>
+              <span>{t('projectCard.createdAt')}: {date}</span>
             </div>
           )}
           {members && (
             <div className="flex items-center space-x-1">
               <Users className="h-3 w-3" />
-              <span>成员: {members}</span>
+              <span>{t('projectCard.members')}: {members}</span>
             </div>
           )}
         </div>
@@ -94,7 +103,7 @@ export function ProjectCard({ title, description, status, stats, date, members, 
             className="text-blue-600 border-blue-200 hover:bg-blue-50"
             onClick={onViewDetails}
           >
-            查看详情
+            {t('projectCard.viewDetails')}
           </Button>
           <Button
             variant="outline"
@@ -102,7 +111,7 @@ export function ProjectCard({ title, description, status, stats, date, members, 
             className="text-blue-600 border-blue-200 hover:bg-blue-50"
             onClick={onManage}
           >
-            管理
+            {t('projectCard.manage')}
           </Button>
         </div>
       </CardContent>

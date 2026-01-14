@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useLanguage } from "../i18n/LanguageContext";
 import type { User } from "../types/user";
 import { registeredUsers } from "../mock/users";
 import { searchUsers, addProjectMembers, removeProjectMember, getUsersByIds } from "../services/projectMembers";
@@ -20,6 +21,7 @@ interface TeamMemberSelectorProps {
 export default function TeamMemberSelector({ selectedIds, onChange, projectId, currentUserRole = "项目经理" }: TeamMemberSelectorProps) {
   const [query, setQuery] = useState("");
   const [pendingSelect, setPendingSelect] = useState<string[]>([]);
+  const { t } = useLanguage();
 
   const selectedUsers = useMemo(() => getUsersByIds(selectedIds), [selectedIds]);
 
@@ -55,11 +57,11 @@ export default function TeamMemberSelector({ selectedIds, onChange, projectId, c
 
   return (
     <div className="space-y-3">
-      <Label className="text-sm font-medium">团队成员</Label>
+      <Label className="text-sm font-medium">{t('team.label.member')}</Label>
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
         <Input
-          placeholder="按用户名/邮箱搜索用户"
+          placeholder={t('team.search.placeholder')}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="pl-10 h-10"
@@ -70,18 +72,18 @@ export default function TeamMemberSelector({ selectedIds, onChange, projectId, c
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[48px]">选择</TableHead>
-              <TableHead>姓名</TableHead>
-              <TableHead>部门</TableHead>
-              <TableHead>角色</TableHead>
-              <TableHead>邮箱</TableHead>
-              <TableHead className="text-right">操作</TableHead>
+              <TableHead className="w-[48px]">{t('team.table.select')}</TableHead>
+              <TableHead>{t('team.table.name')}</TableHead>
+              <TableHead>{t('team.table.department')}</TableHead>
+              <TableHead>{t('team.table.role')}</TableHead>
+              <TableHead>{t('team.table.email')}</TableHead>
+              <TableHead className="text-right">{t('team.table.action')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-sm text-gray-500">未找到匹配的用户</TableCell>
+                <TableCell colSpan={6} className="text-center text-sm text-gray-500">{t('team.empty')}</TableCell>
               </TableRow>
             ) : (
               filtered.map(u => (
@@ -107,7 +109,7 @@ export default function TeamMemberSelector({ selectedIds, onChange, projectId, c
                       if (projectId) await addProjectMembers(projectId, [u.id]);
                       onChange(newIds, getUsersByIds(newIds));
                     }}>
-                      <UserPlus className="h-4 w-4 mr-1" /> 添加
+                      <UserPlus className="h-4 w-4 mr-1" /> {t('team.action.add')}
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -118,15 +120,15 @@ export default function TeamMemberSelector({ selectedIds, onChange, projectId, c
       </div>
 
       <div className="flex items-center justify-between">
-        <div className="text-xs text-gray-600">已选：{selectedIds.length} 人</div>
+        <div className="text-xs text-gray-600">{t('team.label.selected', { count: selectedIds.length })}</div>
         <Button size="sm" className="bg-blue-500 hover:bg-blue-600" onClick={handleBatchAdd} disabled={pendingSelect.length === 0}>
-          <UserPlus className="h-4 w-4 mr-1" /> 批量添加所选
+          <UserPlus className="h-4 w-4 mr-1" /> {t('team.action.batchAdd')}
         </Button>
       </div>
 
       {selectedUsers.length > 0 && (
         <div className="space-y-2">
-          <div className="text-xs text-gray-600">已添加成员：</div>
+          <div className="text-xs text-gray-600">{t('team.label.added')}</div>
           <div className="flex flex-wrap gap-2">
             {selectedUsers.map(u => (
               <div key={u.id} className="flex items-center gap-2 bg-blue-50 text-blue-700 px-2 py-1 rounded-md text-sm">

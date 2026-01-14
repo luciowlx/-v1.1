@@ -346,14 +346,10 @@ export default function App() {
 
   const projectColumns: any[] = [
     {
-      title: '项目ID',
-      dataIndex: 'id',
-      key: 'id',
-      width: 100,
-      fixed: 'left',
+      title: t('project.management.table.id'),
     },
     {
-      title: '项目名称',
+      title: t('project.management.table.name'),
       dataIndex: 'title',
       key: 'title',
       width: 200,
@@ -365,13 +361,13 @@ export default function App() {
       ),
     },
     {
-      title: '项目模式',
+      title: t('project.management.table.mode'),
       dataIndex: 'mode',
       key: 'mode',
       width: 120,
     },
     {
-      title: '状态',
+      title: t('project.management.filter.status'),
       dataIndex: 'status',
       key: 'status',
       width: 100,
@@ -384,25 +380,25 @@ export default function App() {
       }
     },
     {
-      title: '数据集',
+      title: t('project.management.table.dataset'),
       dataIndex: ['stats', 'datasets'],
       key: 'stats_datasets',
       width: 100,
     },
     {
-      title: '模型',
+      title: t('project.management.table.model'),
       dataIndex: ['stats', 'models'],
       key: 'stats_models',
       width: 100,
     },
     {
-      title: '任务',
+      title: t('project.management.table.task'),
       dataIndex: ['stats', 'tasks'],
       key: 'stats_tasks',
       width: 100,
     },
     {
-      title: '负责人',
+      title: t('project.management.table.owner'),
       dataIndex: 'owner',
       key: 'owner',
       width: 120,
@@ -416,14 +412,14 @@ export default function App() {
       )
     },
     {
-      title: '项目周期',
+      title: t('project.management.table.cycle'),
       dataIndex: 'projectCycle',
       key: 'projectCycle',
       width: 200,
       render: (text: string) => <div className="text-xs text-gray-500">{text}</div>
     },
     {
-      title: '创建时间',
+      title: t('common.createdAt'),
       dataIndex: 'createdTime',
       key: 'createdTime',
       width: 150,
@@ -431,7 +427,7 @@ export default function App() {
       render: (text: string) => <div className="text-xs text-gray-500">{text}</div>
     },
     {
-      title: '更新时间',
+      title: t('common.updatedAt'),
       dataIndex: 'updatedTime',
       key: 'updatedTime',
       width: 150,
@@ -439,7 +435,7 @@ export default function App() {
       render: (text: string) => <div className="text-xs text-gray-500">{text}</div>
     },
     {
-      title: '操作',
+      title: t('common.action'),
       key: 'action',
       fixed: 'right',
       width: 120,
@@ -483,22 +479,22 @@ export default function App() {
 
   const projectStats = [
     {
-      label: "总项目",
+      label: t('project.management.stats.total'),
       value: filteredProjectsForMetrics.length,
       icon: List
     },
     {
-      label: "进行中",
+      label: t('project.management.stats.running'),
       value: filteredProjectsForMetrics.filter(p => p.status === "进行中").length,
       icon: Clock
     },
     {
-      label: "已归档",
+      label: t('project.management.stats.archived'),
       value: filteredProjectsForMetrics.filter(p => p.status === "已归档").length,
       icon: Archive
     },
     {
-      label: "已延期",
+      label: t('project.management.stats.delayed'),
       value: filteredProjectsForMetrics.filter(p => p.status === "已延期").length,
       icon: AlertTriangle
     }
@@ -911,8 +907,8 @@ export default function App() {
           <div>
             {/* 页头部分 */}
             <div className="mb-6">
-              <h1 className="text-2xl font-semibold text-gray-900 mb-2">项目管理</h1>
-              <p className="text-gray-600">管理您的机器学习项目，跟踪进度并与团队协作</p>
+              <h1 className="text-2xl font-semibold text-gray-900 mb-2">{t('project.management.title')}</h1>
+              <p className="text-gray-600">{t('project.management.desc')}</p>
             </div>
 
             {/* 统计指标卡片（遵循顶部筛选：搜索/负责人/日期范围；不受状态列筛选影响） */}
@@ -943,7 +939,7 @@ export default function App() {
                   <div className="relative w-[240px] md:w-[280px] shrink-0">
                     <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <Input
-                      placeholder="搜索项目"
+                      placeholder={t('project.management.search.placeholder')}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="pl-12 h-10 md:h-12"
@@ -953,14 +949,14 @@ export default function App() {
                   {/* Status Filter: 状态筛选 (Moved from Table Header) */}
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
                     <SelectTrigger className="w-32 md:w-36 shrink-0">
-                      <SelectValue placeholder="状态" />
+                      <SelectValue placeholder={t('project.management.filter.status')} />
                       <ChevronDown className="w-4 h-4" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">全部状态</SelectItem>
-                      <SelectItem value="进行中">进行中</SelectItem>
-                      <SelectItem value="已归档">已归档</SelectItem>
-                      <SelectItem value="已延期">已延期</SelectItem>
+                      <SelectItem value="all">{t('project.management.filter.all')}</SelectItem>
+                      <SelectItem value="进行中">{t('project.management.stats.running')}</SelectItem>
+                      <SelectItem value="已归档">{t('project.management.stats.archived')}</SelectItem>
+                      <SelectItem value="已延期">{t('project.management.stats.delayed')}</SelectItem>
                     </SelectContent>
                   </Select>
 
@@ -971,7 +967,7 @@ export default function App() {
                         <span className="truncate text-left">
                           {projectDateRange.start && projectDateRange.end
                             ? `${projectDateRange.start} - ${projectDateRange.end}`
-                            : '开始日期 - 结束日期'}
+                            : t('project.management.filter.date.placeholder')}
                         </span>
                         <Calendar className="h-4 w-4 text-gray-500" />
                       </Button>
@@ -981,14 +977,14 @@ export default function App() {
                         <div className="flex items-center gap-2">
                           <Input
                             readOnly
-                            placeholder="开始日期"
+                            placeholder={t('project.management.filter.date.start')}
                             value={projectDateRange.start || ''}
                             className="w-48"
                           />
                           <span className="text-gray-500">-</span>
                           <Input
                             readOnly
-                            placeholder="结束日期"
+                            placeholder={t('project.management.filter.date.end')}
                             value={projectDateRange.end || ''}
                             className="w-48"
                           />
@@ -997,7 +993,7 @@ export default function App() {
                             size="sm"
                             onClick={() => setProjectDateRange({ start: '', end: '' })}
                           >
-                            清除
+                            {t('project.management.filter.date.clear')}
                           </Button>
                         </div>
                         <DateRangeCalendar
@@ -1030,14 +1026,14 @@ export default function App() {
                       onClick={handleApplyProjectQuery}
                       className="h-10 md:h-12 px-4"
                     >
-                      查询
+                      {t('project.management.action.query')}
                     </Button>
                     <Button
                       variant="outline"
                       onClick={handleResetProjectFilters}
                       className="h-10 md:h-12 px-4"
                     >
-                      重置
+                      {t('project.management.action.reset')}
                     </Button>
                   </div>
                 </div>
@@ -1051,7 +1047,7 @@ export default function App() {
                     className="px-3 h-10 md:h-12"
                   >
                     <List className="w-4 h-4 mr-1" />
-                    列表
+                    {t('project.management.view.list')}
                   </Button>
                   <Button
                     variant={viewMode === "grid" ? "default" : "outline"}
@@ -1059,7 +1055,7 @@ export default function App() {
                     className="px-3 h-10 md:h-12"
                   >
                     <Grid3X3 className="w-4 h-4 mr-1" />
-                    网格
+                    {t('project.management.view.grid')}
                   </Button>
                   {/* 新增：创建项目按钮（顶栏右侧） */}
                   <Button
@@ -1068,7 +1064,7 @@ export default function App() {
                     className="px-4 h-10 md:h-12 ml-2"
                   >
                     <Plus className="w-4 h-4 mr-1" />
-                    创建项目
+                    {t('project.management.create')}
                   </Button>
                 </div>
               </div>
@@ -1118,7 +1114,7 @@ export default function App() {
               <SheetContent className="w-[900px] max-w-[90vw] max-h-[85vh] p-0 overflow-y-auto" side="right">
                 <SheetHeader className="px-6 py-4 border-b">
                   <div className="flex items-center justify-between">
-                    <SheetTitle>创建新项目</SheetTitle>
+                    <SheetTitle>{t('project.management.create.title')}</SheetTitle>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -1129,7 +1125,7 @@ export default function App() {
                     </Button>
                   </div>
                   <SheetDescription>
-                    填写项目信息以创建新的AI模型项目
+                    {t('project.management.create.desc')}
                   </SheetDescription>
                 </SheetHeader>
 
@@ -1140,11 +1136,11 @@ export default function App() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="projectName" className="text-sm font-medium">
-                        项目名称 <span className="text-red-500">*</span>
+                        {t('project.management.form.name')} <span className="text-red-500">*</span>
                       </Label>
                       <Input
                         id="projectName"
-                        placeholder="请输入项目名称"
+                        placeholder={t('project.management.form.name.placeholder')}
                         value={projectFormData.projectName}
                         onChange={(e) => setProjectFormData({ ...projectFormData, projectName: e.target.value })}
                         className="h-10"
@@ -1152,14 +1148,14 @@ export default function App() {
                     </div>
                     <div className="space-y-2">
                       <Label className="text-sm font-medium">
-                        团队负责人 <span className="text-red-500">*</span>
+                        {t('project.management.form.leader')} <span className="text-red-500">*</span>
                       </Label>
                       <Select
                         value={projectFormData.teamLeader}
                         onValueChange={(value: string) => setProjectFormData({ ...projectFormData, teamLeader: value })}
                       >
                         <SelectTrigger className="h-10">
-                          <SelectValue placeholder="选择团队负责人" />
+                          <SelectValue placeholder={t('project.management.form.leader.placeholder')} />
                         </SelectTrigger>
                         <SelectContent>
                           {registeredUsers.map((u) => (
@@ -1175,11 +1171,11 @@ export default function App() {
                   {/* 项目描述 */}
                   <div className="space-y-2">
                     <Label htmlFor="projectDescription" className="text-sm font-medium">
-                      项目描述
+                      {t('project.management.form.desc')}
                     </Label>
                     <Textarea
                       id="projectDescription"
-                      placeholder="请输入项目描述（可选）"
+                      placeholder={t('project.management.form.desc.placeholder')}
                       value={projectFormData.projectDescription}
                       onChange={(e) => setProjectFormData({ ...projectFormData, projectDescription: e.target.value })}
                       className="min-h-[80px] resize-none"
@@ -1189,11 +1185,11 @@ export default function App() {
                   {/* 项目周期 */}
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">
-                      项目周期 <span className="text-red-500">*</span>
+                      {t('project.management.form.cycle')} <span className="text-red-500">*</span>
                     </Label>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <Label htmlFor="startDate" className="text-xs text-gray-600">开始日期</Label>
+                        <Label htmlFor="startDate" className="text-xs text-gray-600">{t('project.management.form.startDate')}</Label>
                         <Input
                           id="startDate"
                           type="date"
@@ -1203,7 +1199,7 @@ export default function App() {
                         />
                       </div>
                       <div>
-                        <Label htmlFor="endDate" className="text-xs text-gray-600">结束日期</Label>
+                        <Label htmlFor="endDate" className="text-xs text-gray-600">{t('project.management.form.endDate')}</Label>
                         <Input
                           id="endDate"
                           type="date"
@@ -1219,7 +1215,7 @@ export default function App() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label className="text-sm font-medium">
-                        项目权限 <span className="text-red-500">*</span>
+                        {t('project.management.form.visibility')} <span className="text-red-500">*</span>
                       </Label>
                       <RadioGroup
                         value={projectFormData.projectVisibility}
@@ -1229,13 +1225,13 @@ export default function App() {
                         <div className="flex items-center space-x-2">
                           <RadioGroupItem value="private" id="private" />
                           <Label htmlFor="private" className="text-sm cursor-pointer">
-                            私有项目 - 仅团队成员可访问
+                            {t('project.management.form.visibility.private')}
                           </Label>
                         </div>
                         <div className="flex items-center space-x-2">
                           <RadioGroupItem value="public" id="public" />
                           <Label htmlFor="public" className="text-sm cursor-pointer">
-                            公开项目 - 组织内所有成员可查看
+                            {t('project.management.form.visibility.public')}
                           </Label>
                         </div>
                       </RadioGroup>
@@ -1252,7 +1248,7 @@ export default function App() {
                 {/* 底部按钮 */}
                 <div className="px-6 py-4 border-t flex justify-end space-x-3">
                   <Button variant="outline" onClick={handleCancelProject}>
-                    取消
+                    {t('common.cancel')}
                   </Button>
                   <Button
                     onClick={handleCreateProject}
@@ -1265,7 +1261,7 @@ export default function App() {
                       !projectFormData.teamLeader
                     }
                   >
-                    创建项目
+                    {t('project.management.create')}
                   </Button>
                 </div>
               </SheetContent>
@@ -1328,7 +1324,7 @@ export default function App() {
                 </div>
 
                 <DialogDescription id="project-detail-description" className="sr-only">
-                  查看项目详细信息，包括统计数据、进度和最近活动
+                  {t('project.management.create.desc')}
                 </DialogDescription>
               </DialogContent>
             </Dialog>
@@ -1340,7 +1336,7 @@ export default function App() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <Settings className="h-5 w-5 text-blue-600" />
-                      <SheetTitle>项目设置</SheetTitle>
+                      <SheetTitle>{t('project.management.settings.title')}</SheetTitle>
                     </div>
                     <Button
                       variant="ghost"
@@ -1352,7 +1348,7 @@ export default function App() {
                     </Button>
                   </div>
                   <SheetDescription>
-                    管理项目设置，包括基本信息、团队成员和权限配置
+                    {t('project.management.settings.desc')}
                   </SheetDescription>
                 </SheetHeader>
 
@@ -1361,7 +1357,7 @@ export default function App() {
                   <div className="space-y-4">
                     <div className="flex items-center gap-2">
                       <div className="text-lg">📋</div>
-                      <h3 className="text-lg font-medium">基本信息</h3>
+                      <h3 className="text-lg font-medium">{t('project.management.section.basic')}</h3>
                     </div>
 
                     <div className="space-y-4">
@@ -1389,7 +1385,7 @@ export default function App() {
                         <Label htmlFor="manage-team-leader" className="text-sm">团队负责人 <span className="text-red-500">*</span></Label>
                         <Select value={manageFormData.teamLeader} onValueChange={(value: string) => setManageFormData({ ...manageFormData, teamLeader: value })}>
                           <SelectTrigger className="h-10">
-                            <SelectValue placeholder="选择团队负责人" />
+                            <SelectValue placeholder={t('project.management.form.leader.placeholder')} />
                           </SelectTrigger>
                           <SelectContent>
                             {registeredUsers.map((u) => (
@@ -1433,7 +1429,7 @@ export default function App() {
                   <div className="space-y-4">
                     <div className="flex items-center gap-2">
                       <div className="text-lg">👥</div>
-                      <h3 className="text-lg font-medium">团队管理</h3>
+                      <h3 className="text-lg font-medium">{t('project.management.section.team')}</h3>
                     </div>
 
                     <TeamMemberSelector
@@ -1448,7 +1444,7 @@ export default function App() {
                   <div className="space-y-4">
                     <div className="flex items-center gap-2">
                       <div className="text-lg">🔒</div>
-                      <h3 className="text-lg font-medium">项目权限</h3>
+                      <h3 className="text-lg font-medium">{t('project.management.section.permission')}</h3>
                     </div>
 
                     <RadioGroup
@@ -1463,7 +1459,7 @@ export default function App() {
                             私有项目
                           </Label>
                           <p className="text-sm text-gray-500">
-                            只有团队成员可以访问
+                            {t('project.management.form.visibility.privateDesc')}
                           </p>
                         </div>
                       </div>
@@ -1475,7 +1471,7 @@ export default function App() {
                             公开项目
                           </Label>
                           <p className="text-sm text-gray-500">
-                            所有人都可以查看
+                            {t('project.management.form.visibility.publicDesc')}
                           </p>
                         </div>
                       </div>
@@ -1492,7 +1488,7 @@ export default function App() {
                       className="flex items-center gap-2 text-orange-600 border-orange-200 hover:bg-orange-50"
                     >
                       <Archive className="h-4 w-4" />
-                      归档项目
+                      {t('project.management.action.archive')}
                     </Button>
                     <Button
                       variant="outline"
@@ -1500,19 +1496,19 @@ export default function App() {
                       className="flex items-center gap-2 text-blue-600 border-blue-200 hover:bg-blue-50"
                     >
                       <Copy className="h-4 w-4" />
-                      复制项目
+                      {t('project.management.action.duplicate')}
                     </Button>
                   </div>
 
                   <div className="flex gap-3">
                     <Button variant="outline" onClick={handleCancelManage}>
-                      取消
+                      {t('common.cancel')}
                     </Button>
                     <Button
                       onClick={handleSaveProjectSettings}
                       className="bg-blue-500 hover:bg-blue-600 text-white"
                     >
-                      保存设置
+                      {t('project.management.action.save')}
                     </Button>
                   </div>
                 </div>
@@ -1525,41 +1521,41 @@ export default function App() {
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2">
                     <Copy className="h-5 w-5 text-blue-600" />
-                    复制项目
+                    {t('project.management.action.duplicate')}
                   </DialogTitle>
                   <DialogDescription>
-                    确认要复制项目 "{selectedProject?.title}" 吗？
+                    {t('project.management.duplicate.confirm', { name: selectedProject?.title })}
                   </DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-4">
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-sm font-medium text-blue-800">新项目名称：</span>
+                      <span className="text-sm font-medium text-blue-800">{t('project.management.duplicate.newName')}</span>
                       <Input
                         value={duplicateProjectName}
                         onChange={(e) => setDuplicateProjectName(e.target.value)}
                         className="flex-1 h-8 bg-white border-blue-300 text-blue-900"
-                        placeholder="请输入新项目名称"
+                        placeholder={t('project.management.form.name.placeholder')}
                       />
                     </div>
                     <div className="flex items-start gap-2 mb-2">
-                      <span className="text-sm font-medium text-blue-800 shrink-0 mt-2">新项目描述：</span>
+                      <span className="text-sm font-medium text-blue-800 shrink-0 mt-2">{t('project.management.duplicate.newDesc')}</span>
                       <Textarea
                         value={duplicateProjectDescription}
                         onChange={(e) => setDuplicateProjectDescription(e.target.value)}
                         className="flex-1 min-h-[60px] bg-white border-blue-300 text-blue-900 resize-none text-xs"
-                        placeholder="请输入新项目描述"
+                        placeholder={t('project.management.form.desc.placeholder')}
                       />
                     </div>
                     <div className="text-xs text-blue-600">
-                      可选择复制任务、数据集与项目成员；若取消所有选项，则仅复制项目基础信息（名称与描述）。
+                      {t('project.management.duplicate.note')}
                     </div>
                   </div>
 
                   {/* 复制选项（默认全部勾选） */}
                   <div className="space-y-2">
-                    <div className="text-sm font-medium">选择需要复制的内容（可选）：</div>
+                    <div className="text-sm font-medium">{t('project.management.duplicate.options')}</div>
                     <div className="grid grid-cols-1 gap-3">
                       <label className="flex items-center gap-3 cursor-pointer select-none">
                         <Checkbox
@@ -1591,13 +1587,13 @@ export default function App() {
 
                 <div className="flex justify-end space-x-3">
                   <Button variant="outline" onClick={() => setIsDuplicateConfirmOpen(false)}>
-                    取消
+                    {t('common.cancel')}
                   </Button>
                   <Button
                     onClick={handleConfirmDuplicate}
                     className="bg-blue-500 hover:bg-blue-600 text-white"
                   >
-                    确认复制
+                    {t('project.management.duplicate.action')}
                   </Button>
                 </div>
               </DialogContent>
@@ -1609,10 +1605,10 @@ export default function App() {
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2">
                     <Archive className="h-5 w-5 text-orange-600" />
-                    归档项目
+                    {t('project.management.action.archive')}
                   </DialogTitle>
                   <DialogDescription>
-                    确认要归档项目 "{selectedProject?.title}" 吗？
+                    {t('project.management.archive.confirm', { name: selectedProject?.title })}
                   </DialogDescription>
                 </DialogHeader>
 
@@ -1622,20 +1618,20 @@ export default function App() {
                       <strong>注意：</strong>归档后的项目将被移至归档区域
                     </div>
                     <div className="text-xs text-orange-600 mt-1">
-                      归档的项目可以随时恢复，但将不会在主项目列表中显示
+                      {t('project.management.message.archiveNote')}
                     </div>
                   </div>
                 </div>
 
                 <div className="flex justify-end space-x-3">
                   <Button variant="outline" onClick={() => setIsArchiveConfirmOpen(false)}>
-                    取消
+                    {t('common.cancel')}
                   </Button>
                   <Button
                     onClick={handleConfirmArchive}
                     className="bg-orange-500 hover:bg-orange-600 text-white"
                   >
-                    确认归档
+                    {t('project.management.archive.action')}
                   </Button>
                 </div>
               </DialogContent>
@@ -1658,7 +1654,7 @@ export default function App() {
               <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center transition-opacity">
                 <div className="flex flex-col items-center gap-3">
                   <div className="h-6 w-6 rounded-full border-2 border-gray-300 border-t-transparent animate-spin" />
-                  <div className="text-sm text-gray-600">正在加载页面…</div>
+                  <div className="text-sm text-gray-600">{t('app.loading')}</div>
                 </div>
               </div>
             )}
@@ -1669,7 +1665,7 @@ export default function App() {
           <div>
             <div className="mb-6">
               <h1 className="text-2xl font-semibold text-gray-900 mb-2">{t('task.title')}</h1>
-              <p className="text-gray-600">创建、监控和管理AI模型训练任务，实时跟踪任务进度和性能指标</p>
+              <p className="text-gray-600">{t('task.list.header.desc')}</p>
             </div>
             <TaskManagement
               onOpenCreateTaskPage={() => setIsFullPageTaskCreateOpen(true)}
@@ -1705,7 +1701,7 @@ export default function App() {
         return (
           <div>
             <div className="mb-6">
-              <h1 className="text-2xl font-semibold text-gray-900 mb-2">系统管理</h1>
+              <h1 className="text-2xl font-semibold text-gray-900 mb-2">{t('nav.system')}</h1>
               <p className="text-gray-600">管理系统用户、角色权限和组织架构，配置个人账户信息</p>
             </div>
             <SystemManagement defaultSubTab={systemManagementSubTab} />
@@ -1715,7 +1711,7 @@ export default function App() {
         return (
           <div>
             <div className="mb-6">
-              <h1 className="text-2xl font-semibold text-gray-900 mb-2">开发空间</h1>
+              <h1 className="text-2xl font-semibold text-gray-900 mb-2">{t('nav.notebook')}</h1>
               <p className="text-gray-600">管理您的 Notebook 开发环境，支持 JupyterLab、SSH 及 VS Code 接入</p>
             </div>
             <NotebookManagement
@@ -1727,7 +1723,7 @@ export default function App() {
       default:
         return (
           <div className="text-center py-12">
-            <h2 className="text-xl text-gray-600">{activeTab} 页面正在开发中...</h2>
+            <h2 className="text-xl text-gray-600">{t('app.underDevelopment', { page: activeTab })}</h2>
           </div>
         );
     }
@@ -1865,25 +1861,25 @@ export default function App() {
           }}
           onStop={(id: string) => {
             Modal.confirm({
-              title: '停止 Notebook 实例',
+              title: t('header.stop'),
               icon: <AlertTriangle className="w-5 h-5 text-orange-500" />,
-              content: '停止后，/home/ma-user/work 目录下的数据会保存，其余目录下内容会被清理。',
-              okText: '确认停止',
-              cancelText: '取消',
+              content: t('app.notebook.msg.stopDesc'),
+              okText: t('app.notebook.msg.stopConfirm'),
+              cancelText: t('common.cancel'),
               onOk: () => {
-                message.loading({ content: `正在下发实例 ${id} 停止指令...`, key: 'nb_op' });
+                message.loading({ content: t('app.notebook.msg.stopping', { id }), key: 'nb_op' });
                 setTimeout(() => {
-                  message.success({ content: '停止指令已送达，实例状态更新中', key: 'nb_op' });
+                  message.success({ content: t('app.notebook.msg.stopSent'), key: 'nb_op' });
                 }, 1000);
               }
             });
           }}
           onConnect={handleNotebookConnect}
           onUpdateDescription={(id, desc) => {
-            message.loading({ content: '正在同步更新描述...', key: 'nb_upd' });
+            message.loading({ content: t('app.notebook.msg.updatingDesc'), key: 'nb_upd' });
             setTimeout(() => {
               setSelectedNotebookForFullPage((prev: any) => ({ ...prev, description: desc }));
-              message.success({ content: '描述信息已更新', key: 'nb_upd' });
+              message.success({ content: t('app.notebook.msg.updSuccess'), key: 'nb_upd' });
             }, 600);
           }}
         />
@@ -1932,7 +1928,7 @@ export default function App() {
               className="shadow-lg rounded-full px-4 py-2 bg-indigo-600 text-white hover:bg-indigo-700"
               onClick={() => setShowTaskCompareDemo(true)}
             >
-              任务对比预览
+              {t('app.task.comparePreview')}
             </button>
           </div>
 
@@ -1940,7 +1936,7 @@ export default function App() {
           <Dialog open={showTaskCompareDemo} onOpenChange={setShowTaskCompareDemo}>
             <DialogContent className="sm:max-w-6xl max-w-6xl w-[95vw] max-h-[90vh] overflow-y-auto overflow-x-hidden">
               <DialogHeader>
-                <DialogTitle>任务对比预览</DialogTitle>
+                <DialogTitle>{t('app.task.comparePreview')}</DialogTitle>
               </DialogHeader>
               <TaskCompare task1={taskCompareDemoA as any} task2={taskCompareDemoB as any} onBack={() => setShowTaskCompareDemo(false)} />
             </DialogContent>
@@ -1958,18 +1954,18 @@ export default function App() {
             <div className="p-1.5 bg-blue-100 rounded">
               <LinkIcon className="w-4 h-4 text-blue-600" />
             </div>
-            <span>连接 Notebook 实例: {selectedNotebookForMock?.name}</span>
+            <span>{t('app.notebook.connectTitle', { name: selectedNotebookForMock?.name })}</span>
           </div>
         }
         open={isNotebookConnectModalOpen}
         onCancel={() => setIsNotebookConnectModalOpen(false)}
         footer={[
-          <Button key="close" onClick={() => setIsNotebookConnectModalOpen(false)}>暂不连接</Button>,
-          <Button key="jupyter" type="primary" onClick={() => {
+          <Button key="close" onClick={() => setIsNotebookConnectModalOpen(false)}>{t('common.cancel')}</Button>,
+          <Button key="jupyter" variant="default" onClick={() => {
             setIsNotebookConnectModalOpen(false);
             setActiveNotebookMockView('jupyter');
           }}>
-            进入 JupyterLab
+            {t('app.notebook.enterJupyter')}
           </Button>
         ]}
         width={700}
@@ -1977,30 +1973,30 @@ export default function App() {
         <div className="space-y-6">
           <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
             <h4 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
-              <Code className="w-4 h-4 text-blue-600" /> VS Code Remote - SSH 开发接入
+              <Code className="w-4 h-4 text-blue-600" /> {t('app.notebook.ssh.title')}
             </h4>
             <div className="space-y-4">
               <div className="flex items-start gap-3">
                 <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">1</div>
                 <div>
-                  <p className="text-xs font-bold text-slate-700 m-0">在本地打开 VS Code</p>
-                  <p className="text-[11px] text-slate-500 m-0">确保已安装 <b>"Remote - SSH"</b> 官方扩展插件组件包。</p>
+                  <p className="text-xs font-bold text-slate-700 m-0">{t('app.notebook.ssh.step1')}</p>
+                  <p className="text-[11px] text-slate-500 m-0">{t('app.notebook.ssh.step1Desc')}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">2</div>
                 <div className="flex-1">
-                  <p className="text-xs font-bold text-slate-700 m-0">直接粘贴 SSH 连接命令</p>
-                  <p className="text-[11px] text-slate-500 mb-2">点击 Command Palette (F1) {'->'} SSH: Connect to Host...</p>
+                  <p className="text-xs font-bold text-slate-700 m-0">{t('app.notebook.ssh.step2')}</p>
+                  <p className="text-[11px] text-slate-500 mb-2">{t('app.notebook.ssh.step2Desc')}</p>
                   <div className="relative group">
                     <pre className="bg-slate-900 text-slate-300 p-3 rounded text-[11px] overflow-hidden whitespace-nowrap text-ellipsis border border-slate-700 pr-12">
                       {selectedNotebookForMock?.sshCommand || 'ssh -p 30022 root@192.168.1.100'}
                     </pre>
                     <Button
-                      size="small"
+                      size="sm"
                       className="absolute right-2 top-1/2 -translate-y-1/2 bg-slate-800 border-slate-600 text-slate-300 group-hover:bg-slate-700"
                       onClick={() => {
-                        message.success('已复制到剪贴板');
+                        message.success(t('app.notebook.ssh.copyMsg'));
                         navigator.clipboard.writeText(selectedNotebookForMock?.sshCommand || '');
                       }}
                     >
@@ -2012,8 +2008,8 @@ export default function App() {
               <div className="flex items-start gap-3">
                 <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">3</div>
                 <div>
-                  <p className="text-xs font-bold text-slate-700 m-0">输入密码或确认密钥</p>
-                  <p className="text-[11px] text-slate-500 m-0">若尚未配置免密登录，请在提示框中输入该环境对应的连接密码或生成新的密钥对上传。</p>
+                  <p className="text-xs font-bold text-slate-700 m-0">{t('app.notebook.ssh.step3')}</p>
+                  <p className="text-[11px] text-slate-500 m-0">{t('app.notebook.ssh.step3Desc')}</p>
                 </div>
               </div>
             </div>
@@ -2033,11 +2029,11 @@ export default function App() {
         <JupyterLabMock
           onClose={() => {
             Modal.confirm({
-              title: '确定要关闭 JupyterLab 吗？',
+              title: t('app.jupyter.confirmClose'),
               icon: <AlertTriangle className="w-5 h-5 text-orange-500" />,
-              content: '未保存的更改可能会丢失。',
-              okText: '确认关闭',
-              cancelText: '取消',
+              content: t('app.jupyter.unsavedNote'),
+              okText: t('app.jupyter.closeAction'),
+              cancelText: t('common.cancel'),
               okButtonProps: { danger: true },
               onOk: () => setActiveNotebookMockView(null)
             });

@@ -45,7 +45,7 @@ export function Header({ activeTab, onTabChange, onOpenPersonalCenter, onOpenPer
       <div className="flex items-center space-x-8">
         <div className="flex items-center space-x-2">
           <img src="/logo-icon.png" alt="LimiX Logo" className="h-8 w-8" />
-          <span className="text-xl font-bold tracking-tight">LimiX | 通用数据分析平台</span>
+          <span className="text-xl font-bold tracking-tight">LimiX | {t('app.subtitle')}</span>
         </div>
 
         <nav className="flex items-center space-x-6">

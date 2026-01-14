@@ -167,9 +167,9 @@ export const CreateTaskPage: React.FC<CreateTaskPageProps> = ({
     const isDraggingRef = useRef(false);
 
     const steps = [
-        { number: 1, label: '基础信息配置' },
-        { number: 2, label: '数据与目标' },
-        { number: 3, label: '参数配置' },
+        { number: 1, label: t('createTask.step.basicInfo') },
+        { number: 2, label: t('createTask.step.dataAndTarget') },
+        { number: 3, label: t('createTask.step.paramConfig') },
     ];
 
     const initialFormData: FormData = {
@@ -721,7 +721,7 @@ export const CreateTaskPage: React.FC<CreateTaskPageProps> = ({
                     </Button>
                     <div className="h-6 w-px bg-slate-600 mx-2" />
                     <Target className="h-5 w-5 text-blue-400" />
-                    <h2 className="text-lg font-semibold">{isEditMode ? '编辑任务' : '创建新任务'}</h2>
+                    <h2 className="text-lg font-semibold">{isEditMode ? t('createTask.editTask') : t('createTask.createTask')}</h2>
                 </div>
                 <div className="flex items-center space-x-3">
 

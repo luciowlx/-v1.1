@@ -98,7 +98,7 @@ const mockProjects = [
   { id: 'proj_003', name: '工艺时序预测' },
   { id: 'proj_004', name: '设备故障预测' },
 ];
-const getProjectName = (id: string) => mockProjects.find(p => p.id === id)?.name || '未选择项目';
+
 
 type ViewMode = 'table' | 'grid';
 type SortField = 'createdAt' | 'completedAt' | 'status' | 'priority' | 'taskName';
@@ -149,6 +149,7 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
   externalTaskPatch = null,
 }) => {
   const { t } = useLanguage();
+  const getProjectName = (id: string) => mockProjects.find(p => p.id === id)?.name || t('taskManagement.noProjectSelected');
   // 对话框与侧边栏控制
   const [selectedTaskForDetails, setSelectedTaskForDetails] = useState<Task | null>(null);
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
@@ -478,13 +479,13 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
    */
   const getStatusConfig = (status: TaskStatus) => {
     const configs = {
-      not_started: { color: 'bg-gray-100 text-gray-800', icon: Circle, label: '未开始' },
-      pending: { color: 'bg-gray-100 text-gray-800', icon: Clock, label: '排队中' },
-      running: { color: 'bg-blue-100 text-blue-800', icon: Activity, label: '运行中' },
-      completed: { color: 'bg-green-100 text-green-800', icon: CheckCircle, label: '已完成' },
-      failed: { color: 'bg-red-100 text-red-800', icon: XCircle, label: '失败' },
-      cancelled: { color: 'bg-yellow-100 text-yellow-800', icon: AlertCircle, label: '已取消' },
-      archived: { color: 'bg-gray-100 text-gray-600', icon: Archive, label: '已归档' }
+      not_started: { color: 'bg-gray-100 text-gray-800', icon: Circle, label: t('task.filters.status.not_started') },
+      pending: { color: 'bg-gray-100 text-gray-800', icon: Clock, label: t('task.filters.status.pending') },
+      running: { color: 'bg-blue-100 text-blue-800', icon: Activity, label: t('task.filters.status.running') },
+      completed: { color: 'bg-green-100 text-green-800', icon: CheckCircle, label: t('task.filters.status.completed') },
+      failed: { color: 'bg-red-100 text-red-800', icon: XCircle, label: t('task.filters.status.failed') },
+      cancelled: { color: 'bg-yellow-100 text-yellow-800', icon: AlertCircle, label: t('task.filters.status.cancelled') },
+      archived: { color: 'bg-gray-100 text-gray-600', icon: Archive, label: t('task.filters.status.archived') }
     };
     return configs[status];
   };
@@ -496,9 +497,9 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
    */
   const getPriorityConfig = (priority: TaskPriority) => {
     const configs = {
-      low: { color: 'bg-gray-100 text-gray-800', label: '低' },
-      medium: { color: 'bg-blue-100 text-blue-800', label: '中' },
-      high: { color: 'bg-orange-100 text-orange-800', label: '高' }
+      low: { color: 'bg-gray-100 text-gray-800', label: t('task.filters.priority.low') },
+      medium: { color: 'bg-blue-100 text-blue-800', label: t('task.filters.priority.medium') },
+      high: { color: 'bg-orange-100 text-orange-800', label: t('task.filters.priority.high') }
     } as const;
     return configs[priority];
   };
@@ -506,9 +507,9 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
   // 任务类型映射（中文标签）
   const getTaskTypeLabel = (type: TaskType) => {
     const labels: Record<TaskType, string> = {
-      [TASK_TYPES.forecasting]: '时序预测',
-      [TASK_TYPES.classification]: '分类',
-      [TASK_TYPES.regression]: '回归',
+      [TASK_TYPES.forecasting]: t('createTask.form.taskType.timeseries'),
+      [TASK_TYPES.classification]: t('createTask.form.taskType.classification'),
+      [TASK_TYPES.regression]: t('createTask.form.taskType.regression'),
     };
     return labels[type];
   };
@@ -1182,7 +1183,7 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
 
   const columns: any[] = [
     {
-      title: '任务名称',
+      title: t('task.label.taskName'),
       dataIndex: 'taskName',
       key: 'taskName',
       width: 250,
@@ -1200,7 +1201,7 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
       )
     },
     {
-      title: '任务类型',
+      title: t('task.label.taskType'),
       dataIndex: 'taskType',
       key: 'taskType',
       width: 130,
@@ -1209,16 +1210,16 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
       )
     },
     {
-      title: '所属项目',
+      title: t('task.label.project'),
       dataIndex: 'projectId',
       key: 'project',
       width: 140,
       render: (pid: string, record: Task) => (
-        <span className="text-sm text-slate-600">{record.projectName || (pid ? getProjectName(pid) : '未选择项目')}</span>
+        <span className="text-sm text-slate-600">{record.projectName || (pid ? getProjectName(pid) : t('taskManagement.noProjectSelected'))}</span>
       )
     },
     {
-      title: '数据集 & 模型',
+      title: t('task.label.datasetModel'),
       key: 'data_model',
       width: 220,
       render: (_: any, record: Task) => (
@@ -1238,7 +1239,7 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
       )
     },
     {
-      title: '状态',
+      title: t('task.label.status'),
       key: 'status',
       width: 160,
       render: (_: any, record: Task) => {
@@ -1261,7 +1262,7 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
       }
     },
     {
-      title: '优先级',
+      title: t('task.label.priority'),
       dataIndex: 'priority',
       key: 'priority',
       width: 100,
@@ -1271,7 +1272,7 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
       }
     },
     {
-      title: '创建时间',
+      title: t('common.createdAt'),
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 150,
@@ -1281,7 +1282,7 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
       </div>
     },
     {
-      title: '操作',
+      title: t('common.action'),
       key: 'action',
       fixed: 'right',
       width: 180,
@@ -1321,7 +1322,7 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
         <DialogContent className="sm:max-w-[1600px] max-w-[1600px] w-[98vw] max-h-[90vh] overflow-y-auto overflow-x-hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <GitCompare className="h-5 w-5" /> 任务对比预览
+              <GitCompare className="h-5 w-5" /> {t('task.compare.preview')}
             </DialogTitle>
           </DialogHeader>
           <TaskCompare
@@ -1352,7 +1353,7 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
                       className="flex items-center space-x-1"
                     >
                       <GitCompare className="h-4 w-4" />
-                      <span>任务对比预览</span>
+                      <span>{t('task.compare.preview')}</span>
                     </Button>
                   )}
                   <Button
@@ -1362,7 +1363,7 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
                     className="flex items-center space-x-1"
                   >
                     <Archive className="h-4 w-4" />
-                    <span>批量归档</span>
+                    <span>{t('task.actions.batchArchive')}</span>
                   </Button>
                   <Button
                     variant="outline"
@@ -1371,7 +1372,7 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
                     className="flex items-center space-x-1"
                   >
                     <Download className="h-4 w-4" />
-                    <span>批量导出</span>
+                    <span>{t('task.actions.batchExport')}</span>
                   </Button>
                   <Button
                     variant="outline"
@@ -1380,7 +1381,7 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
                     className="flex items-center space-x-1"
                   >
                     <RotateCcw className="h-4 w-4" />
-                    <span>批量重试</span>
+                    <span>{t('task.actions.batchRetry')}</span>
                   </Button>
                 </div>
               </div>
@@ -1398,7 +1399,7 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
                 <Activity className="h-4 w-4 text-blue-600" />
               </div>
               <div>
-                <p className="text-xs text-gray-600">总任务数</p>
+                <p className="text-xs text-gray-600">{t('task.stats.total')}</p>
                 <p className="text-xl font-bold">{tasks.length}</p>
               </div>
             </div>
@@ -1412,7 +1413,7 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
                 <Clock className="h-4 w-4 text-blue-600" />
               </div>
               <div>
-                <p className="text-xs text-gray-600">运行中</p>
+                <p className="text-xs text-gray-600">{t('task.stats.running')}</p>
                 <p className="text-xl font-bold">{tasks.filter(t => t.status === 'running').length}</p>
               </div>
             </div>
@@ -1426,7 +1427,7 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
                 <CheckCircle className="h-4 w-4 text-green-600" />
               </div>
               <div>
-                <p className="text-xs text-gray-600">已完成</p>
+                <p className="text-xs text-gray-600">{t('task.stats.completed')}</p>
                 <p className="text-xl font-bold">{tasks.filter(t => t.status === 'completed').length}</p>
               </div>
             </div>
@@ -1440,7 +1441,7 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
                 <XCircle className="h-4 w-4 text-red-600" />
               </div>
               <div>
-                <p className="text-xs text-gray-600">失败</p>
+                <p className="text-xs text-gray-600">{t('task.stats.failed')}</p>
                 <p className="text-xl font-bold">{tasks.filter(t => t.status === 'failed').length}</p>
               </div>
             </div>
@@ -1454,7 +1455,7 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
                 <Target className="h-4 w-4 text-gray-600" />
               </div>
               <div>
-                <p className="text-xs text-gray-600">排队中</p>
+                <p className="text-xs text-gray-600">{t('task.stats.pending')}</p>
                 <p className="text-xl font-bold">{tasks.filter(t => t.status === 'pending').length}</p>
               </div>
             </div>
@@ -1477,9 +1478,9 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
               />
             </div>
             <Select value={filters.taskType} onValueChange={(v) => handleFilterChange('taskType', v)}>
-              <SelectTrigger className="w-[140px] bg-slate-50 border-slate-200"><SelectValue placeholder="任务类型" /></SelectTrigger>
+              <SelectTrigger className="w-[140px] bg-slate-50 border-slate-200"><SelectValue placeholder={t('task.filters.type')} /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">全部类型</SelectItem>
+                <SelectItem value="all">{t('task.filters.type.all')}</SelectItem>
                 {Array.from(ALLOWED_TASK_TYPES).map(tt => <SelectItem key={tt} value={tt}>{getTaskTypeLabel(tt as TaskType)}</SelectItem>)}
               </SelectContent>
             </Select>
@@ -1487,7 +1488,7 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
               <PopoverTrigger asChild>
                 <Button variant="outline" className="w-[220px] justify-start text-left font-normal bg-slate-50 border-slate-200">
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {filters.dateRange.start ? `${filters.dateRange.start} - ${filters.dateRange.end || '...'}` : <span>选期间</span>}
+                  {filters.dateRange.start ? `${filters.dateRange.start} - ${filters.dateRange.end || '...'}` : <span>{t('task.filters.createdAtRange')}</span>}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -1507,7 +1508,7 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
               <button onClick={() => setViewMode('grid')} className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500 hover:text-slate-700'}`}><Grid className="w-4 h-4" /></button>
             </div>
             <Button onClick={() => setFilters({ ...filters, status: 'all', taskType: 'all', projectId: 'all', priority: 'all', dateRange: { start: '', end: '' }, searchQuery: '' })} variant="ghost" size="icon" className="text-slate-400 hover:text-slate-600"><RotateCcw className="w-4 h-4" /></Button>
-            <Button onClick={onOpenCreateTaskPage} className="bg-blue-600 hover:bg-blue-700 text-white shadow-md gap-2"><Plus className="w-4 h-4" /> 创建任务</Button>
+            <Button onClick={onOpenCreateTaskPage} className="bg-blue-600 hover:bg-blue-700 text-white shadow-md gap-2"><Plus className="w-4 h-4" /> {t('task.create')}</Button>
           </div>
         </div>
 
@@ -1517,7 +1518,7 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
             dataSource={getFilteredAndSortedTasks()}
             rowKey="id"
             rowSelection={{ selectedRowKeys: selectedTaskIds, onChange: (keys) => setSelectedTaskIds(keys as string[]) }}
-            pagination={{ pageSize: 15, showTotal: (total) => `共 ${total} 条` }}
+            pagination={{ pageSize: 15, showTotal: (total) => `${t('common.total', { count: total })}` }}
             scroll={{ x: 1300 }}
             size="middle"
           />
@@ -1577,32 +1578,32 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
       <Dialog open={!!selectedTaskForDetails} onOpenChange={() => setSelectedTaskForDetails(null)}>
         <DialogContent className="max-w-4xl">
           {selectedTaskForDetails && (<><DialogHeader>
-            <DialogTitle>任务详情 - {selectedTaskForDetails.taskName}</DialogTitle>
+            <DialogTitle>{t('task.dialog.detail.title')} - {selectedTaskForDetails.taskName}</DialogTitle>
           </DialogHeader>
             <div className="space-y-6">
               {/* 任务详情内容 */}
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div>
-                    <Label className="text-sm font-medium text-gray-500">任务ID</Label>
+                    <Label className="text-sm font-medium text-gray-500">{t('task.label.taskId')}</Label>
                     <p className="mt-1">{selectedTaskForDetails.id}</p>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-gray-500">任务类型</Label>
+                    <Label className="text-sm font-medium text-gray-500">{t('task.label.taskType')}</Label>
                     <p className="mt-1">{getTaskTypeLabel(selectedTaskForDetails.taskType)}</p>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-gray-500">数据集</Label>
+                    <Label className="text-sm font-medium text-gray-500">{t('task.label.dataset')}</Label>
                     <p className="mt-1">{selectedTaskForDetails.datasetName} ({selectedTaskForDetails.datasetVersion})</p>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-gray-500">模型</Label>
+                    <Label className="text-sm font-medium text-gray-500">{t('task.label.model')}</Label>
                     <p className="mt-1">{selectedTaskForDetails.modelName}</p>
                   </div>
                 </div>
                 <div className="space-y-4">
                   <div>
-                    <Label className="text-sm font-medium text-gray-500">状态</Label>
+                    <Label className="text-sm font-medium text-gray-500">{t('task.label.status')}</Label>
                     <div className="mt-1">
                       <Badge className={getStatusConfig(selectedTaskForDetails.status).color}>
                         {getStatusConfig(selectedTaskForDetails.status).label}
@@ -1610,7 +1611,7 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
                     </div>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-gray-500">优先级</Label>
+                    <Label className="text-sm font-medium text-gray-500">{t('task.label.priority')}</Label>
                     <div className="mt-1">
                       <Badge className={getPriorityConfig(selectedTaskForDetails.priority).color}>
                         {getPriorityConfig(selectedTaskForDetails.priority).label}
@@ -1618,11 +1619,11 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
                     </div>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-gray-500">创建时间</Label>
+                    <Label className="text-sm font-medium text-gray-500">{t('common.createdAt')}</Label>
                     <p className="mt-1">{new Date(selectedTaskForDetails.createdAt).toLocaleString('zh-CN')}</p>
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-gray-500">创建者</Label>
+                    <Label className="text-sm font-medium text-gray-500">{t('common.creator')}</Label>
                     <p className="mt-1">{selectedTaskForDetails.createdBy}</p>
                   </div>
                 </div>
@@ -1630,14 +1631,14 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
 
               {selectedTaskForDetails.description && (
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">任务描述</Label>
+                  <Label className="text-sm font-medium text-gray-500">{t('task.edit.description')}</Label>
                   <p className="mt-1 text-gray-900">{selectedTaskForDetails.description}</p>
                 </div>
               )}
 
               {(['running', 'pending', 'completed'].includes(selectedTaskForDetails.status)) && (
                 <div>
-                  <Label className="text-sm font-medium text-gray-500">执行进度</Label>
+                  <Label className="text-sm font-medium text-gray-500">{t('task.label.executionProgress')}</Label>
                   <div className="mt-2">
                     <Progress value={selectedTaskForDetails.status === 'completed' ? 100 : selectedTaskForDetails.status === 'pending' ? 0 : (selectedTaskForDetails.progress ?? 0)} className="h-3" />
                     <p className="text-sm text-gray-600 mt-1">
@@ -1703,31 +1704,31 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
 
           <div className="space-y-4">
             <div className="bg-gray-50 p-4 rounded-lg">
-              <p className="text-sm text-gray-600 mb-2">任务名称</p>
+              <p className="text-sm text-gray-600 mb-2">{t('taskDetail.overview.taskName')}</p>
               <p className="font-medium">{confirmDialog.taskName}</p>
             </div>
 
             <div className="text-sm text-gray-600">
               {confirmDialog.action === 'start' && (
-                <p>确认要开始执行此任务吗？任务开始后将消耗计算资源，请确保配置正确。</p>
+                <p>{t('task.messages.confirmStart')}</p>
               )}
               {confirmDialog.action === 'stop' && (
-                <p>确认要停止正在执行的任务吗？停止后任务将立即中断，已完成的部分会被保留。</p>
+                <p>{t('task.messages.confirmStop')}</p>
               )}
               {confirmDialog.action === 'retry' && (
-                <p>确认要重试此任务吗？重试将按当前配置重新执行失败或已取消的任务。</p>
+                <p>{t('task.messages.confirmRetry')}</p>
               )}
               {confirmDialog.action === 'rerun' && (
-                <p>确认要重新运行此任务吗？该任务将按当前配置重新排队等待执行。</p>
+                <p>{t('task.messages.confirmRerun')}</p>
               )}
               {confirmDialog.action === 'cancel_queue' && (
-                <p>确认要取消该任务的排队吗？取消后任务状态将回到“未开始”，不会占用队列资源。</p>
+                <p>{t('task.messages.confirmCancelQueue')}</p>
               )}
               {confirmDialog.action === 'archive' && (
-                <p>确认要归档此任务吗？归档后任务将移至历史记录，不会影响任务结果。</p>
+                <p>{t('task.messages.confirmArchive')}</p>
               )}
               {confirmDialog.action === 'delete' && (
-                <p>确认要删除此任务吗？此操作不可撤销，任务将从列表中移除。</p>
+                <p>{t('task.messages.confirmDelete')}</p>
               )}
             </div>
           </div>
@@ -1737,7 +1738,7 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
               variant="outline"
               onClick={handleCancelConfirm}
             >
-              取消
+              {t('common.cancel')}
             </Button>
             <Button
               variant="default"
@@ -1757,13 +1758,13 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
                           : '!bg-gray-700 hover:!bg-gray-800 !text-white'
               }
             >
-              {confirmDialog.action === 'start' ? '开始任务' :
-                confirmDialog.action === 'stop' ? '停止任务' :
-                  confirmDialog.action === 'retry' ? '重试任务' :
-                    confirmDialog.action === 'rerun' ? '重新运行' :
-                      confirmDialog.action === 'cancel_queue' ? '取消排队' :
-                        confirmDialog.action === 'archive' ? '归档任务' :
-                          confirmDialog.action === 'delete' ? '删除任务' : '确认'}
+              {confirmDialog.action === 'start' ? t('task.actions.start') :
+                confirmDialog.action === 'stop' ? t('task.actions.stop') :
+                  confirmDialog.action === 'retry' ? t('task.actions.retry') :
+                    confirmDialog.action === 'rerun' ? t('task.actions.rerun') :
+                      confirmDialog.action === 'cancel_queue' ? t('task.actions.cancelQueue') :
+                        confirmDialog.action === 'archive' ? t('task.actions.archive') :
+                          confirmDialog.action === 'delete' ? t('task.actions.delete') : t('common.confirm')}
             </Button>
           </div>
         </DialogContent>
@@ -1781,12 +1782,12 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
 
           <div className="space-y-4">
             <div className="bg-gray-50 p-4 rounded-lg">
-              <p className="text-sm text-gray-600 mb-1">原任务名称</p>
+              <p className="text-sm text-gray-600 mb-1">{t('task.edit.originalName')}</p>
               <p className="font-medium text-gray-900">{copyDialog.sourceTask?.taskName}</p>
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm font-medium">新任务名称</Label>
+              <Label className="text-sm font-medium">{t('task.edit.newTitle')}</Label>
               <Input
                 value={copyDialog.newName}
                 onChange={(e) => setCopyDialog({ ...copyDialog, newName: e.target.value })}
@@ -1796,7 +1797,7 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm font-medium">任务描述</Label>
+              <Label className="text-sm font-medium">{t('task.edit.description')}</Label>
               <Textarea
                 value={copyDialog.newDescription}
                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setCopyDialog({ ...copyDialog, newDescription: e.target.value })}

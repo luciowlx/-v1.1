@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import { useLanguage } from "../i18n/LanguageContext";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
@@ -98,6 +99,7 @@ interface RecommendedStrategy {
 
 
 export function DataPreprocessing({ isOpen, onClose, datasetId, mode = 'traditional' }: DataPreprocessingProps) {
+  const { t } = useLanguage();
   const [currentMode, setCurrentMode] = useState<'traditional' | 'auto'>(mode);
   // 初始不加载字段信息，先进行“选择数据集”步骤
   const [isLoading, setIsLoading] = useState(false);
@@ -1594,7 +1596,7 @@ export function DataPreprocessing({ isOpen, onClose, datasetId, mode = 'traditio
     toast.info('已开始执行数据处理任务（后台执行）');
     try {
       await new Promise(resolve => setTimeout(resolve, 3000));
-      toast.success('数据预处理已完成');
+      toast.success(t('preprocess.msg.complete'));
     } catch (error) {
       toast.error('应用预处理失败');
     }
@@ -1843,7 +1845,7 @@ export function DataPreprocessing({ isOpen, onClose, datasetId, mode = 'traditio
       // 模拟应用过程
       await new Promise(resolve => setTimeout(resolve, 3000));
 
-      toast.success('数据预处理已完成');
+      toast.success(t('preprocess.msg.complete'));
 
       onClose();
     } catch (error) {
@@ -1941,17 +1943,17 @@ export function DataPreprocessing({ isOpen, onClose, datasetId, mode = 'traditio
       <DialogContent className="sm:max-w-[1800px] max-w-[1800px] w-[98vw] sm:w-[1800px] min-w-[800px] max-h-[90vh] overflow-y-auto overflow-x-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center justify-between">
-            <span>数据预处理</span>
+            <span>{t('preprocess.title')}</span>
           </DialogTitle>
           <DialogDescription>
-            数据清洗与预处理，支持规则配置与智能优化
+            {t('preprocess.description')}
           </DialogDescription>
         </DialogHeader>
 
         {isLoading ? (
           <div className="flex justify-center items-center py-12">
             <RefreshCw className="h-8 w-8 animate-spin mr-3" />
-            <span className="text-lg">加载数据集信息...</span>
+            <span className="text-lg">{t('preprocess.loading')}</span>
           </div>
         ) : currentMode === 'auto' ? (
           <SoloDataCleaning
@@ -1964,9 +1966,9 @@ export function DataPreprocessing({ isOpen, onClose, datasetId, mode = 'traditio
             {/* 步骤指示器 */}
             <div className="flex items-center justify-center space-x-4">
               {[
-                { step: 0, title: '选择数据集', icon: Database },
-                { step: 1, title: '字段选择', icon: Layers },
-                { step: 2, title: '规则配置', icon: Settings }
+                { step: 0, title: t('preprocess.step.selectDataset'), icon: Database },
+                { step: 1, title: t('preprocess.step.fieldSelection'), icon: Layers },
+                { step: 2, title: t('preprocess.step.ruleConfig'), icon: Settings }
               ].map(({ step, title, icon: Icon }) => (
                 <div key={step} className="flex items-center">
                   <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${currentStep >= step
@@ -1994,9 +1996,9 @@ export function DataPreprocessing({ isOpen, onClose, datasetId, mode = 'traditio
             {currentMode === 'traditional' ? (
               <Tabs value={currentStep.toString()} onValueChange={(value: string) => setCurrentStep(parseInt(value))}>
                 <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="0">选择数据集</TabsTrigger>
-                  <TabsTrigger value="1">字段选择</TabsTrigger>
-                  <TabsTrigger value="2">规则配置</TabsTrigger>
+                  <TabsTrigger value="0">{t('preprocess.step.selectDataset')}</TabsTrigger>
+                  <TabsTrigger value="1">{t('preprocess.step.fieldSelection')}</TabsTrigger>
+                  <TabsTrigger value="2">{t('preprocess.step.ruleConfig')}</TabsTrigger>
                 </TabsList>
 
                 {/* 选择数据集（Step 0） - 上下布局 + 多选 + 标签切换预览 */}
@@ -2006,10 +2008,11 @@ export function DataPreprocessing({ isOpen, onClose, datasetId, mode = 'traditio
                       <CardTitle className="flex items-center justify-between w-full">
                         <div className="flex items-center space-x-2">
                           <Database className="h-5 w-5" />
-                          <span>选择目标数据集</span>
+                          <span>{t('preprocess.select.targetDataset')}</span>
                         </div>
                         <div className="text-xs text-gray-600">
-                          已选 {selectedDatasetIds.length} 个{activeDatasetId ? ` · 当前预览：${datasetOptions.find(d => d.id === activeDatasetId)?.name || activeDatasetId}` : ''}
+                          {t('preprocess.select.selectedCount').replace('{count}', selectedDatasetIds.length.toString())}
+                          {activeDatasetId ? ` · ${t('preprocess.select.currentPreview').replace('{name}', datasetOptions.find(d => d.id === activeDatasetId)?.name || activeDatasetId)}` : ''}
                         </div>
                       </CardTitle>
                     </CardHeader>
@@ -2017,12 +2020,12 @@ export function DataPreprocessing({ isOpen, onClose, datasetId, mode = 'traditio
                       {/* 顶部：数据集多选列表（支持模糊搜索 + 大量数据滚动显示） */}
                       <div className="rounded-md border bg-muted/40 p-3">
                         <div className="flex items-center justify-between">
-                          <Label className="text-sm">数据集列表（单选，支持多版本/文件）</Label>
+                          <Label className="text-sm">{t('preprocess.select.datasetListLabel')}</Label>
                           <div className="flex items-center gap-2">
                             <div className="relative w-56 sm:w-72">
                               <Search className="pointer-events-none h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
                               <Input
-                                aria-label="搜索数据集名称（支持模糊）"
+                                aria-label={t('preprocess.select.searchLabel')}
                                 value={datasetSearch}
                                 onChange={(e) => setDatasetSearch(e.target.value)}
                                 onKeyDown={(e) => {
@@ -2033,7 +2036,7 @@ export function DataPreprocessing({ isOpen, onClose, datasetId, mode = 'traditio
                                     setActiveDatasetId(top.id);
                                   }
                                 }}
-                                placeholder="搜索数据集名称（支持模糊）"
+                                placeholder={t('preprocess.select.searchPlaceholder')}
                                 className="pl-8"
                               />
                             </div>
@@ -2041,13 +2044,13 @@ export function DataPreprocessing({ isOpen, onClose, datasetId, mode = 'traditio
                               const first = filteredDatasets[0];
                               if (!first) return;
                               toggleDatasetSelection(first.id, true);
-                            }}>选择首个结果</Button>
-                            <Button size="sm" variant="ghost" onClick={clearSelectedDatasets}>清空</Button>
+                            }}>{t('preprocess.btn.selectFirst')}</Button>
+                            <Button size="sm" variant="ghost" onClick={clearSelectedDatasets}>{t('preprocess.btn.clear')}</Button>
                           </div>
                         </div>
                         <div className="mt-2 max-h-80 overflow-y-auto overscroll-contain overflow-x-hidden rounded-sm border bg-background/60 p-2">
                           {filteredDatasets.length === 0 ? (
-                            <div className="px-2 py-3 text-xs text-gray-500">未匹配到数据集</div>
+                            <div className="px-2 py-3 text-xs text-gray-500">{t('preprocess.select.noMatch')}</div>
                           ) : (
                             <div className="divide-y">
                               {filteredDatasets.map(ds => {
@@ -2146,12 +2149,17 @@ export function DataPreprocessing({ isOpen, onClose, datasetId, mode = 'traditio
                                 const rows = ver?.rows || selectedDataset.rows;
                                 const cols = ver?.columns || selectedDataset.columns;
                                 const size = ver?.size || selectedDataset.size;
-                                const suffix = selVers.length > 1 ? ` · 已选 ${selVers.length} 版本` : '';
-                                return `${rows} 条记录 · ${(datasetFieldSchemas[activeDatasetId!]?.length ?? Number(cols))} 个字段 · ${size}${ver ? ` · 预览版本：${ver.label}` : ''}${suffix}`;
+                                const suffix = selVers.length > 1 ? ` · ${t('preprocess.select.multiVersionCount').replace('{count}', selVers.length.toString())}` : '';
+                                return t('preprocess.select.statsSummary')
+                                  .replace('{rows}', rows.toString())
+                                  .replace('{cols}', (datasetFieldSchemas[activeDatasetId!]?.length ?? Number(cols)).toString())
+                                  .replace('{size}', size)
+                                  + (ver ? ` · ${t('preprocess.select.previewVersionLabel').replace('{label}', ver.label)}` : '')
+                                  + suffix;
                               })()}
                             </div>
                             <div className="mt-2 flex items-center gap-3">
-                              <span className="text-xs">预览版本：</span>
+                              <span className="text-xs">{t('preprocess.select.previewVersion')}</span>
                               {(() => {
                                 const dsId = activeDatasetId!;
                                 const options = (selectedDatasetVersions[dsId] || []);
@@ -2178,11 +2186,11 @@ export function DataPreprocessing({ isOpen, onClose, datasetId, mode = 'traditio
                                   </Select>
                                 );
                               })()}
-                              <span className="text-xs">预览文件：</span>
+                              <span className="text-xs">{t('preprocess.select.previewFile')}</span>
                               {(() => {
                                 const dsId = activeDatasetId!;
                                 const verId = activeVersionByDataset[dsId] || (selectedDatasetVersions[dsId] || [])[0];
-                                if (!verId) return <span className="text-[11px] text-gray-500">请选择版本</span>;
+                                if (!verId) return <span className="text-[11px] text-gray-500">{t('preprocess.select.pleaseSelectVersion')}</span>;
                                 const key = `${dsId}::${verId}`;
                                 const fileIds = selectedFilesByVersion[key] || [];
                                 const dsObj = datasetOptions.find(d => d.id === dsId);
@@ -2205,7 +2213,7 @@ export function DataPreprocessing({ isOpen, onClose, datasetId, mode = 'traditio
                             {/* 去重：底部不再重复版本与文件选择 */}
                             {/* 去重：底部不再重复文件选择 */}
                             <div className="mt-3">
-                              <div className="text-xs font-medium mb-2">数据表预览（原始结构与数据）</div>
+                              <div className="text-xs font-medium mb-2">{t('preprocess.select.dataPreviewTitle')}</div>
                               <div className="rounded-sm border bg-background/60 overflow-x-auto">
                                 <div className="min-w-[1200px]">
                                   <Table>
@@ -2219,7 +2227,7 @@ export function DataPreprocessing({ isOpen, onClose, datasetId, mode = 'traditio
                                     <TableBody>
                                       {pagedPreviewRows.length === 0 ? (
                                         <TableRow>
-                                          <TableCell colSpan={Math.max(1, previewSchema.length)} className="text-center text-xs text-gray-500">暂无预览数据</TableCell>
+                                          <TableCell colSpan={Math.max(1, previewSchema.length)} className="text-center text-xs text-gray-500">{t('preprocess.select.noPreviewData')}</TableCell>
                                         </TableRow>
                                       ) : (
                                         pagedPreviewRows.map((row, rIdx) => (
@@ -2236,7 +2244,7 @@ export function DataPreprocessing({ isOpen, onClose, datasetId, mode = 'traditio
                               </div>
                               <div className="flex items-center justify-between mt-2 text-xs">
                                 <div className="flex items-center gap-2">
-                                  <span>每页</span>
+                                  <span>{t('preprocess.common.rowsPerPage')}</span>
                                   <Select value={String(rowsPerPage)} onValueChange={(v: string) => { setRowsPerPage(Number(v)); setPreviewPage(1); }}>
                                     <SelectTrigger className="h-7 w-20">
                                       <SelectValue />
@@ -2297,7 +2305,7 @@ export function DataPreprocessing({ isOpen, onClose, datasetId, mode = 'traditio
 
                   <div className="flex justify-end">
                     <Button onClick={proceedToFieldSelection} disabled={!activeDatasetId}>
-                      下一步：字段选择
+                      {t('preprocess.btn.nextFieldSelection')}
                     </Button>
                   </div>
                 </TabsContent>
@@ -2308,14 +2316,16 @@ export function DataPreprocessing({ isOpen, onClose, datasetId, mode = 'traditio
                     <CardHeader>
                       <CardTitle className="flex items-center space-x-2">
                         <Layers className="h-5 w-5" />
-                        <span>字段信息</span>
-                        <Badge variant="secondary">{(selectedSourcesForView.length > 1 ? aggregatedFields.length : fields.length)} 个字段</Badge>
+                        <span>{t('preprocess.fieldInfo.title')}</span>
+                        <Badge variant="secondary">
+                          {t('preprocess.fieldInfo.fieldCount').replace('{count}', (selectedSourcesForView.length > 1 ? aggregatedFields.length : fields.length).toString())}
+                        </Badge>
                       </CardTitle>
                       {selectedSourcesForView.length > 1 && (
                         <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-600 overflow-x-auto">
 
                           <div className="flex items-center gap-2">
-                            <span>主表：</span>
+                            <span>{t('preprocess.fieldInfo.primaryTableLabel')}</span>
                             <Select value={primaryDatasetId || activeDatasetId || selectedDatasetIds[0]} onValueChange={(v: string) => setPrimaryDatasetId(v)}>
                               <SelectTrigger className="h-8 min-w-[9rem] sm:w-48">
                                 <SelectValue />
@@ -2327,7 +2337,7 @@ export function DataPreprocessing({ isOpen, onClose, datasetId, mode = 'traditio
                               </SelectContent>
                             </Select>
                             {/* 主表版本选择（联动主表数据集） */}
-                            <span>版本：</span>
+                            <span>{t('preprocess.fieldInfo.versionLabel')}</span>
                             {(() => {
                               const baseId = primaryDatasetId || activeDatasetId || selectedDatasetIds[0];
                               const ds = datasetOptions.find(d => d.id === baseId);
@@ -2358,7 +2368,7 @@ export function DataPreprocessing({ isOpen, onClose, datasetId, mode = 'traditio
                               const currFile = (selectedFilesByVersion[key] || [])[0] || files[0]?.id || '';
                               return (
                                 <>
-                                  <span>文件：</span>
+                                  <span>{t('preprocess.fieldInfo.fileLabel')}</span>
                                   <Select value={currFile} onValueChange={(fid: string) => setSelectedFilesByVersion(prev => ({ ...prev, [key]: fid ? [fid] : [] }))}>
                                     <SelectTrigger className="h-8 min-w-[10rem] sm:w-52">
                                       <SelectValue />
@@ -2378,11 +2388,11 @@ export function DataPreprocessing({ isOpen, onClose, datasetId, mode = 'traditio
                             })()}
                           </div>
                           <div className="flex items-center gap-2 w-full sm:w-auto sm:ml-auto order-last sm:order-none">
-                            <span>显示：</span>
-                            <Button size="sm" variant={showCommonOnly ? 'default' : 'outline'} onClick={() => setShowCommonOnly(true)}>仅公共字段</Button>
-                            <Button size="sm" variant={!showCommonOnly ? 'default' : 'outline'} onClick={() => setShowCommonOnly(false)}>显示全部字段</Button>
+                            <span>{t('preprocess.common.displayLabel')}</span>
+                            <Button size="sm" variant={showCommonOnly ? 'default' : 'outline'} onClick={() => setShowCommonOnly(true)}>{t('preprocess.btn.onlyCommonFields')}</Button>
+                            <Button size="sm" variant={!showCommonOnly ? 'default' : 'outline'} onClick={() => setShowCommonOnly(false)}>{t('preprocess.btn.showAllFields')}</Button>
                           </div>
-                          <Badge variant="outline" className="shrink-0">{showCommonOnly ? '公共字段' : '全部字段'}</Badge>
+                          <Badge variant="outline" className="shrink-0">{showCommonOnly ? t('preprocess.badge.commonFields') : t('preprocess.badge.allFields')}</Badge>
                         </div>
                       )}
                       {selectedSourcesForView.length <= 1 && (
@@ -2392,9 +2402,9 @@ export function DataPreprocessing({ isOpen, onClose, datasetId, mode = 'traditio
                             const ds = datasetOptions.find(d => d.id === baseId);
                             return (
                               <div className="flex items-center gap-2">
-                                <span>主表：</span>
+                                <span>{t('preprocess.fieldInfo.primaryTableLabel')}</span>
                                 <span className="px-3 py-1 rounded bg-gray-100">{ds?.name || baseId}</span>
-                                <span>版本：</span>
+                                <span>{t('preprocess.fieldInfo.versionLabel')}</span>
                                 {(() => {
                                   const selectedVers = (baseId ? (selectedDatasetVersions[baseId] || []) : []);
                                   const optionIds = selectedVers.length > 0 ? selectedVers : (ds?.versions?.map(v => v.id) || []);
@@ -2421,14 +2431,14 @@ export function DataPreprocessing({ isOpen, onClose, datasetId, mode = 'traditio
                                   const currFile = (selectedFilesByVersion[key] || [])[0] || files[0]?.id || '';
                                   return (
                                     <>
-                                      <span>文件：</span>
+                                      <span>{t('preprocess.fieldInfo.fileLabel')}</span>
                                       <Select value={currFile} onValueChange={(fid: string) => setSelectedFilesByVersion(prev => ({ ...prev, [key]: fid ? [fid] : [] }))}>
                                         <SelectTrigger className="h-8 min-w-[10rem] sm:w-52">
                                           <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
                                           {files.length === 0 ? (
-                                            <SelectItem value="">无文件</SelectItem>
+                                            <SelectItem value="">{t('preprocess.fieldInfo.noFiles')}</SelectItem>
                                           ) : (
                                             files.map((f: any) => (
                                               <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
@@ -2447,16 +2457,16 @@ export function DataPreprocessing({ isOpen, onClose, datasetId, mode = 'traditio
                     </CardHeader>
                     <CardContent>
                       {!activeDatasetId && (
-                        <div className="text-sm text-orange-600 mb-2">⚠️ 未选择数据集，请返回上一步选择数据集。</div>
+                        <div className="text-sm text-orange-600 mb-2">{t('preprocess.msg.noDatasetWarning')}</div>
                       )}
                       {selectedSourcesForView.length > 1 ? (
                         <Table>
                           <TableHeader>
                             <TableRow>
-                              <TableHead className="w-12">选择</TableHead>
+                              <TableHead className="w-12">{t('preprocess.field.select')}</TableHead>
                               <TableHead>
                                 <div className="flex items-center gap-2">
-                                  <span>字段名</span>
+                                  <span>{t('preprocess.field.name')}</span>
                                   <Popover>
                                     <PopoverTrigger asChild>
                                       <Button variant="ghost" size="sm" className={`h-6 w-6 p-0 ${fieldNameSearch ? 'text-blue-600' : ''}`}>
@@ -2465,9 +2475,9 @@ export function DataPreprocessing({ isOpen, onClose, datasetId, mode = 'traditio
                                     </PopoverTrigger>
                                     <PopoverContent className="w-60 p-2">
                                       <div className="space-y-2">
-                                        <h4 className="font-medium leading-none text-sm">搜索字段名</h4>
+                                        <h4 className="font-medium leading-none text-sm">{t('preprocess.search.fieldName')}</h4>
                                         <Input
-                                          placeholder="输入字段名..."
+                                          placeholder={t('preprocess.search.placeholderFieldName')}
                                           value={fieldNameSearch}
                                           onChange={(e) => setFieldNameSearch(e.target.value)}
                                           className="h-8"
@@ -2477,15 +2487,15 @@ export function DataPreprocessing({ isOpen, onClose, datasetId, mode = 'traditio
                                   </Popover>
                                 </div>
                               </TableHead>
-                              <TableHead>类型</TableHead>
-                              <TableHead>空值率</TableHead>
-                              <TableHead>重复率</TableHead>
-                              <TableHead>唯一数</TableHead>
-                              <TableHead>示例值</TableHead>
+                              <TableHead>{t('preprocess.field.type')}</TableHead>
+                              <TableHead>{t('preprocess.field.missingRate')}</TableHead>
+                              <TableHead>{t('preprocess.field.duplicateRate')}</TableHead>
+                              <TableHead>{t('preprocess.field.uniqueCount')}</TableHead>
+                              <TableHead>{t('preprocess.field.samples')}</TableHead>
                               {!showCommonOnly && (
                                 <TableHead>
                                   <div className="flex items-center gap-2">
-                                    <span>数据来源</span>
+                                    <span>{t('preprocess.field.source')}</span>
                                     <Popover>
                                       <PopoverTrigger asChild>
                                         <Button variant="ghost" size="sm" className={`h-6 w-6 p-0 ${dataSourceFilter.length > 0 ? 'text-blue-600' : ''}`}>
@@ -2494,11 +2504,11 @@ export function DataPreprocessing({ isOpen, onClose, datasetId, mode = 'traditio
                                       </PopoverTrigger>
                                       <PopoverContent className="w-60 p-2">
                                         <div className="space-y-2">
-                                          <h4 className="font-medium leading-none text-sm">筛选来源</h4>
+                                          <h4 className="font-medium leading-none text-sm">{t('preprocess.filter.source')}</h4>
                                           <div className="max-h-48 overflow-y-auto space-y-1">
                                             {(() => {
                                               const allSources = Array.from(new Set(aggregatedFields.flatMap(f => f.sourceFiles || []))).sort();
-                                              if (allSources.length === 0) return <div className="text-xs text-gray-500">无可用来源</div>;
+                                              if (allSources.length === 0) return <div className="text-xs text-gray-500">{t('preprocess.filter.noSources')}</div>;
                                               return allSources.map(src => (
                                                 <div key={src} className="flex items-center space-x-2">
                                                   <Checkbox
@@ -2521,7 +2531,7 @@ export function DataPreprocessing({ isOpen, onClose, datasetId, mode = 'traditio
                                           </div>
                                           {dataSourceFilter.length > 0 && (
                                             <Button variant="ghost" size="sm" className="w-full h-6 text-xs" onClick={() => setDataSourceFilter([])}>
-                                              清除筛选
+                                              {t('preprocess.filter.clear')}
                                             </Button>
                                           )}
                                         </div>
@@ -2782,7 +2792,7 @@ export function DataPreprocessing({ isOpen, onClose, datasetId, mode = 'traditio
 
                   <div className="flex items-center justify-between">
                     <Button variant="outline" onClick={() => setCurrentStep(0)}>
-                      上一步
+                      {t('preprocess.btn.prev')}
                     </Button>
                     <Button
                       onClick={() => setCurrentStep(2)}
@@ -2790,7 +2800,7 @@ export function DataPreprocessing({ isOpen, onClose, datasetId, mode = 'traditio
                         ? aggregatedFields.filter(f => f.selected).length === 0 || hasAnyAggNameError
                         : fields.filter(f => f.selected).length === 0 || hasAnyNameError)}
                     >
-                      下一步：配置规则
+                      {t('preprocess.btn.nextRuleConfig')}
                     </Button>
                   </div>
                 </TabsContent>
@@ -2803,13 +2813,13 @@ export function DataPreprocessing({ isOpen, onClose, datasetId, mode = 'traditio
                       <CardHeader>
                         <CardTitle className="flex items-center space-x-2">
                           <Layers className="h-5 w-5" />
-                          <span>字段视图（规则配置）</span>
-                          <Badge variant="secondary">{step2AggregatedFields.length} 个字段</Badge>
+                          <span>{t('preprocess.ruleConfig.fieldViewTitle')}</span>
+                          <Badge variant="secondary">{t('preprocess.fieldInfo.fieldCount').replace('{count}', step2AggregatedFields.length.toString())}</Badge>
                         </CardTitle>
                         <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-600 overflow-x-auto">
-                          <span className="whitespace-nowrap">已选择多个数据集或多个版本，以下展示公共字段聚合视图。</span>
+                          <span className="whitespace-nowrap">{t('preprocess.ruleConfig.multiSourceNote')}</span>
                           <div className="flex items-center gap-2">
-                            <span>主表：</span>
+                            <span>{t('preprocess.fieldInfo.primaryTableLabel')}</span>
                             <Select value={step2PrimaryDatasetId || primaryDatasetId || activeDatasetId || selectedDatasetIds[0]} onValueChange={(v: string) => setStep2PrimaryDatasetId(v)}>
                               <SelectTrigger className="h-8 min-w-[9rem] sm:w-48">
                                 <SelectValue />
@@ -2820,7 +2830,7 @@ export function DataPreprocessing({ isOpen, onClose, datasetId, mode = 'traditio
                                 ))}
                               </SelectContent>
                             </Select>
-                            <span>版本：</span>
+                            <span>{t('preprocess.fieldInfo.versionLabel')}</span>
                             {(() => {
                               const baseId = step2PrimaryDatasetId || primaryDatasetId || activeDatasetId || selectedDatasetIds[0];
                               const ds = datasetOptions.find(d => d.id === baseId);
@@ -2844,7 +2854,7 @@ export function DataPreprocessing({ isOpen, onClose, datasetId, mode = 'traditio
                           </div>
 
                           <div className="flex items-center gap-2">
-                            <span>从表：</span>
+                            <span>{t('preprocess.fieldInfo.secondaryTableLabel')}</span>
                             <Select value={step2SecondaryDatasetId || (selectedDatasetIds.find(id => id !== (step2PrimaryDatasetId || primaryDatasetId || activeDatasetId || selectedDatasetIds[0])) || (step2PrimaryDatasetId || primaryDatasetId || activeDatasetId || selectedDatasetIds[0]))} onValueChange={(v: string) => setStep2SecondaryDatasetId(v)}>
                               <SelectTrigger className="h-8 min-w-[9rem] sm:w-48">
                                 <SelectValue />
@@ -2855,7 +2865,7 @@ export function DataPreprocessing({ isOpen, onClose, datasetId, mode = 'traditio
                                 ))}
                               </SelectContent>
                             </Select>
-                            <span>版本：</span>
+                            <span>{t('preprocess.fieldInfo.versionLabel')}</span>
                             {(() => {
                               const baseId = step2PrimaryDatasetId || primaryDatasetId || activeDatasetId || selectedDatasetIds[0];
                               const secId = step2SecondaryDatasetId || (selectedDatasetIds.find(id => id !== baseId) || baseId);
@@ -2885,11 +2895,11 @@ export function DataPreprocessing({ isOpen, onClose, datasetId, mode = 'traditio
                           </div>
 
                           <div className="flex items-center gap-2 w-full sm:w-auto sm:ml-auto order-last sm:order-none">
-                            <span>显示：</span>
-                            <Button size="sm" variant={step2ShowCommonOnly ? 'default' : 'outline'} onClick={() => setStep2ShowCommonOnly(true)}>仅公共字段</Button>
-                            <Button size="sm" variant={!step2ShowCommonOnly ? 'default' : 'outline'} onClick={() => setStep2ShowCommonOnly(false)}>显示全部字段</Button>
+                            <span>{t('preprocess.common.displayLabel')}</span>
+                            <Button size="sm" variant={step2ShowCommonOnly ? 'default' : 'outline'} onClick={() => setStep2ShowCommonOnly(true)}>{t('preprocess.btn.onlyCommonFields')}</Button>
+                            <Button size="sm" variant={!step2ShowCommonOnly ? 'default' : 'outline'} onClick={() => setStep2ShowCommonOnly(false)}>{t('preprocess.btn.showAllFields')}</Button>
                           </div>
-                          <Badge variant="outline" className="shrink-0">{step2ShowCommonOnly ? '公共字段' : '全部字段'}</Badge>
+                          <Badge variant="outline" className="shrink-0">{step2ShowCommonOnly ? t('preprocess.badge.commonFields') : t('preprocess.badge.allFields')}</Badge>
                         </div>
                       </CardHeader>
                       <CardContent>
@@ -2907,22 +2917,22 @@ export function DataPreprocessing({ isOpen, onClose, datasetId, mode = 'traditio
                           <div className="w-full rounded-md border border-amber-200 bg-amber-50 p-3 sm:p-4">
                             <div className="flex items-center gap-2">
                               <AlertCircle className="h-4 w-4 text-orange-600" />
-                              <span className="text-sm sm:text-xs">当前公共字段为空。</span>
+                              <span className="text-sm sm:text-xs">{t('preprocess.ruleConfig.noCommonFields')}</span>
                             </div>
                             <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 items-center">
                               <div className="flex items-center gap-2 text-xs text-gray-700">
-                                <Badge variant="outline">提示</Badge>
-                                <span className="whitespace-nowrap">可尝试以下操作：</span>
+                                <Badge variant="outline">{t('preprocess.common.hint')}</Badge>
+                                <span className="whitespace-nowrap">{t('preprocess.ruleConfig.tryOperations')}</span>
                               </div>
                               <div className="flex flex-wrap sm:flex-nowrap items-center gap-2">
-                                <Button size="sm" variant="outline" onClick={() => setStep2ShowCommonOnly(false)}>显示全部字段</Button>
-                                <Button size="sm" variant="outline" onClick={() => setCurrentStep(1)}>返回字段选择</Button>
+                                <Button size="sm" variant="outline" onClick={() => setStep2ShowCommonOnly(false)}>{t('preprocess.btn.showAllFields')}</Button>
+                                <Button size="sm" variant="outline" onClick={() => setCurrentStep(1)}>{t('preprocess.btn.returnFieldSelection')}</Button>
                                 <Button size="sm" variant="outline" onClick={() => {
                                   const baseId = step2PrimaryDatasetId || primaryDatasetId || activeDatasetId || selectedDatasetIds[0];
                                   const secId = step2SecondaryDatasetId || (selectedDatasetIds.find(id => id !== baseId) || baseId);
                                   setStep2SecondaryDatasetId(baseId);
                                   setStep2PrimaryDatasetId(secId);
-                                }}>交换主/从表</Button>
+                                }}>{t('preprocess.btn.swapTables')}</Button>
                               </div>
                             </div>
                           </div>
@@ -2950,9 +2960,9 @@ export function DataPreprocessing({ isOpen, onClose, datasetId, mode = 'traditio
                             <Input
                               value={recommendedQuery}
                               onChange={(e) => setRecommendedQuery(e.target.value)}
-                              placeholder="请输入自然语言指令，例如：去重、缺失值填充（均值/众数/前向填充）等"
+                              placeholder={t('preprocess.placeholder.aiQuery')}
                             />
-                            <p className="mt-1 text-xs text-gray-500">输入的自然语言指令可用于筛选或排序推荐策略</p>
+                            <p className="mt-1 text-xs text-gray-500">{t('preprocess.ruleConfig.aiQueryNote')}</p>
                           </div>
                           <div className="space-y-3">
                             {(recommendedStrategies.filter(s => {
@@ -2973,14 +2983,17 @@ export function DataPreprocessing({ isOpen, onClose, datasetId, mode = 'traditio
                                     <div className="flex items-center flex-wrap gap-2">
                                       <FileText className="h-4 w-4 text-gray-600" />
                                       <span className="font-medium">{s.title}</span>
-                                      <span className={`px-2 py-0.5 rounded text-xs ${impactLevelClass(s.impactLevel)}`}>{s.impactLevel}影响</span>
-                                      <Badge variant="outline">置信度：{Math.round(s.confidence * 100)}%</Badge>
+                                      <span className={`px-2 py-0.5 rounded text-xs ${impactLevelClass(s.impactLevel)}`}>
+                                        {t('common.priority.' + (s.impactLevel === '高' ? 'high' : s.impactLevel === '中' ? 'medium' : 'low'))}
+                                        {t('preprocess.common.impact')}
+                                      </span>
+                                      <Badge variant="outline">{t('preprocess.ruleConfig.confidence')}{Math.round(s.confidence * 100)}%</Badge>
                                     </div>
                                     {/* 指标行 */}
                                     <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm text-gray-700">
                                       {/* 预计时间已移除 */}
-                                      <div>影响行数：{s.affectedRows.toLocaleString()}</div>
-                                      <div>影响字段：{s.affectedFields.join(', ')}</div>
+                                      <div>{t('preprocess.ruleConfig.affectedRows')}{s.affectedRows.toLocaleString()}</div>
+                                      <div>{t('preprocess.ruleConfig.affectedFields')}{s.affectedFields.join(', ')}</div>
                                     </div>
                                     {/* 说明 */}
                                     <p className="mt-2 text-sm text-gray-600">{s.description}</p>
@@ -2989,7 +3002,7 @@ export function DataPreprocessing({ isOpen, onClose, datasetId, mode = 'traditio
                               </div>
                             ))}
                             {recommendedStrategies.length === 0 && (
-                              <div className="text-sm text-gray-500">暂无推荐策略</div>
+                              <div className="text-sm text-gray-500">{t('preprocess.ruleConfig.noRecommendations')}</div>
                             )}
                           </div>
                         </CardContent>
@@ -3001,7 +3014,7 @@ export function DataPreprocessing({ isOpen, onClose, datasetId, mode = 'traditio
                           <CardTitle className="flex items-center justify-between">
                             <div className="flex items-center space-x-2">
                               <Settings className="h-5 w-5" />
-                              <span>清洗规则</span>
+                              <span>{t('preprocess.ruleConfig.cleaningRulesTitle')}</span>
                             </div>
                             <Button
                               size="sm"
@@ -3011,7 +3024,7 @@ export function DataPreprocessing({ isOpen, onClose, datasetId, mode = 'traditio
                                 : fields.filter(f => f.selected).length === 0)}
                             >
                               <Plus className="h-4 w-4 mr-1" />
-                              添加规则
+                              {t('preprocess.btn.addRule')}
                             </Button>
                           </CardTitle>
                         </CardHeader>
@@ -3021,7 +3034,7 @@ export function DataPreprocessing({ isOpen, onClose, datasetId, mode = 'traditio
                               <div className="space-y-3">
                                 <div className="flex items-center justify-between">
                                   <Badge variant={rule.source === 'recommended' ? 'default' : 'secondary'}>
-                                    {rule.source === 'recommended' ? '推荐策略' : '自定义'}</Badge>
+                                    {rule.source === 'recommended' ? t('preprocess.ruleConfig.sourceRecommended') : t('preprocess.ruleConfig.sourceCustom')}</Badge>
                                   <div>
                                     <Button
                                       size="sm"
@@ -3036,7 +3049,7 @@ export function DataPreprocessing({ isOpen, onClose, datasetId, mode = 'traditio
                                 <div className={`grid ${rule.type === 'deduplicate' ? 'grid-cols-1' : 'grid-cols-2'} gap-3`}>
                                   {/* 左侧：规则类型 */}
                                   <div>
-                                    <Label>规则类型</Label>
+                                    <Label>{t('preprocess.ruleConfig.ruleType')}</Label>
                                     <Select
                                       value={rule.type}
                                       onValueChange={(type: string) => {
@@ -4178,7 +4191,7 @@ export function DataPreprocessing({ isOpen, onClose, datasetId, mode = 'traditio
 
                   <div className="flex justify-between">
                     <Button variant="outline" onClick={() => setCurrentStep(1)}>
-                      上一步
+                      {t('preprocess.btn.prev')}
                     </Button>
                     <div className="flex items-center gap-2">
 
@@ -4405,22 +4418,22 @@ export function DataPreprocessing({ isOpen, onClose, datasetId, mode = 'traditio
           <DialogHeader>
             <DialogTitle className="flex items-center space-x-2">
               <AlertTriangle className="h-5 w-5 text-orange-500" />
-              <span>规则确认</span>
+              <span>{t('preprocess.dialog.ruleConfirm.title')}</span>
             </DialogTitle>
             <DialogDescription>
-              {(ruleConfirmPayload?.message) || '是否确认执行该规则相关的敏感操作？'}
+              {(ruleConfirmPayload?.message) || t('preprocess.dialog.ruleConfirm.msg')}
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end space-x-2 mt-4">
             <Button variant="outline" onClick={() => setShowRuleConfirmDialog(false)}>
-              取消
+              {t('common.cancel')}
             </Button>
-            <Button onClick={handleRuleConfirm} variant={'destructive'}>
-              确认
+            <Button onClick={() => handleRuleConfirm(true)} variant={'destructive'}>
+              {t('common.confirm')}
             </Button>
           </div>
         </DialogContent>
       </Dialog>
-    </Dialog>
+    </Dialog >
   );
 }

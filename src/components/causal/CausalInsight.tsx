@@ -212,6 +212,7 @@ export default function CausalInsight({ initialView = 'list', onResetView }: Cau
  * 任务列表视图
  */
 function CITaskList({ tasks, onSearch, onCreate, onViewDetail, onEdit, onDelete, onCopy }: any) {
+    const { t } = useLanguage();
     // 筛选状态
     const [sourceFilter, setSourceFilter] = useState<string>('all');
     const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -225,12 +226,12 @@ function CITaskList({ tasks, onSearch, onCreate, onViewDetail, onEdit, onDelete,
 
     // 状态选项
     const statusOptions = [
-        { value: 'all', label: '全部状态' },
-        { value: 'DRAFT', label: '草稿' },
-        { value: 'QUEUED', label: '排队中' },
-        { value: 'RUNNING', label: '运行中' },
-        { value: 'SUCCEEDED', label: '已完成' },
-        { value: 'FAILED', label: '失败' },
+        { value: 'all', label: t('causal.filter.allStatus') },
+        { value: 'DRAFT', label: t('causal.status.draft') },
+        { value: 'QUEUED', label: t('causal.status.queued') },
+        { value: 'RUNNING', label: t('causal.status.running') },
+        { value: 'SUCCEEDED', label: t('causal.status.completed') },
+        { value: 'FAILED', label: t('causal.status.failed') },
     ];
 
     // 获取项目选项
@@ -254,7 +255,7 @@ function CITaskList({ tasks, onSearch, onCreate, onViewDetail, onEdit, onDelete,
 
     const columns: any[] = [
         {
-            title: '任务名称',
+            title: t('causal.table.name'),
             dataIndex: 'name',
             key: 'name',
             width: 260,
@@ -268,14 +269,14 @@ function CITaskList({ tasks, onSearch, onCreate, onViewDetail, onEdit, onDelete,
             )
         },
         {
-            title: '来源任务',
+            title: t('causal.table.sourceTask'),
             dataIndex: 'sourceDecisionTaskName',
             key: 'source',
             width: 180,
             render: (text: string) => <span className="text-slate-600 text-sm">{text}</span>
         },
         {
-            title: '所属项目',
+            title: t('causal.table.project'),
             dataIndex: 'projectId',
             key: 'project',
             width: 160,
@@ -290,7 +291,7 @@ function CITaskList({ tasks, onSearch, onCreate, onViewDetail, onEdit, onDelete,
             }
         },
         {
-            title: 'Y 字段',
+            title: t('causal.table.yField'),
             dataIndex: ['ySpec', 'field'],
             key: 'yField',
             width: 120,
@@ -299,7 +300,7 @@ function CITaskList({ tasks, onSearch, onCreate, onViewDetail, onEdit, onDelete,
             )
         },
         {
-            title: '样本命中',
+            title: t('causal.table.sampleHit'),
             key: 'sample',
             width: 200,
             render: (_: any, record: any) => (
@@ -313,7 +314,7 @@ function CITaskList({ tasks, onSearch, onCreate, onViewDetail, onEdit, onDelete,
             )
         },
         {
-            title: '状态',
+            title: t('causal.table.status'),
             dataIndex: 'status',
             key: 'status',
             width: 120,
@@ -322,23 +323,23 @@ function CITaskList({ tasks, onSearch, onCreate, onViewDetail, onEdit, onDelete,
             render: (status: string) => {
                 let color = 'default';
                 let label = status;
-                if (status === 'RUNNING') { color = 'processing'; label = '运行中'; }
-                else if (status === 'SUCCEEDED') { color = 'success'; label = '已完成'; }
-                else if (status === 'FAILED') { color = 'error'; label = '失败'; }
-                else if (status === 'DRAFT') { color = 'default'; label = '草稿'; }
-                else if (status === 'QUEUED') { color = 'warning'; label = '排队中'; }
+                if (status === 'RUNNING') { color = 'processing'; label = t('causal.status.running'); }
+                else if (status === 'SUCCEEDED') { color = 'success'; label = t('causal.status.completed'); }
+                else if (status === 'FAILED') { color = 'error'; label = t('causal.status.failed'); }
+                else if (status === 'DRAFT') { color = 'default'; label = t('causal.status.draft'); }
+                else if (status === 'QUEUED') { color = 'warning'; label = t('causal.status.queued'); }
                 return <AntBadge status={color as any} text={label} />;
             }
         },
         {
-            title: '创建人',
+            title: t('causal.table.createdBy'),
             dataIndex: 'createdBy',
             key: 'creator',
             width: 120,
             render: (text: string) => <span className="text-slate-600 text-sm font-medium">{text}</span>
         },
         {
-            title: '创建时间',
+            title: t('causal.table.createdAt'),
             dataIndex: 'createdAt',
             key: 'createdAt',
             width: 160,
@@ -346,30 +347,30 @@ function CITaskList({ tasks, onSearch, onCreate, onViewDetail, onEdit, onDelete,
             render: (text: string) => <span className="text-slate-500 text-sm">{text}</span>
         },
         {
-            title: '操作',
+            title: t('causal.table.actions'),
             key: 'action',
             fixed: 'right',
             width: 180,
             render: (_: any, task: any) => (
                 <Space size="small">
                     {['DRAFT', 'FAILED'].includes(task.status) && (
-                        <Tooltip title="编辑">
+                        <Tooltip title={t('causal.action.edit')}>
                             <Button variant="ghost" size="icon" onClick={() => onEdit(task.id)} className="h-8 w-8 text-slate-500 hover:text-blue-600 hover:bg-blue-50">
                                 <Pencil className="w-4 h-4" />
                             </Button>
                         </Tooltip>
                     )}
-                    <Tooltip title="查看详情">
+                    <Tooltip title={t('causal.action.view')}>
                         <Button variant="ghost" size="icon" onClick={() => onViewDetail(task.id)} className="h-8 w-8 text-slate-500 hover:text-blue-600 hover:bg-blue-50">
                             <Eye className="w-4 h-4" />
                         </Button>
                     </Tooltip>
-                    <Tooltip title="复制配置">
+                    <Tooltip title={t('causal.action.copy')}>
                         <Button variant="ghost" size="icon" onClick={() => onCopy(task.id)} className="h-8 w-8 text-slate-500 hover:text-blue-600 hover:bg-blue-50">
                             <Copy className="w-4 h-4" />
                         </Button>
                     </Tooltip>
-                    <Popconfirm title="确定要删除该任务吗？" onConfirm={() => onDelete(task.id)} okText="确认" cancelText="取消">
+                    <Popconfirm title={t('causal.confirm.delete')} onConfirm={() => onDelete(task.id)} okText={t('common.confirm')} cancelText={t('common.cancel')}>
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-red-600 hover:bg-red-50">
                             <Trash2 className="w-4 h-4" />
                         </Button>
@@ -383,11 +384,11 @@ function CITaskList({ tasks, onSearch, onCreate, onViewDetail, onEdit, onDelete,
         <div className="space-y-4">
             <div className="flex justify-between items-center mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900 leading-tight">因果洞察</h1>
-                    <p className="text-slate-500 mt-1">基于任务切片深度分析特征对目标变量的因果影响</p>
+                    <h1 className="text-2xl font-bold text-slate-900 leading-tight">{t('causal.list.title')}</h1>
+                    <p className="text-slate-500 mt-1">{t('causal.description')}</p>
                 </div>
                 <Button onClick={onCreate} className="bg-blue-600 hover:bg-blue-700 text-white shadow-md border-none h-10 px-4">
-                    <Plus className="w-4 h-4 mr-2" /> 新建因果洞察任务
+                    <Plus className="w-4 h-4 mr-2" /> {t('causal.create.button')}
                 </Button>
             </div>
 
@@ -397,35 +398,35 @@ function CITaskList({ tasks, onSearch, onCreate, onViewDetail, onEdit, onDelete,
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                             <Input
-                                placeholder="搜索任务名称或ID..."
+                                placeholder={t('causal.filter.placeholder.id')}
                                 className="pl-10 h-10 border-slate-200 focus:ring-blue-500 w-64"
                                 onChange={(e) => onSearch(e.target.value)}
                             />
                         </div>
                         <AntSelect
-                            placeholder="任务来源"
+                            placeholder={t('causal.filter.placeholder.source')}
                             style={{ width: 160 }}
                             value={sourceFilter}
                             onChange={setSourceFilter}
                             options={[
-                                { value: 'all', label: '全部来源' },
+                                { value: 'all', label: t('causal.filter.allSources') },
                                 ...sourceOptions.map((s: string) => ({ value: s, label: s }))
                             ]}
                         />
                         <AntSelect
-                            placeholder="任务状态"
+                            placeholder={t('causal.filter.placeholder.status')}
                             style={{ width: 140 }}
                             value={statusFilter}
                             onChange={setStatusFilter}
                             options={statusOptions}
                         />
                         <AntSelect
-                            placeholder="所属项目"
+                            placeholder={t('causal.filter.placeholder.project')}
                             style={{ width: 160 }}
                             value={projectFilter}
                             onChange={setProjectFilter}
                             options={[
-                                { value: 'all', label: '全部项目' },
+                                { value: 'all', label: t('causal.filter.allProjects') },
                                 ...projectOptions
                             ]}
                         />
@@ -454,6 +455,7 @@ function CreateCITask({ onBack, onSubmit, existingTasks = [], editingTask = null
     existingTasks?: CausalInsightTask[];
     editingTask?: CausalInsightTask | null;
 }) {
+    const { t } = useLanguage();
     /**
      * 生成唯一任务名称（检测冲突并添加序号）
      * @param baseName 基础名称，如 "因果洞察_销售数据预测"
@@ -471,6 +473,7 @@ function CreateCITask({ onBack, onSubmit, existingTasks = [], editingTask = null
         }
         return `${baseName} (${counter})`;
     };
+
 
     // 编辑模式时，使用 editingTask 的数据初始化表单
     const [formData, setFormData] = useState({
@@ -580,17 +583,19 @@ function CreateCITask({ onBack, onSubmit, existingTasks = [], editingTask = null
         onSubmit(newTask);
     };
 
+    const { t: translate } = useLanguage(); // 避免与外部 t 冲突，虽然这里已经是函数作用域内了
+
     return (
         <div className="max-w-7xl mx-auto space-y-6 pb-20 animate-in fade-in duration-500">
             {/* 顶部标题栏 */}
             <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center space-x-3">
                     <Button variant="ghost" onClick={onBack} className="text-slate-500 hover:text-slate-900 group">
-                        <ChevronLeft className="w-5 h-5 mr-1 group-hover:-translate-x-0.5 transition-transform" /> 返回列表
+                        <ChevronLeft className="w-5 h-5 mr-1 group-hover:-translate-x-0.5 transition-transform" /> {t('causal.action.backToList')}
                     </Button>
                     <div className="h-4 w-px bg-slate-200 mx-2" />
                     <h2 className="text-2xl font-black text-slate-800 tracking-tight">
-                        {editingTask ? '编辑因果洞察任务' : '创建因果洞察任务'}
+                        {editingTask ? t('causal.editTask') : t('causal.create.title')}
                     </h2>
                 </div>
             </div>
@@ -603,19 +608,19 @@ function CreateCITask({ onBack, onSubmit, existingTasks = [], editingTask = null
                     <Card className="border-none shadow-xl shadow-slate-200/50 bg-white rounded-3xl overflow-hidden">
                         <CardHeader className="pb-2">
                             <CardTitle className="text-sm font-black text-slate-400 uppercase tracking-widest flex items-center">
-                                <Database className="w-4 h-4 mr-2 text-blue-500" /> 基础配置
+                                <Database className="w-4 h-4 mr-2 text-blue-500" /> {t('causal.create.step.basic')}
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-8 p-6">
                             {/* 来源任务 */}
                             <div className="space-y-3">
-                                <Label className="text-sm font-bold text-slate-700 ml-1">决策推理任务</Label>
+                                <Label className="text-sm font-bold text-slate-700 ml-1">{t('causal.form.decisionTask')}</Label>
                                 <AntSelect
                                     showSearch
                                     optionFilterProp="label"
                                     className="w-full"
                                     style={{ width: '100%', height: '48px' }}
-                                    placeholder="请选择已完成的决策推理任务"
+                                    placeholder={t('causal.form.decisionTask.placeholder')}
                                     value={formData.sourceTaskId || undefined}
                                     onChange={(val, option: any) => {
                                         // 自动填充任务名称：因果洞察_[任务名] (带冲突检测)
@@ -634,9 +639,9 @@ function CreateCITask({ onBack, onSubmit, existingTasks = [], editingTask = null
 
                             {/* 任务名称 */}
                             <div className="space-y-3">
-                                <Label className="text-sm font-bold text-slate-700 ml-1">任务名称</Label>
+                                <Label className="text-sm font-bold text-slate-700 ml-1">{t('causal.form.taskName')}</Label>
                                 <Input
-                                    placeholder="请输入任务名称"
+                                    placeholder={t('causal.form.taskName.placeholder')}
                                     className="h-12 border-slate-200"
                                     value={formData.name}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -646,13 +651,13 @@ function CreateCITask({ onBack, onSubmit, existingTasks = [], editingTask = null
                             {/* Y 分析目标 */}
                             <div className="space-y-6 pt-2 border-t border-slate-50">
                                 <div className="space-y-3">
-                                    <Label className="text-sm font-bold text-slate-700 ml-1">Y (分析目标)</Label>
+                                    <Label className="text-sm font-bold text-slate-700 ml-1">{t('causal.form.yField')}</Label>
                                     <AntSelect
                                         showSearch
                                         optionFilterProp="label"
                                         className="w-full"
                                         style={{ width: '100%', height: '48px' }}
-                                        placeholder="选择预警/分析字段"
+                                        placeholder={t('causal.form.yField.placeholder')}
                                         value={formData.yField || undefined}
                                         onChange={(val) => setFormData({ ...formData, yField: val })}
                                         options={schema?.fields.map((f: any) => ({
@@ -736,7 +741,7 @@ function CreateCITask({ onBack, onSubmit, existingTasks = [], editingTask = null
                                             <div className="flex items-start space-x-2 pt-2 px-1 text-[10px] text-blue-500/80">
                                                 <Database className="w-3 h-3 mt-0.5 shrink-0" />
                                                 <div className="flex flex-col">
-                                                    <span className="font-bold">测试集数据范围:</span>
+                                                    <span className="font-bold">{t('causal.detail.testSetRange') || '测试集数据范围'}:</span>
                                                     <span className="font-mono mt-0.5">
                                                         {currentYSchema.filterType === 'Numeric' && (
                                                             <>
@@ -766,7 +771,7 @@ function CreateCITask({ onBack, onSubmit, existingTasks = [], editingTask = null
                     <Card className="border-none shadow-xl shadow-slate-200/50 bg-white rounded-3xl overflow-hidden min-h-[600px]">
                         <CardHeader className="pb-2 flex flex-row items-center justify-between">
                             <CardTitle className="text-sm font-black text-slate-400 uppercase tracking-widest flex items-center">
-                                <Filter className="w-4 h-4 mr-2 text-blue-500" /> X（特征因子）
+                                <Filter className="w-4 h-4 mr-2 text-blue-500" /> {t('causal.form.xFields')}
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="p-6 space-y-4">
@@ -774,28 +779,28 @@ function CreateCITask({ onBack, onSubmit, existingTasks = [], editingTask = null
                                 <Table
                                     columns={[
                                         {
-                                            title: '字段',
+                                            title: t('causal.filter.field'),
                                             dataIndex: 'field',
                                             key: 'field',
                                             width: '35%',
                                             render: (t: any, r: any) => <span className="font-bold text-slate-700 pl-2">{schema?.fields.find((f: any) => f.name === r.field)?.displayName || r.field}</span>
                                         },
                                         {
-                                            title: '操作符',
+                                            title: t('causal.filter.operator'),
                                             dataIndex: 'op',
                                             key: 'op',
                                             width: '25%',
                                             render: (t: string) => <span className="font-mono text-[11px] font-black text-slate-400">{t}</span>
                                         },
                                         {
-                                            title: '值',
+                                            title: t('causal.filter.value'),
                                             dataIndex: 'value',
                                             key: 'value',
                                             width: '30%',
                                             render: (v: any) => <span className="text-sm font-medium text-slate-600">{Array.isArray(v) ? v.join(' ~ ') : v}</span>
                                         },
                                         {
-                                            title: '操作',
+                                            title: t('causal.table.actions'),
                                             key: 'action',
                                             width: '10%',
                                             align: 'right',
@@ -811,7 +816,7 @@ function CreateCITask({ onBack, onSubmit, existingTasks = [], editingTask = null
                                     rowKey="id"
                                     pagination={false}
                                     size="middle"
-                                    locale={{ emptyText: <Empty description="暂无过滤条件" image={Empty.PRESENTED_IMAGE_SIMPLE} /> }}
+                                    locale={{ emptyText: <Empty description={t('causal.filter.empty')} image={Empty.PRESENTED_IMAGE_SIMPLE} /> }}
                                 />
                                 <Button
                                     onClick={() => setIsFilterModalOpen(true)}
@@ -819,7 +824,7 @@ function CreateCITask({ onBack, onSubmit, existingTasks = [], editingTask = null
                                     className="w-full h-14 text-blue-500 font-black text-xs uppercase tracking-[0.2em] border-t border-slate-50 hover:bg-blue-50/30 rounded-none flex items-center justify-center space-x-2"
                                 >
                                     <Plus className="w-4 h-4" />
-                                    <span>添加过滤条件</span>
+                                    <span>{t('causal.filter.add')}</span>
                                 </Button>
                             </div>
 
@@ -831,12 +836,12 @@ function CreateCITask({ onBack, onSubmit, existingTasks = [], editingTask = null
                                         {/* 左侧：覆盖分析 */}
                                         <div className="flex flex-col justify-between h-16">
                                             <div className="flex items-center space-x-2">
-                                                <span className="text-slate-900 text-base font-bold tracking-tight">样本覆盖分析</span>
+                                                <span className="text-slate-900 text-base font-bold tracking-tight">{t('causal.create.analysis.coverage')}</span>
                                             </div>
                                             {estimating ? (
                                                 <div className="flex items-center space-x-2">
                                                     <RefreshCcw className="w-5 h-5 animate-spin text-blue-500" />
-                                                    <span className="text-base font-bold text-slate-400 italic tracking-widest">Est...</span>
+                                                    <span className="text-base font-bold text-slate-400 italic tracking-widest">{t('causal.create.analysis.calculating')}</span>
                                                 </div>
                                             ) : (
                                                 <div className="flex items-baseline space-x-2">
@@ -848,7 +853,7 @@ function CreateCITask({ onBack, onSubmit, existingTasks = [], editingTask = null
 
                                         {/* 右侧：匹配比例 */}
                                         <div className="flex flex-col items-end justify-between h-16">
-                                            <div className="text-sm font-medium text-slate-500 tracking-tight">匹配样本比例</div>
+                                            <div className="text-sm font-medium text-slate-500 tracking-tight">{t('causal.create.analysis.matchRate')}</div>
                                             <div className="flex items-baseline">
                                                 <span className="text-3xl font-medium text-blue-600 tabular-nums">
                                                     {((estimateResult.hit / estimateResult.total) * 100).toFixed(1)}
@@ -865,7 +870,7 @@ function CreateCITask({ onBack, onSubmit, existingTasks = [], editingTask = null
                                         variant="outline"
                                         className="h-12 px-8 rounded-2xl border-slate-200 text-slate-600 font-black text-xs uppercase tracking-widest hover:bg-slate-50"
                                     >
-                                        保存草稿
+                                        {t('causal.action.saveDraft')}
                                     </Button>
                                     <Button
                                         onClick={() => handleSubmit('QUEUED')}
@@ -875,7 +880,7 @@ function CreateCITask({ onBack, onSubmit, existingTasks = [], editingTask = null
                                             : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-200 hover:scale-105 active:scale-95'
                                             }`}
                                     >
-                                        保存并运行 <Play className="w-4 h-4 ml-2 fill-current group-hover:translate-x-1 transition-transform" />
+                                        {t('causal.action.saveAndRun')} <Play className="w-4 h-4 ml-2 fill-current group-hover:translate-x-1 transition-transform" />
                                     </Button>
                                 </div>
                             </div>
@@ -886,7 +891,7 @@ function CreateCITask({ onBack, onSubmit, existingTasks = [], editingTask = null
 
             {/* 添加过滤器弹窗 */}
             <Modal
-                title={<div className="font-bold text-lg pb-2 border-b">配置筛选条件</div>}
+                title={<div className="font-bold text-lg pb-2 border-b">{t('causal.filter.configure.title')}</div>}
                 open={isFilterModalOpen}
                 onCancel={() => setIsFilterModalOpen(false)}
                 footer={null}
@@ -897,11 +902,11 @@ function CreateCITask({ onBack, onSubmit, existingTasks = [], editingTask = null
             >
                 <div className="py-2 space-y-6">
                     <div className="space-y-2">
-                        <Label className="text-xs font-black text-slate-400 uppercase ml-1 tracking-widest">分析字段</Label>
+                        <Label className="text-xs font-black text-slate-400 uppercase ml-1 tracking-widest">{t('causal.filter.field')}</Label>
                         <AntSelect
                             showSearch
                             optionFilterProp="label"
-                            placeholder="选择筛选字段"
+                            placeholder={t('causal.filter.field.placeholder')}
                             className="w-full h-12"
                             style={{ width: '100%', height: '48px' }}
                             popupClassName="rounded-xl font-medium"
@@ -943,9 +948,9 @@ function CreateCITask({ onBack, onSubmit, existingTasks = [], editingTask = null
 
                                     if (addedCount > 0) {
                                         setFormData({ ...formData, filters: newFilters });
-                                        message.success(`已添加 ${addedCount} 个字段的过滤条件（默认全量范围）`);
+                                        message.success(t('causal.message.filtersAdded', { count: addedCount }));
                                     } else {
-                                        message.info('所有字段已在过滤列表中');
+                                        message.info(t('causal.message.allFiltersAdded'));
                                     }
                                     setIsFilterModalOpen(false);
                                     return;
@@ -977,7 +982,7 @@ function CreateCITask({ onBack, onSubmit, existingTasks = [], editingTask = null
                                 });
                             }}
                             options={[
-                                { label: <span className="text-blue-600 font-bold">✨ 全选 (添加所有字段)</span>, value: 'ALL' },
+                                { label: <span className="text-blue-600 font-bold">{t('causal.filter.selectAll')}</span>, value: 'ALL' },
                                 ...(schema?.fields.map((f: any) => ({ label: f.displayName, value: f.name })) || [])
                             ]}
                         />
@@ -985,23 +990,23 @@ function CreateCITask({ onBack, onSubmit, existingTasks = [], editingTask = null
 
                     <div className="grid grid-cols-3 gap-4">
                         <div className="col-span-1 space-y-2">
-                            <Label className="text-xs font-black text-slate-400 uppercase ml-1 tracking-widest">操作符</Label>
+                            <Label className="text-xs font-black text-slate-400 uppercase ml-1 tracking-widest">{t('causal.filter.operator')}</Label>
                             <AntSelect
                                 className="w-full h-12"
                                 style={{ width: '100%', height: '48px' }}
                                 value={editingFilter.op}
                                 onChange={(val: string) => setEditingFilter({ ...editingFilter, op: val })}
                                 options={[
-                                    { label: 'BETWEEN (区间)', value: 'BETWEEN' },
-                                    { label: '等于 (=)', value: '=' },
-                                    { label: '包含 (IN)', value: 'IN' },
-                                    { label: '大于 (>)', value: '>' },
-                                    { label: '小于 (<)', value: '<' },
+                                    { label: t('causal.filter.op.between'), value: 'BETWEEN' },
+                                    { label: t('causal.filter.op.eq'), value: '=' },
+                                    { label: t('causal.filter.op.in'), value: 'IN' },
+                                    { label: t('causal.filter.op.gt'), value: '>' },
+                                    { label: t('causal.filter.op.lt'), value: '<' },
                                 ]}
                             />
                         </div>
                         <div className="col-span-2 space-y-2">
-                            <Label className="text-xs font-black text-slate-400 uppercase ml-1 tracking-widest">筛选值</Label>
+                            <Label className="text-xs font-black text-slate-400 uppercase ml-1 tracking-widest">{t('causal.filter.value')}</Label>
                             {(() => {
                                 const currentField = schema?.fields.find((f: any) => f.name === editingFilter.field);
 
@@ -1095,7 +1100,7 @@ function CreateCITask({ onBack, onSubmit, existingTasks = [], editingTask = null
                                 return (
                                     <div className="text-[10px] text-slate-400 px-1 flex items-center bg-slate-50 p-2 rounded-lg border border-slate-100">
                                         <Database className="w-3 h-3 mr-1.5 text-blue-400" />
-                                        <span>测试集数据预览: </span>
+                                        <span>{t('causal.filter.preview')}: </span>
                                         <span className="ml-1 font-mono font-medium text-slate-600">
                                             {f.filterType === 'Numeric' && `${f.statistics.min} ~ ${f.statistics.max}`}
                                             {f.filterType === 'Temporal' && `${f.statistics.start} ~ ${f.statistics.end}`}
@@ -1108,13 +1113,13 @@ function CreateCITask({ onBack, onSubmit, existingTasks = [], editingTask = null
                     </div>
 
                     <div className="flex gap-4 pt-4">
-                        <Button variant="ghost" onClick={() => setIsFilterModalOpen(false)} className="flex-1 h-12 rounded-2xl font-bold text-slate-500">放弃</Button>
+                        <Button variant="ghost" onClick={() => setIsFilterModalOpen(false)} className="flex-1 h-12 rounded-2xl font-bold text-slate-500">{t('causal.action.discard')}</Button>
                         <Button
                             onClick={handleSaveFilter}
                             disabled={!editingFilter.field || editingFilter.value === null || editingFilter.value === ''}
                             className="flex-1 h-12 rounded-2xl font-black text-xs uppercase tracking-widest bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-100 border-none"
                         >
-                            {editingFilter.id ? '确认修改' : '确认添加'}
+                            {editingFilter.id ? t('causal.action.confirmEdit') : t('causal.action.confirmAdd')}
                         </Button>
                     </div>
                 </div>
@@ -1280,14 +1285,15 @@ function CausalHeatmap({ data, title, description }: { data: any, title: React.R
  * 原始样本数据表格组件
  */
 function SampleDataTable({ data, columns, className }: { data: any[], columns?: string[], className?: string }) {
-    if (!data || data.length === 0) return <div className="text-center py-10 text-slate-400">暂无数据</div>;
+    const { t } = useLanguage();
+    if (!data || data.length === 0) return <div className="text-center py-10 text-slate-400">{t('common.noData') || '暂无数据'}</div>;
 
     // 动态获取列名 (排除一些不需要展示的 meta key)
     const displayColumns = columns || Object.keys(data[0]).filter(k => !['id', 'isPositive'].includes(k));
 
     const tableColumns: any[] = [
-        { title: '序号', key: 'index', render: (_: any, __: any, index: number) => index + 1, width: 80, align: 'center' },
-        ...(displayColumns.includes('time') ? [{ title: '时间', dataIndex: 'time', key: 'time', width: 160 }] : []),
+        { title: t('common.index') || '序号', key: 'index', render: (_: any, __: any, index: number) => index + 1, width: 80, align: 'center' },
+        ...(displayColumns.includes('time') ? [{ title: t('common.time') || '时间', dataIndex: 'time', key: 'time', width: 160 }] : []),
         ...displayColumns.filter(c => c !== 'time').map(col => ({ title: col, dataIndex: col, key: col, width: 120 }))
     ];
 
@@ -1303,7 +1309,7 @@ function SampleDataTable({ data, columns, className }: { data: any[], columns?: 
                 className="[&_.ant-table-thead_th]:bg-slate-50 [&_.ant-table-thead_th]:font-bold [&_.ant-table-thead_th]:text-slate-700"
             />
             <div className="bg-slate-50 border-t border-slate-200 p-2 text-center text-xs text-slate-400">
-                共 {data.length} 条数据
+                {t('causal.detail.totalCount', { count: data.length }) || `共 ${data.length} 条数据`}
             </div>
         </div>
     );
@@ -1313,6 +1319,7 @@ function SampleDataTable({ data, columns, className }: { data: any[], columns?: 
  * 任务详情视图
  */
 function CITaskDetail({ task, onBack }: { task: CausalInsightTask; onBack: () => void }) {
+    const { t } = useLanguage();
     const [filteredViewMode, setFilteredViewMode] = useState<'chart' | 'table'>('chart');
     const [fullViewMode, setFullViewMode] = useState<'chart' | 'table'>('chart');
 
@@ -1518,21 +1525,21 @@ function CITaskDetail({ task, onBack }: { task: CausalInsightTask; onBack: () =>
             <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center space-x-3">
                     <Button variant="ghost" onClick={onBack} className="text-slate-500 hover:text-slate-900 group">
-                        <ChevronLeft className="w-5 h-5 mr-1 group-hover:-translate-x-0.5 transition-transform" /> 返回列表
+                        <ChevronLeft className="w-5 h-5 mr-1 group-hover:-translate-x-0.5 transition-transform" /> {t('causal.action.backToList')}
                     </Button>
                     <div className="h-4 w-px bg-slate-200" />
                     <h2 className="text-xl font-bold text-slate-800">{task.name}</h2>
                     {task.status === 'SUCCEEDED' && (
-                        <Badge className="bg-green-500/10 text-green-600 border-green-500/20 px-2 py-0">已完成分析</Badge>
+                        <Badge className="bg-green-500/10 text-green-600 border-green-500/20 px-2 py-0">{t('causal.status.completed')}</Badge>
                     )}
                     {task.status === 'FAILED' && (
-                        <Badge className="bg-red-500/10 text-red-600 border-red-500/20 px-2 py-0">分析失败</Badge>
+                        <Badge className="bg-red-500/10 text-red-600 border-red-500/20 px-2 py-0">{t('causal.status.failed')}</Badge>
                     )}
                     {task.status === 'RUNNING' && (
-                        <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20 px-2 py-0">分析中</Badge>
+                        <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20 px-2 py-0">{t('causal.status.running')}</Badge>
                     )}
                     {task.status === 'QUEUED' && (
-                        <Badge className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20 px-2 py-0">排队中</Badge>
+                        <Badge className="bg-yellow-500/10 text-yellow-600 border-yellow-500/20 px-2 py-0">{t('causal.status.queued')}</Badge>
                     )}
                 </div>
                 <div className="flex items-center space-x-3">
@@ -1544,11 +1551,11 @@ function CITaskDetail({ task, onBack }: { task: CausalInsightTask; onBack: () =>
                     >
                         {isExporting ? (
                             <>
-                                <Loader2 className="w-4 h-4 mr-2 animate-spin" /> 正在导出...
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" /> {t('common.exporting') || '正在导出...'}
                             </>
                         ) : (
                             <>
-                                <Download className="w-4 h-4 mr-2" /> 导出报告
+                                <Download className="w-4 h-4 mr-2" /> {t('causal.action.export')}
                             </>
                         )}
                     </Button>
@@ -1562,19 +1569,19 @@ function CITaskDetail({ task, onBack }: { task: CausalInsightTask; onBack: () =>
                         <div className="h-2 bg-blue-600" />
                         <CardHeader className="pb-4">
                             <CardTitle className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center">
-                                <FileText className="w-4 h-4 mr-2 text-blue-500" /> 任务概览
+                                <FileText className="w-4 h-4 mr-2 text-blue-500" /> {t('causal.detail.taskOverview')}
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-6">
                             {/* 1. 来源决策任务 */}
                             <div className="space-y-1.5">
-                                <Label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">来源决策任务</Label>
+                                <Label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{t('causal.table.sourceTask')}</Label>
                                 <p className="text-sm font-bold text-slate-700 leading-tight">{task.sourceDecisionTaskName}</p>
                             </div>
 
                             {/* 2. 创建日期 */}
                             <div className="space-y-1.5">
-                                <Label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">创建日期</Label>
+                                <Label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{t('causal.table.createdAt')}</Label>
                                 <p className="text-sm font-bold text-slate-700 leading-tight">{task.createdAt}</p>
                             </div>
 
@@ -1582,7 +1589,7 @@ function CITaskDetail({ task, onBack }: { task: CausalInsightTask; onBack: () =>
 
                             {/* 3. X (影响因子) */}
                             <div className="space-y-1.5">
-                                <Label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">X (影响因子)</Label>
+                                <Label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{t('causal.form.xFields')}</Label>
                                 <div className="bg-slate-50 border border-slate-100/80 rounded-xl p-3">
                                     <div className="flex flex-wrap gap-1.5 max-h-[300px] overflow-y-auto pr-1">
                                         {task.xSpec.fields.map((f: string) => (
@@ -1598,7 +1605,7 @@ function CITaskDetail({ task, onBack }: { task: CausalInsightTask; onBack: () =>
 
                             {/* 4. X (样本条件过滤) */}
                             <div className="space-y-1.5">
-                                <Label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">X (样本条件过滤)</Label>
+                                <Label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{t('causal.detail.xFilter')}</Label>
                                 <div className="bg-slate-50 border border-slate-100/80 rounded-xl p-3">
                                     <div className="space-y-2">
                                         {xFilters.length > 0 ? (
@@ -1618,7 +1625,7 @@ function CITaskDetail({ task, onBack }: { task: CausalInsightTask; onBack: () =>
                                                 );
                                             })
                                         ) : (
-                                            <div className="text-[10px] text-slate-400 italic text-center py-1">无过滤条件</div>
+                                            <div className="text-[10px] text-slate-400 italic text-center py-1">{t('causal.filter.empty')}</div>
                                         )}
                                     </div>
                                 </div>
@@ -1628,7 +1635,7 @@ function CITaskDetail({ task, onBack }: { task: CausalInsightTask; onBack: () =>
 
                             {/* 5. Y (分析目标) */}
                             <div className="space-y-1.5">
-                                <Label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">目标变量 (Y)</Label>
+                                <Label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{t('causal.form.targetVariable') || '目标变量 (Y)'}</Label>
                                 <div className="bg-slate-50 border border-slate-100/80 rounded-xl p-3">
                                     <div className="flex items-center space-x-2">
                                         <span className="px-2.5 py-1 bg-white border border-blue-200 text-blue-600 text-[11px] font-bold rounded-lg shadow-sm">
@@ -1640,7 +1647,7 @@ function CITaskDetail({ task, onBack }: { task: CausalInsightTask; onBack: () =>
 
                             {/* 6. Y (样本条件过滤) */}
                             <div className="space-y-1.5">
-                                <Label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Y (样本条件过滤)</Label>
+                                <Label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{t('causal.detail.yFilter')}</Label>
                                 <div className="bg-slate-50 border border-slate-100/80 rounded-xl p-3">
                                     <div className="space-y-2">
                                         {yFilters.length > 0 ? (
@@ -1656,7 +1663,7 @@ function CITaskDetail({ task, onBack }: { task: CausalInsightTask; onBack: () =>
                                                 </div>
                                             ))
                                         ) : (
-                                            <div className="text-[10px] text-slate-400 italic text-center py-1">无过滤条件</div>
+                                            <div className="text-[10px] text-slate-400 italic text-center py-1">{t('causal.filter.empty')}</div>
                                         )}
                                     </div>
                                 </div>
@@ -1665,11 +1672,11 @@ function CITaskDetail({ task, onBack }: { task: CausalInsightTask; onBack: () =>
                             {/* 统计信息 */}
                             <div className="space-y-3 pt-4 border-t border-slate-50 mt-4">
                                 <div className="flex justify-between items-center bg-slate-50 transition-all p-3 rounded-xl border border-slate-100/50">
-                                    <span className="text-xs font-bold text-slate-500">命中样本</span>
+                                    <span className="text-xs font-bold text-slate-500">{t('causal.table.sampleHit') || '命中样本'}</span>
                                     <span className="text-sm font-black text-slate-800">{task.sampleHit.toLocaleString()}</span>
                                 </div>
                                 <div className="flex justify-between items-center bg-slate-50 transition-all p-3 rounded-xl border border-slate-100/50">
-                                    <span className="text-xs font-bold text-slate-500">覆盖率</span>
+                                    <span className="text-xs font-bold text-slate-500">{t('causal.stats.coverage')}</span>
                                     <span className="text-sm font-black text-blue-600 tracking-tighter">{((task.sampleHit / task.sampleTotal) * 100).toFixed(1)}%</span>
                                 </div>
                             </div>
@@ -1684,12 +1691,12 @@ function CITaskDetail({ task, onBack }: { task: CausalInsightTask; onBack: () =>
                             <CardHeader className="border-b border-slate-100 pb-4">
                                 <CardTitle className="text-xl font-bold text-red-600 flex items-center">
                                     <AlertTriangle className="w-6 h-6 mr-2" />
-                                    任务分析失败
+                                    {t('causal.detail.taskFailed')}
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="p-8 space-y-6">
                                 <div className="space-y-2">
-                                    <Label className="text-sm font-bold text-slate-500">错误日志</Label>
+                                    <Label className="text-sm font-bold text-slate-500">{t('causal.detail.errorLog')}</Label>
                                     <div className="bg-red-50 p-6 rounded-xl border border-red-100 text-sm text-red-800 font-mono whitespace-pre-wrap leading-relaxed shadow-inner">
                                         {task.errorMessage || `Error: System Runtime Exception
 Task ID: ${task.id}
@@ -1709,12 +1716,12 @@ Please verify your dataset schema match the input requirements.`}
                                 <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
                                     <h4 className="font-bold text-slate-700 mb-2 flex items-center">
                                         <Activity className="w-4 h-4 mr-2 text-blue-500" />
-                                        建议操作
+                                        {t('causal.detail.suggestedActions')}
                                     </h4>
                                     <ul className="list-disc list-inside text-sm text-slate-600 space-y-1 ml-1">
-                                        <li>检查“来源决策任务”的数据快照是否存在异常值</li>
-                                        <li>尝试减少样本命中过滤条件的复杂性</li>
-                                        <li>点击右上角“导出报告”下载完整错误日志供技术支持排查</li>
+                                        <li>{t('causal.detail.failedAction1')}</li>
+                                        <li>{t('causal.detail.failedAction2')}</li>
+                                        <li>{t('causal.detail.failedAction3')}</li>
                                     </ul>
                                 </div>
                             </CardContent>
@@ -1729,7 +1736,7 @@ Please verify your dataset schema match the input requirements.`}
                                         <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                                             <div className="flex items-center space-x-2">
                                                 <Filter className="w-5 h-5 text-blue-600" />
-                                                <h2 className="text-xl font-black text-slate-800">当前筛选条件下的分析结果</h2>
+                                                <h2 className="text-xl font-black text-slate-800">{t('causal.detail.filteredResult')}</h2>
                                             </div>
 
                                             {/* 视图切换 Toggle */}
@@ -1742,7 +1749,7 @@ Please verify your dataset schema match the input requirements.`}
                                                         }`}
                                                 >
                                                     <BarChart3 className="w-3.5 h-3.5" />
-                                                    <span>可视化</span>
+                                                    <span>{t('causal.detail.tab.visual')}</span>
                                                 </button>
                                                 <button
                                                     onClick={() => setFilteredViewMode('table')}
@@ -1752,7 +1759,7 @@ Please verify your dataset schema match the input requirements.`}
                                                         }`}
                                                 >
                                                     <TableIcon className="w-3.5 h-3.5" />
-                                                    <span>原始数据</span>
+                                                    <span>{t('causal.detail.tab.raw')}</span>
                                                 </button>
                                             </div>
                                         </div>
@@ -1762,16 +1769,16 @@ Please verify your dataset schema match the input requirements.`}
                                                 {/* 1. 筛选条件-影响因子条形图 */}
                                                 <CausalImpactChart
                                                     data={filteredImpactData}
-                                                    title={<><BarChart3 className="w-5 h-5 mr-2 text-blue-500" /> 各影响因子影响分数对比 (筛选后)</>}
-                                                    description={`针对当前筛选条件下的样本，计算出的不同特征对目标变量 ${task.ySpec.field} 的平均影响分数`}
+                                                    title={<><BarChart3 className="w-5 h-5 mr-2 text-blue-500" /> {t('causal.detail.impactScoreTitle.filtered')}</>}
+                                                    description={t('causal.detail.impactScoreDesc', { yField: task.ySpec.field })}
                                                     yField={task.ySpec.field}
                                                 />
 
                                                 {/* 2. 筛选条件-因果关系热力图 */}
                                                 <CausalHeatmap
                                                     data={filteredHeatmapData}
-                                                    title={<><Flame className="w-5 h-5 mr-2 text-orange-500 fill-orange-500/20" /> 因果关系分布 (筛选后)</>}
-                                                    description="展示当前筛选条件下特征 X 之间的相互依赖与因果指向强度"
+                                                    title={<><Flame className="w-5 h-5 mr-2 text-orange-500 fill-orange-500/20" /> {t('causal.detail.heatmapTitle.filtered')}</>}
+                                                    description={t('causal.detail.heatmapDesc.filtered')}
                                                 />
                                             </>
                                         ) : (
@@ -1788,7 +1795,7 @@ Please verify your dataset schema match the input requirements.`}
                                         <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                                             <div className="flex items-center space-x-2">
                                                 <Database className="w-5 h-5 text-purple-600" />
-                                                <h2 className="text-xl font-black text-slate-800">全样本分析结果</h2>
+                                                <h2 className="text-xl font-black text-slate-800">{t('causal.detail.allSampleResult')}</h2>
                                             </div>
 
                                             {/* 视图切换 Toggle */}
@@ -1801,7 +1808,7 @@ Please verify your dataset schema match the input requirements.`}
                                                         }`}
                                                 >
                                                     <BarChart3 className="w-3.5 h-3.5" />
-                                                    <span>可视化</span>
+                                                    <span>{t('causal.detail.tab.visual')}</span>
                                                 </button>
                                                 <button
                                                     onClick={() => setFullViewMode('table')}
@@ -1811,7 +1818,7 @@ Please verify your dataset schema match the input requirements.`}
                                                         }`}
                                                 >
                                                     <TableIcon className="w-3.5 h-3.5" />
-                                                    <span>原始数据</span>
+                                                    <span>{t('causal.detail.tab.raw')}</span>
                                                 </button>
                                             </div>
                                         </div>
@@ -1821,16 +1828,16 @@ Please verify your dataset schema match the input requirements.`}
                                                 {/* 3. 全样-影响因子条形图 */}
                                                 <CausalImpactChart
                                                     data={impactData}
-                                                    title={<><BarChart3 className="w-5 h-5 mr-2 text-blue-500" /> 各影响因子影响分数对比 (全样本)</>}
-                                                    description={`针对所有样本计算出不同特征对目标变量 ${task.ySpec.field} 的平均影响分数`}
+                                                    title={<><BarChart3 className="w-5 h-5 mr-2 text-blue-500" /> {t('causal.detail.impactScoreTitle.full')}</>}
+                                                    description={t('causal.detail.impactScoreDesc.full', { yField: task.ySpec.field })}
                                                     yField={task.ySpec.field}
                                                 />
 
                                                 {/* 4. 全样-因果关系热力图 */}
                                                 <CausalHeatmap
                                                     data={resultData.heatmap}
-                                                    title={<><Flame className="w-5 h-5 mr-2 text-orange-500 fill-orange-500/20" /> 因果关系分布 (全样本)</>}
-                                                    description="展示所有样本下特征 X 之间的相互依赖与因果指向强度"
+                                                    title={<><Flame className="w-5 h-5 mr-2 text-orange-500 fill-orange-500/20" /> {t('causal.detail.heatmapTitle.full')}</>}
+                                                    description={t('causal.detail.heatmapDesc.full')}
                                                 />
                                             </>
                                         ) : (
@@ -1851,12 +1858,12 @@ Please verify your dataset schema match the input requirements.`}
                         <div className="flex items-center space-x-4">
                             <div className="flex items-center space-x-2">
                                 <List className="h-5 w-5 text-blue-600" />
-                                <DialogTitle className="text-lg font-bold text-slate-800">全部命中样本数据</DialogTitle>
+                                <DialogTitle className="text-lg font-bold text-slate-800">{t('causal.detail.sampleModalTitle') || '全部命中样本数据'}</DialogTitle>
                             </div>
                             <div className="h-4 w-px bg-slate-200" />
                             <div className="flex items-center space-x-4 text-xs font-medium text-slate-500">
-                                <span className="bg-slate-100 px-2 py-1 rounded">共 {fullSampleData.length} 条数据</span>
-                                <span className="bg-slate-100 px-2 py-1 rounded">按时间降序排列</span>
+                                <span className="bg-slate-100 px-2 py-1 rounded">{t('causal.detail.totalCount', { count: fullSampleData.length }) || `共 ${fullSampleData.length} 条数据`}</span>
+                                <span className="bg-slate-100 px-2 py-1 rounded">{t('causal.detail.timeSortDesc') || '按时间降序排列'}</span>
                             </div>
                         </div>
                         <Button

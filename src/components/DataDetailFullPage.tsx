@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLanguage } from "../i18n/LanguageContext";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
@@ -53,6 +54,7 @@ interface DataRow {
 }
 
 export function DataDetailFullPage({ dataset, onClose, initialTab }: DataDetailFullPageProps) {
+  const { t } = useLanguage();
   /**
    * 渲染统一灰色样式的字符串标签，默认最多展示三个；
    * 超出部分以“+N”徽标显示，悬停展示全部剩余标签。
@@ -83,18 +85,18 @@ export function DataDetailFullPage({ dataset, onClose, initialTab }: DataDetailF
   };
   // 统一使用 mock 元数据，初始化时优先采用列表传入的真实数据名称/ID/版本
   const initialMeta = {
-    name: dataset?.title ?? "示例数据集",
+    name: dataset?.title ?? t('dataDetail.title'),
     id: dataset?.id != null ? String(dataset.id) : "1",
     version: dataset?.version ?? "v1.2",
-    source: dataset?.source ?? "上传",
+    source: dataset?.source ?? t('data.source.upload'),
     createdAt: "2024-01-17T09:15:00",
     updatedAt: "2024-01-15T14:30:00",
     creator: "王五",
     sizeBytes: Math.round(2.8 * 1024 * 1024),
-    status: "成功",
+    status: t('common.success'),
     projectId: dataset?.projectId || "proj_001",
-    description: dataset?.description ?? "包含2023年客户营销记录，涵盖产品信息、客户数据、交易数据等关键信息",
-    tags: ["订阅更新版本", "客户", "营销", "交易", "安全"],
+    description: dataset?.description ?? t('dataDetail.overview.description'),
+    tags: [t('data.source.subscription'), "客户", "营销", "交易", "安全"],
     stats: { totalRows: 891 },
     permissions: { canEditDescription: true, canDownload: true },
     downloadUrl: "https://example.com/download/mock.csv",
@@ -353,30 +355,30 @@ export function DataDetailFullPage({ dataset, onClose, initialTab }: DataDetailF
     const now = new Date();
     const ts = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")} ${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
     return [
-      `# 数据处理失败日志`,
-      `时间: ${ts}`,
-      `数据ID: ${meta.id}`,
-      `数据名称: ${meta.name}`,
-      `版本号: ${meta.version}`,
-      `来源方式: ${meta.source}`,
-      `状态: ${meta.status}`,
+      `# ${t('data.detail.failureLog.title')}`,
+      `${t('common.time')}: ${ts}`,
+      `${t('dataDetail.dataId')}: ${meta.id}`,
+      `${t('dataDetail.overview.name')}: ${meta.name}`,
+      `${t('dataDetail.dataVersion')}: ${meta.version}`,
+      `${t('dataDetail.overview.source')}: ${meta.source}`,
+      `${t('common.status')}: ${meta.status}`,
       `——`,
-      `错误类型: DataPreprocessError`,
-      `错误码: DP-4001`,
-      `错误信息: 列 \'Age\' 存在非法值导致归一化失败（发现 NaN / Infinity）`,
-      `重试建议: 请清洗异常值（缺失/无穷大/非数值），并重新运行预处理任务`,
+      `${t('common.errorType')}: DataPreprocessError`,
+      `${t('common.errorCode')}: DP-4001`,
+      `${t('common.errorMsg')}: ${t('data.detail.failureLog.errorMessage')}`,
+      `${t('common.retrySuggest')}: ${t('data.detail.failureLog.retrySuggest')}`,
       `——`,
-      `堆栈片段:`,
+      `${t('common.stackTrace')}:`,
       `  at normalizeColumn (preprocess/normalize.ts:42:17)`,
       `  at runPipeline (preprocess/pipeline.ts:88:23)`,
       `  at main (preprocess/index.ts:15:5)`,
       `——`,
-      `输入摘要:`,
-      `  行数: 7504`,
-      `  列数: 12`,
-      `  触发步骤: 缺失处理 -> 归一化 -> 特征选择`,
+      `${t('common.inputSummary')}:`,
+      `  ${t('common.rows')}: 7504`,
+      `  ${t('common.columns')}: 12`,
+      `  ${t('common.triggerStep')}: ${t('data.preprocess.missing')} -> ${t('data.preprocess.normalize')} -> ${t('data.preprocess.featureSelection')}`,
       `——`,
-      `注：以上为前端模拟日志内容，仅用于原型演示。`
+      `${t('common.mockLogNote')}`
     ].join("\n");
   };
 
@@ -422,28 +424,27 @@ export function DataDetailFullPage({ dataset, onClose, initialTab }: DataDetailF
   const mapSourceLabel = (src?: string) => {
     if (!src) return "—";
     const s = String(src).toLowerCase();
-    if (s.includes("upload") || s.includes("上传")) return "上传";
-    if (s.includes("订阅") || s.includes("subscription")) return "订阅";
-    if (s.includes("清洗") || s.includes("clean")) return "清洗";
+    if (s.includes("upload") || s.includes("上传")) return t('data.source.upload');
+    if (s.includes("订阅") || s.includes("subscription")) return t('data.source.subscription');
+    if (s.includes("清洗") || s.includes("clean")) return t('data.source.preprocess');
     return src as string;
   };
 
   const getSourceClass = (label: string) => {
-    switch (label) {
-      case "上传": return "bg-blue-50 text-blue-700 border-blue-300";
-      case "订阅": return "bg-purple-50 text-purple-700 border-purple-300";
-      case "清洗": return "bg-green-50 text-green-700 border-green-300";
-      default: return "bg-gray-50 text-gray-700 border-gray-300";
-    }
+    const s = String(label).toLowerCase();
+    if (s === t('data.source.upload').toLowerCase() || label === "上传") return "bg-blue-50 text-blue-700 border-blue-300";
+    if (s === t('data.source.subscription').toLowerCase() || label === "订阅") return "bg-purple-50 text-purple-700 border-purple-300";
+    if (s === t('data.source.preprocess').toLowerCase() || label === "清洗") return "bg-green-50 text-green-700 border-green-300";
+    return "bg-gray-50 text-gray-700 border-gray-300";
   };
 
   const getStatusStyling = (status?: string) => {
     const s = status ? String(status).toLowerCase() : "";
-    if (s.includes("success") || s.includes("成功")) return { cls: "bg-green-50 text-green-700 border-green-300", label: "成功" };
-    if (s.includes("fail") || s.includes("失败")) return { cls: "bg-red-50 text-red-700 border-red-300", label: "失败" };
+    if (s.includes("success") || s.includes("成功") || s === t('status.success').toLowerCase()) return { cls: "bg-green-50 text-green-700 border-green-300", label: t('status.success') };
+    if (s.includes("fail") || s.includes("失败") || s === t('status.failed').toLowerCase()) return { cls: "bg-red-50 text-red-700 border-red-300", label: t('status.failed') };
     // 兼容历史“处理中”字符串，但统一显示为“导入中”
-    if (s.includes("process") || s.includes("处理中") || s.includes("running") || s.includes("导入中")) return { cls: "bg-yellow-50 text-yellow-700 border-yellow-300", label: "导入中" };
-    return { cls: "bg-gray-50 text-gray-700 border-gray-300", label: status || "未知" };
+    if (s.includes("process") || s.includes("处理中") || s.includes("running") || s.includes("导入中") || s === t('status.processing').toLowerCase()) return { cls: "bg-yellow-50 text-yellow-700 border-yellow-300", label: t('status.processing') };
+    return { cls: "bg-gray-50 text-gray-700 border-gray-300", label: status || t('common.unknown') };
   };
 
   // 已移除：LimiX质量评分相关逻辑
@@ -455,7 +456,7 @@ export function DataDetailFullPage({ dataset, onClose, initialTab }: DataDetailF
   const handleDownload = () => {
     const url = meta.downloadUrl;
     if (!url) {
-      alert("暂无下载链接");
+      alert(t('common.noDownloadLink'));
       return;
     }
     window.open(url, "_blank");
@@ -658,7 +659,7 @@ export function DataDetailFullPage({ dataset, onClose, initialTab }: DataDetailF
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center space-x-2">
               <FileText className="h-5 w-5" />
-              <span>基本信息</span>
+              <span>{t('dataDetail.basicInfo')}</span>
             </CardTitle>
             {/* 操作按钮已迁移至“数据表预览”工具栏，强调针对当前预览版本执行 */}
           </div>
@@ -668,11 +669,11 @@ export function DataDetailFullPage({ dataset, onClose, initialTab }: DataDetailF
             {/* 第一列：ID 与 来源 */}
             <div className="space-y-4">
               <div>
-                <div className="text-gray-500 mb-1">数据ID</div>
+                <div className="text-gray-500 mb-1">{t('dataDetail.dataId')}</div>
                 <div className="font-mono text-gray-900">{meta.id}</div>
               </div>
               <div>
-                <div className="text-gray-500 mb-1">来源方式</div>
+                <div className="text-gray-500 mb-1">{t('dataDetail.sourceType')}</div>
                 <div>
                   {(() => {
                     const label = mapSourceLabel(meta.source);
@@ -686,11 +687,11 @@ export function DataDetailFullPage({ dataset, onClose, initialTab }: DataDetailF
             {/* 第二列：创建人 与 创建时间 */}
             <div className="space-y-4">
               <div>
-                <div className="text-gray-500 mb-1">创建人</div>
+                <div className="text-gray-500 mb-1">{t('dataDetail.creator')}</div>
                 <div className="text-gray-900">{meta.creator}</div>
               </div>
               <div>
-                <div className="text-gray-500 mb-1">创建时间</div>
+                <div className="text-gray-500 mb-1">{t('dataDetail.createTime')}</div>
                 <div className="text-gray-900">{formatDateTime(meta.createdAt)}</div>
               </div>
             </div>
@@ -698,11 +699,11 @@ export function DataDetailFullPage({ dataset, onClose, initialTab }: DataDetailF
             {/* 第三列：数据大小 与 文件数量 */}
             <div className="space-y-4">
               <div>
-                <div className="text-gray-500 mb-1">数据大小</div>
+                <div className="text-gray-500 mb-1">{t('dataDetail.dataSize')}</div>
                 <div className="text-gray-900">{formatBytes(meta.sizeBytes)}</div>
               </div>
               <div>
-                <div className="text-gray-500 mb-1">文件数量</div>
+                <div className="text-gray-500 mb-1">{t('dataDetail.fileCount')}</div>
                 <div className="text-gray-900">{getCurrentSubDatasetOptions().length}</div>
               </div>
             </div>
@@ -710,7 +711,7 @@ export function DataDetailFullPage({ dataset, onClose, initialTab }: DataDetailF
             {/* 第四列：状态 */}
             <div className="space-y-4">
               <div>
-                <div className="text-gray-500 mb-1">状态</div>
+                <div className="text-gray-500 mb-1">{t('common.status')}</div>
                 <div>
                   {(() => {
                     const { cls, label } = getStatusStyling(meta.status);
@@ -723,7 +724,7 @@ export function DataDetailFullPage({ dataset, onClose, initialTab }: DataDetailF
             {/* 第五列：所属项目 */}
             <div className="space-y-4">
               <div>
-                <div className="text-gray-500 mb-1">所属项目</div>
+                <div className="text-gray-500 mb-1">{t('dataDetail.project')}</div>
                 <div className="text-gray-900 font-medium">
                   {(() => {
                     const project = mockProjects.find(p => p.id.toLowerCase() === meta.projectId?.toLowerCase());
@@ -738,7 +739,7 @@ export function DataDetailFullPage({ dataset, onClose, initialTab }: DataDetailF
               <div className="flex flex-col md:flex-row gap-8">
                 {/* 左侧：描述 (约占 60-70%) */}
                 <div className="flex-1 min-w-0">
-                  <div className="text-gray-500 mb-2">描述</div>
+                  <div className="text-gray-500 mb-2">{t('common.description')}</div>
                   {!isEditingDesc ? (
                     <div className="text-gray-700 leading-relaxed text-sm">{editableDesc}</div>
                   ) : (
@@ -746,12 +747,12 @@ export function DataDetailFullPage({ dataset, onClose, initialTab }: DataDetailF
                       <Input
                         value={editableDesc}
                         onChange={(e) => setEditableDesc(e.target.value)}
-                        placeholder="请输入描述"
+                        placeholder={t('common.description.placeholder')}
                         className="text-sm"
                       />
                       <div className="flex justify-end space-x-2">
-                        <Button size="sm" onClick={() => { setIsEditingDesc(false); }}>保存</Button>
-                        <Button variant="outline" size="sm" onClick={() => { setEditableDesc(meta.description); setIsEditingDesc(false); }}>取消</Button>
+                        <Button size="sm" onClick={() => { setIsEditingDesc(false); }}>{t('common.save')}</Button>
+                        <Button variant="outline" size="sm" onClick={() => { setEditableDesc(meta.description); setIsEditingDesc(false); }}>{t('common.cancel')}</Button>
                       </div>
                     </div>
                   )}
@@ -759,7 +760,7 @@ export function DataDetailFullPage({ dataset, onClose, initialTab }: DataDetailF
 
                 {/* 右侧：数据标签 (约占 30-40%) */}
                 <div className="w-full md:w-80 shrink-0">
-                  <div className="text-gray-500 mb-2">数据标签</div>
+                  <div className="text-gray-500 mb-2">{t('dataDetail.dataTags')}</div>
                   {renderGrayTextLabels(meta.tags)}
                 </div>
               </div>
@@ -785,23 +786,23 @@ export function DataDetailFullPage({ dataset, onClose, initialTab }: DataDetailF
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center space-x-2">
                 <FileText className="h-5 w-5" />
-                <span>数据表预览</span>
+                <span>{t('data.detail.previewTitle')}</span>
               </CardTitle>
               <div className="flex items-center space-x-2 flex-wrap">
                 {/* 版本选择（默认最新 v1.3） */}
-                <span className="text-sm text-gray-600">数据版本:</span>
+                <span className="text-sm text-gray-600">{t('data.detail.preview.version')}:</span>
                 <Select value={activeVersionId} onValueChange={(value: string) => handleSwitchVersionSelect(value)}>
                   <SelectTrigger className="w-40">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {Object.keys(versionConfig).map((vid) => (
-                      <SelectItem key={vid} value={vid}>{vid}{vid === 'v1.3' ? '（最新）' : ''}</SelectItem>
+                      <SelectItem key={vid} value={vid}>{vid}{vid === 'v1.3' ? `${t('common.latest')}` : ''}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
 
-                <span className="text-sm text-gray-600">数据子集:</span>
+                <span className="text-sm text-gray-600">{t('data.detail.id')}:</span>
                 {/* 下拉选择子数据集，选项展示完整的数据名称 */}
                 <Select value={activeSubDatasetId} onValueChange={(value: string) => handleSwitchSubDataset(value)}>
                   <SelectTrigger className="w-56">
@@ -822,16 +823,16 @@ export function DataDetailFullPage({ dataset, onClose, initialTab }: DataDetailF
                   className={missingOnly ? "bg-red-50 border-red-500 text-red-600" : ""}
                 >
                   <Filter className="h-4 w-4 mr-2" />
-                  缺失值
+                  {t('dataDetail.preview.missingValues')}
                 </Button>
                 <Button
                   size="sm"
                   onClick={() => setPreviewVisualMode('missing')}
                   className="bg-blue-600 hover:bg-blue-700 text-white"
-                  aria-label="切换至缺失分析可视化视图"
+                  aria-label={t('data.detail.preview.visualAnalysis')}
                 >
                   <BarChart3 className="h-4 w-4 mr-2" />
-                  缺失分析可视化
+                  {t('data.detail.preview.visualAnalysis')}
                 </Button>
                 {/* 唯一值筛选合并组件：默认全选，支持按字段多选 */}
                 <DropdownMenu>
@@ -842,18 +843,18 @@ export function DataDetailFullPage({ dataset, onClose, initialTab }: DataDetailF
                       className={uniqueOnly ? "bg-orange-50 border-orange-500 text-orange-600" : ""}
                     >
                       <TrendingUp className="h-4 w-4 mr-2" />
-                      唯一值
+                      {t('data.detail.preview.uniqueValue')}
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start" className="w-56">
-                    <DropdownMenuLabel>选择字段（默认全选）</DropdownMenuLabel>
-                    <div className="px-2 py-1.5 text-xs text-gray-500">选中字段中任一字段的值在全体中唯一时保留该行</div>
+                    <DropdownMenuLabel>{t('dataDetail.preview.selectFields')}</DropdownMenuLabel>
+                    <div className="px-2 py-1.5 text-xs text-gray-500">{t('dataDetail.preview.uniqueFieldsHint')}</div>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => { setUniqueFields(allVariables as (keyof DataRow)[]); setUniqueOnly(true); }}>
-                      全选
+                      {t('common.selectAll')}
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => { setUniqueFields([]); setUniqueOnly(false); }}>
-                      清空
+                      {t('common.clear')}
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuGroup>
@@ -885,25 +886,25 @@ export function DataDetailFullPage({ dataset, onClose, initialTab }: DataDetailF
             </div>
             {/* 第二行：当前版本相关操作按钮，支持响应式换行 */}
             <div className="mt-3 flex items-center gap-2 flex-wrap">
-              {meta.status === "失败" && (
+              {meta.status === t('status.failed') && (
                 <>
                   <Button
                     variant="destructive"
                     size="sm"
                     onClick={handleOpenFailureLog}
-                    aria-label="查看失败日志"
+                    aria-label={t('data.detail.failureLog.view')}
                   >
                     <AlertTriangle className="h-4 w-4 mr-2" />
-                    查看失败日志
+                    {t('data.detail.failureLog.view')}
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={handleDownloadFailureLog}
-                    aria-label="下载失败日志"
+                    aria-label={t('data.detail.failureLog.download')}
                   >
                     <Download className="h-4 w-4 mr-2" />
-                    下载失败日志
+                    {t('data.detail.failureLog.download')}
                   </Button>
                 </>
               )}
@@ -915,16 +916,16 @@ export function DataDetailFullPage({ dataset, onClose, initialTab }: DataDetailF
                 className={!canDownload ? "opacity-50 cursor-not-allowed" : ""}
               >
                 <Download className="h-4 w-4 mr-2" />
-                下载当前版本
+                {t('data.detail.downloadCurrent')}
               </Button>
             </div>
             <div className="text-sm text-gray-600 flex items-center gap-3">
               <span>
-                总条数 <span className="font-semibold">{previewRows.length}</span>
+                {t('data.detail.stats.totalRows')} <span className="font-semibold">{previewRows.length}</span>
               </span>
               <span className="text-gray-400">|</span>
               <span>
-                总字段数 <span className="font-semibold">{allVariables.length}</span>
+                {t('data.detail.stats.totalColumns')} <span className="font-semibold">{allVariables.length}</span>
               </span>
             </div>
           </CardHeader>
@@ -966,13 +967,13 @@ export function DataDetailFullPage({ dataset, onClose, initialTab }: DataDetailF
                                       setUniqueOnly(false);
                                     }
                                   }}
-                                  aria-label={`字段 ${String(field)} 的缺失率：${s.missingRate.toFixed(1)}%`}
+                                  aria-label={t('dataDetail.stats.missingLabel', { field: String(field), rate: s.missingRate.toFixed(1) })}
                                 >
-                                  缺失率: {s.missingRate.toFixed(1)}%
+                                  {t('dataDetail.stats.nullRate')}: {s.missingRate.toFixed(1)}%
                                 </div>
                               </TooltipTrigger>
                               <TooltipContent>
-                                <div className="text-xs">{String(field)} 缺失 {s.missingCount} / {previewRows.length} 行（{s.missingRate.toFixed(1)}%）</div>
+                                <div className="text-xs">{t('dataDetail.stats.missingTip', { field: String(field), count: s.missingCount, total: previewRows.length, rate: s.missingRate.toFixed(1) })}</div>
                               </TooltipContent>
                             </Tooltip>
                           )}
@@ -985,25 +986,25 @@ export function DataDetailFullPage({ dataset, onClose, initialTab }: DataDetailF
                                   style={{ backgroundColor: '#F97316' }}
                                   className={`inline-flex items-center justify-center text-white h-6 text-xs rounded px-2 py-1 cursor-pointer select-none`}
                                   onClick={() => {
-                                    setUniqueField(field);
+                                    setUniqueFields([field]);
                                     setUniqueOnly(true);
                                     setMissingOnly(false);
                                   }}
                                   onKeyDown={(e) => {
                                     if (e.key === 'Enter' || e.key === ' ') {
                                       e.preventDefault();
-                                      setUniqueField(field);
+                                      setUniqueFields([field]);
                                       setUniqueOnly(true);
                                       setMissingOnly(false);
                                     }
                                   }}
-                                  aria-label={`字段 ${String(field)} 的唯一值数量：${s.uniqueCount}`}
+                                  aria-label={t('dataDetail.stats.uniqueLabel', { field: String(field), count: s.uniqueCount })}
                                 >
-                                  唯一值: {s.uniqueCount}
+                                  {t('dataDetail.stats.distinct')}: {s.uniqueCount}
                                 </div>
                               </TooltipTrigger>
                               <TooltipContent>
-                                <div className="text-xs">{String(field)} 唯一值 {s.uniqueCount} / {previewRows.length} 行（{s.uniqueRate.toFixed(1)}%）</div>
+                                <div className="text-xs">{t('dataDetail.stats.uniqueTip', { field: String(field), count: s.uniqueCount, total: previewRows.length, rate: s.uniqueRate.toFixed(1) })}</div>
                               </TooltipContent>
                             </Tooltip>
                           )}
@@ -1030,7 +1031,7 @@ export function DataDetailFullPage({ dataset, onClose, initialTab }: DataDetailF
                   })()}
                   <TableRow>
                     <TableHead className="w-12">
-                      <div className="bg-blue-500 text-white px-2 py-1 rounded text-xs">序号</div>
+                      <div className="bg-blue-500 text-white px-2 py-1 rounded text-xs">{t('common.index')}</div>
                     </TableHead>
                     <TableHead>
                       <div className="bg-blue-500 text-white px-2 py-1 rounded text-xs">PassengerId</div>
@@ -1095,7 +1096,7 @@ export function DataDetailFullPage({ dataset, onClose, initialTab }: DataDetailF
           {/* 表格下方：记录数选择器 */}
           <div className="px-6 pb-6">
             <div className="mt-3 flex items-center gap-2">
-              <span className="text-sm text-gray-600">选择要查看的记录数:</span>
+              <span className="text-sm text-gray-600">{t('data.detail.stats.totalRows')}:</span>
               <Select value={selectedRows.toString()} onValueChange={(value: string) => setSelectedRows(Number(value))}>
                 <SelectTrigger className="w-20">
                   <SelectValue />
@@ -1107,7 +1108,7 @@ export function DataDetailFullPage({ dataset, onClose, initialTab }: DataDetailF
                   <SelectItem value="50">50</SelectItem>
                 </SelectContent>
               </Select>
-              <span className="text-sm text-gray-600">条/页</span>
+              <span className="text-sm text-gray-600">{t('data.pagination.itemsPerPage')}</span>
             </div>
           </div>
         </Card>
@@ -1115,14 +1116,14 @@ export function DataDetailFullPage({ dataset, onClose, initialTab }: DataDetailF
         <Card className="fade-in">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>数据缺失分析</CardTitle>
+              <CardTitle>{t('dataDetail.preview.visualAnalysis')}</CardTitle>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-600">显示模式:</span>
-                <Button variant={heatmapMode === 'sample' ? 'default' : 'outline'} size="sm" onClick={() => setHeatmapMode('sample')}>按行抽样</Button>
-                <Button variant={heatmapMode === 'column' ? 'default' : 'outline'} size="sm" onClick={() => setHeatmapMode('column')}>按列聚合</Button>
+                <span className="text-sm text-gray-600">{t('common.displayMode')}:</span>
+                <Button variant={heatmapMode === 'sample' ? 'default' : 'outline'} size="sm" onClick={() => setHeatmapMode('sample')}>{t('dataDetail.preview.heatmapSample')}</Button>
+                <Button variant={heatmapMode === 'column' ? 'default' : 'outline'} size="sm" onClick={() => setHeatmapMode('column')}>{t('dataDetail.preview.heatmapColumn')}</Button>
                 <Button variant="outline" size="sm" onClick={() => setPreviewVisualMode('table')}>
                   <ArrowLeft className="h-4 w-4 mr-2" />
-                  返回数据表预览
+                  {t('dataDetail.preview.backToTable')}
                 </Button>
               </div>
             </div>
@@ -1155,7 +1156,7 @@ export function DataDetailFullPage({ dataset, onClose, initialTab }: DataDetailF
                           </div>
                         ))}
                       </div>
-                      <div className="text-xs text-gray-500 mt-2">抽样显示 {sampleRows} 行（上限 10k）</div>
+                      <div className="text-xs text-gray-500 mt-2">{t('dataDetail.preview.samplingNote', { count: sampleRows })}</div>
                     </div>
                   </div>
                 );
@@ -1172,7 +1173,7 @@ export function DataDetailFullPage({ dataset, onClose, initialTab }: DataDetailF
                         ))}
                       </div>
                       <div className="flex items-center">
-                        <div className="w-16 text-xs text-gray-600">列聚合</div>
+                        <div className="w-16 text-xs text-gray-600">{t('dataDetail.preview.columnAggregation')}</div>
                         {allVariables.map((variable) => {
                           const c = m.fieldMissingCounts[variable] || 0;
                           const ratio = m.totalRows === 0 ? 0 : c / m.totalRows;
@@ -1216,12 +1217,12 @@ export function DataDetailFullPage({ dataset, onClose, initialTab }: DataDetailF
           <div className="flex items-center space-x-4">
             <Button variant="ghost" onClick={onClose}>
               <ArrowLeft className="h-4 w-4 mr-2" />
-              返回
+              {t('common.back')}
             </Button>
             <div>
               <h1 className="text-xl font-semibold">{meta.name}</h1>
               <div className="flex items-center text-sm text-gray-600 mt-1">
-                <span className="mr-2">数据ID: {meta.id}</span>
+                <span className="mr-2">{t('dataDetail.dataId')}: {meta.id}</span>
                 {/* 复制ID按钮已移除 */}
               </div>
             </div>
@@ -1253,18 +1254,18 @@ export function DataDetailFullPage({ dataset, onClose, initialTab }: DataDetailF
       <Dialog open={isFailureLogOpen} onOpenChange={setIsFailureLogOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
-            <DialogTitle>失败日志</DialogTitle>
+            <DialogTitle>{t('data.detail.failureLog.title')}</DialogTitle>
           </DialogHeader>
           <div className="bg-slate-950 text-slate-200 rounded-md p-4 overflow-auto max-h-[60vh] font-mono text-xs whitespace-pre-wrap">
             {failureLogContent || generateFailureLogText()}
           </div>
           <div className="flex justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={handleDownloadFailureLog} aria-label="下载失败日志">
+            <Button variant="outline" size="sm" onClick={handleDownloadFailureLog} aria-label={t('data.detail.failureLog.download')}>
               <Download className="h-4 w-4 mr-2" />
-              下载失败日志
+              {t('data.detail.failureLog.download')}
             </Button>
-            <Button size="sm" onClick={() => setIsFailureLogOpen(false)} aria-label="关闭失败日志">
-              关闭
+            <Button size="sm" onClick={() => setIsFailureLogOpen(false)} aria-label={t('common.close')}>
+              {t('common.close')}
             </Button>
           </div>
         </DialogContent>
