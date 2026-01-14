@@ -766,7 +766,7 @@ function CreateCITask({ onBack, onSubmit, existingTasks = [], editingTask = null
                     <Card className="border-none shadow-xl shadow-slate-200/50 bg-white rounded-3xl overflow-hidden min-h-[600px]">
                         <CardHeader className="pb-2 flex flex-row items-center justify-between">
                             <CardTitle className="text-sm font-black text-slate-400 uppercase tracking-widest flex items-center">
-                                <Filter className="w-4 h-4 mr-2 text-blue-500" /> X / 样本条件过滤
+                                <Filter className="w-4 h-4 mr-2 text-blue-500" /> X（特征因子）
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="p-6 space-y-4">
@@ -907,15 +907,66 @@ function CreateCITask({ onBack, onSubmit, existingTasks = [], editingTask = null
                             popupClassName="rounded-xl font-medium"
                             value={editingFilter.field || undefined}
                             onChange={(val: string) => {
+                                // 处理全选逻辑
+                                if (val === 'ALL') {
+                                    const newFilters = [...formData.filters];
+                                    const existingFieldNames = new Set(newFilters.map((f: any) => f.field));
+
+                                    let addedCount = 0;
+                                    schema?.fields.forEach((f: any) => {
+                                        if (!existingFieldNames.has(f.name)) {
+                                            let defaultOp = '=';
+                                            let defaultValue = null;
+
+                                            if (f.filterType === 'Numeric') {
+                                                defaultOp = 'BETWEEN';
+                                                if (f.statistics) defaultValue = [f.statistics.min, f.statistics.max];
+                                            } else if (f.filterType === 'Temporal') {
+                                                defaultOp = 'BETWEEN'; // 时间通常也是区间
+                                                if (f.statistics) defaultValue = [f.statistics.start, f.statistics.end];
+                                            } else if (f.filterType === 'Categorical') {
+                                                defaultOp = 'IN';
+                                                if (f.statistics?.options) defaultValue = f.statistics.options;
+                                            }
+
+                                            if (defaultValue) {
+                                                newFilters.push({
+                                                    id: Date.now() + Math.random(), // 简单的唯一ID生成
+                                                    field: f.name,
+                                                    op: defaultOp,
+                                                    value: defaultValue
+                                                });
+                                                addedCount++;
+                                            }
+                                        }
+                                    });
+
+                                    if (addedCount > 0) {
+                                        setFormData({ ...formData, filters: newFilters });
+                                        message.success(`已添加 ${addedCount} 个字段的过滤条件（默认全量范围）`);
+                                    } else {
+                                        message.info('所有字段已在过滤列表中');
+                                    }
+                                    setIsFilterModalOpen(false);
+                                    return;
+                                }
+
                                 const fieldSchema = schema?.fields.find((f: any) => f.name === val);
                                 let defaultOp = '=';
                                 if (fieldSchema?.filterType === 'Numeric') defaultOp = 'BETWEEN';
                                 if (fieldSchema?.filterType === 'Categorical') defaultOp = 'IN'; // 默认多选
+                                if (fieldSchema?.filterType === 'Temporal') defaultOp = 'BETWEEN'; // 时间默认为区间
 
                                 // 自动填充默认值 (基于统计信息)
                                 let defaultValue = null;
-                                if (fieldSchema?.filterType === 'Numeric' && fieldSchema.statistics && defaultOp === 'BETWEEN') {
-                                    // defaultValue = [fieldSchema.statistics.min, fieldSchema.statistics.max]; // 可选：是否自动填充全范围？用户体验上可能留空更好，或者填中间值。这里暂不自动填，仅显示提示。
+                                if (fieldSchema?.statistics) {
+                                    if (fieldSchema.filterType === 'Numeric' && defaultOp === 'BETWEEN') {
+                                        defaultValue = [fieldSchema.statistics.min, fieldSchema.statistics.max];
+                                    } else if (fieldSchema.filterType === 'Temporal') {
+                                        defaultValue = [fieldSchema.statistics.start, fieldSchema.statistics.end];
+                                    } else if (fieldSchema.filterType === 'Categorical' && defaultOp === 'IN') {
+                                        defaultValue = fieldSchema.statistics.options;
+                                    }
                                 }
 
                                 setEditingFilter({
@@ -925,7 +976,10 @@ function CreateCITask({ onBack, onSubmit, existingTasks = [], editingTask = null
                                     value: defaultValue
                                 });
                             }}
-                            options={schema?.fields.map((f: any) => ({ label: f.displayName, value: f.name }))}
+                            options={[
+                                { label: <span className="text-blue-600 font-bold">✨ 全选 (添加所有字段)</span>, value: 'ALL' },
+                                ...(schema?.fields.map((f: any) => ({ label: f.displayName, value: f.name })) || [])
+                            ]}
                         />
                     </div>
 
@@ -953,11 +1007,17 @@ function CreateCITask({ onBack, onSubmit, existingTasks = [], editingTask = null
 
                                 // 情况 1: 时间类型
                                 if (currentField?.filterType === 'Temporal') {
+                                    // 确保 value 是数组格式适配 RangePicker，如果是字符串则尝试重置
+                                    const dateValue = Array.isArray(editingFilter.value) ?
+                                        [dayjs(editingFilter.value[0]), dayjs(editingFilter.value[1])] :
+                                        undefined;
+
                                     return (
-                                        <DatePicker
+                                        <DatePicker.RangePicker
                                             className="w-full h-12 rounded-xl border-slate-200"
-                                            style={{ height: '48px' }}
+                                            style={{ height: '48px', width: '100%' }}
                                             showTime
+                                            value={dateValue as any}
                                             onChange={(_, dateString) => setEditingFilter({ ...editingFilter, value: dateString })}
                                         />
                                     );
@@ -971,6 +1031,7 @@ function CreateCITask({ onBack, onSubmit, existingTasks = [], editingTask = null
                                                 <InputNumber
                                                     className="w-full h-12 rounded-xl border-slate-200 pt-2"
                                                     placeholder="Min"
+                                                    value={Array.isArray(editingFilter.value) ? editingFilter.value[0] : null}
                                                     onChange={(val) => {
                                                         const current = Array.isArray(editingFilter.value) ? editingFilter.value : [null, null];
                                                         setEditingFilter({ ...editingFilter, value: [val, current[1]] });
@@ -980,6 +1041,7 @@ function CreateCITask({ onBack, onSubmit, existingTasks = [], editingTask = null
                                                 <InputNumber
                                                     className="w-full h-12 rounded-xl border-slate-200 pt-2"
                                                     placeholder="Max"
+                                                    value={Array.isArray(editingFilter.value) ? editingFilter.value[1] : null}
                                                     onChange={(val) => {
                                                         const current = Array.isArray(editingFilter.value) ? editingFilter.value : [null, null];
                                                         setEditingFilter({ ...editingFilter, value: [current[0], val] });
@@ -993,6 +1055,7 @@ function CreateCITask({ onBack, onSubmit, existingTasks = [], editingTask = null
                                             className="w-full h-12 rounded-xl border-slate-200 pt-2"
                                             style={{ width: '100%' }}
                                             placeholder="输入数值"
+                                            value={typeof editingFilter.value === 'number' ? editingFilter.value : null}
                                             onChange={(val) => setEditingFilter({ ...editingFilter, value: val })}
                                         />
                                     );
