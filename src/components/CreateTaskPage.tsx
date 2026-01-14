@@ -1675,23 +1675,7 @@ export const CreateTaskPage: React.FC<CreateTaskPageProps> = ({
                                                         className="h-10 transition-all border-gray-200 focus:border-blue-400"
                                                     />
                                                 </div>
-                                                <div className="space-y-2">
-                                                    <Label className="text-sm font-medium text-gray-700 flex items-center">
-                                                        <span className="text-red-500 mr-1">*</span>预测开始时间
-                                                        <TooltipProvider>
-                                                            <Tooltip>
-                                                                <TooltipTrigger><Info className="h-3 w-3 ml-1 text-gray-400" /></TooltipTrigger>
-                                                                <TooltipContent>后端将解析此时间字符串并与时间列匹配</TooltipContent>
-                                                            </Tooltip>
-                                                        </TooltipProvider>
-                                                    </Label>
-                                                    <Input
-                                                        placeholder="如: 2024-01-01 00:00:00"
-                                                        value={formData.forecastingConfig.startTime}
-                                                        onChange={(e) => handleInputChange('forecastingConfig', { ...formData.forecastingConfig, startTime: e.target.value })}
-                                                        className="h-10 transition-all border-gray-200 focus:border-blue-400"
-                                                    />
-                                                </div>
+
                                             </div>
                                         </CardContent>
                                     </Card>
