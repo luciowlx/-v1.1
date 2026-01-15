@@ -218,10 +218,9 @@ const initialDatasets: MockDataset[] = [
       {
         version: "v1.0",
         files: [
-          "C64.csv", "C65.csv", "C7.csv", "C77.csv", "C78.csv", "C79.csv", "C8.csv", "C80.csv",
-          "C81.csv", "C82.csv", "C83.csv", "C84.csv", "C85.csv", "C86.csv", "C87.csv", "C88.csv",
-          "C89.csv", "C9.csv", "C90.csv", "C91.csv", "C92.csv", "C93.csv", "C94.csv", "C95.csv",
-          "C96.csv", "C97.csv", "C98.csv", "C99.csv"
+          "C64.csv", "C65.csv", "C7.csv", "C8.csv", "C9.csv",
+          "C77.csv", "C78.csv", "C79.csv", "C80.csv", "C81.csv",
+          "C82.csv", "C83.csv", "C84.csv", "C85.csv"
         ].map(name => ({
           name,
           size: "2.5MB",

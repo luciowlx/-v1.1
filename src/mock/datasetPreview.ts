@@ -102,6 +102,16 @@ export const datasetPreviewRows: Record<string, PreviewRow[]> = {
   'C9.csv': generateIndustryData('WIND', WIND_FIELDS, 20, WIND_CLASSIFICATION_COLS),
   'C64.csv': generateIndustryData('WIND', WIND_FIELDS, 20, WIND_CLASSIFICATION_COLS),
   'C65.csv': generateIndustryData('WIND', WIND_FIELDS, 20, WIND_CLASSIFICATION_COLS),
+  // C77-C85 风电场运行监控数据
+  'C77.csv': generateIndustryData('WIND', WIND_FIELDS, 20, WIND_CLASSIFICATION_COLS),
+  'C78.csv': generateIndustryData('WIND', WIND_FIELDS, 20, WIND_CLASSIFICATION_COLS),
+  'C79.csv': generateIndustryData('WIND', WIND_FIELDS, 20, WIND_CLASSIFICATION_COLS),
+  'C80.csv': generateIndustryData('WIND', WIND_FIELDS, 20, WIND_CLASSIFICATION_COLS),
+  'C81.csv': generateIndustryData('WIND', WIND_FIELDS, 20, WIND_CLASSIFICATION_COLS),
+  'C82.csv': generateIndustryData('WIND', WIND_FIELDS, 20, WIND_CLASSIFICATION_COLS),
+  'C83.csv': generateIndustryData('WIND', WIND_FIELDS, 20, WIND_CLASSIFICATION_COLS),
+  'C84.csv': generateIndustryData('WIND', WIND_FIELDS, 20, WIND_CLASSIFICATION_COLS),
+  'C85.csv': generateIndustryData('WIND', WIND_FIELDS, 20, WIND_CLASSIFICATION_COLS),
 
   // 生产线传感器（含分类列：设备健康、告警等级）
   '生产线传感器1.csv': generateIndustryData('SENSE', SENSOR_FIELDS, 10, SENSOR_CLASSIFICATION_COLS),
